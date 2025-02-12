@@ -1,7 +1,7 @@
 name: open-cuak-apps
 services:
   open-cuak-web:
-    image: ghcr.io/aident-ai/open-cuak-web:${OPEN_CUAK_VERSION:-latest} # TODO: fallback to stable tag
+    image: ghcr.io/aident-ai/open-cuak-web:${OPEN_CUAK_VERSION:-stable}
     container_name: open-cuak-web
     restart: always
     ports:
@@ -13,7 +13,7 @@ services:
     platform: linux/amd64
 
   open-cuak-browserless:
-    image: ghcr.io/aident-ai/open-cuak-browserless:${OPEN_CUAK_VERSION:-latest} # TODO: fallback to stable tag
+    image: ghcr.io/aident-ai/open-cuak-browserless:${OPEN_CUAK_VERSION:-stable}
     container_name: open-cuak-browserless
     restart: always
     extra_hosts:
