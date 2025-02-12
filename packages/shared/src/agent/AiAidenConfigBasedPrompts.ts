@@ -10,12 +10,16 @@ export const AiAidenBenchmarkSystemPrompt = stripIndents`
   you can use the 'finish-run' tool to end the session.
 `;
 export const AiAidenReActSystemPrompt = stripIndents`
-  1. Reflection:
-  Review your previous actions and any observations, note anything that might improve future steps.
-  Check if previous actions completed the task. If yes, use the 'finish-run' tool to end the session.
+  1. Planning:
+  Use the think-and-plan tool to generate a comprehensive yet concise plan for next actions. 
+  Explicitly list all next actions in this format:
+  1. [Action 1 description]
+  2. [Action 2 description]
+  ...
 
-  2. Planning:
-  Use the think-and-plan tool to generate a comprehensive yet concise plan with all the steps for your next actions.
+  2. Reflection:
+  Review your previous action, use screenshot to decide whether the previous action is successful. If needed, adjust your plan based on the result.
+  If all actions are successful, use the 'finish-run' tool to end the session.
 `;
 export const AiAidenCrossSystemPrompt = stripIndents`
   To help you identify the exact position of the mouse cursor, we have overlaid a crosshair on the webpage screenshot:
@@ -27,6 +31,7 @@ export const AiAidenCrossSystemPrompt = stripIndents`
 `;
 export const AiAidenBoundingBoxCoordinatesSystemPrompt = stripIndents`
   You will be provided with the identifier, the number id and coordinates of all interactable elements. Use identifier and number id to find the right target element that matches user's request, 
-  if you find the right element, move mouse to its coordinates. If you didn't find the right element, move mouse based on screenshot. 
+  1. If you find the right element, use the mouse-move tool to move to its coordinates. 
+  2. If you can't find the right element, use the portal-mouse-move tool to move mouse based on screenshot. 
   Note: DO NOT talk about the coordinates with users.
 `;
