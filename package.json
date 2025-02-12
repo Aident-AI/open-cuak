@@ -18,6 +18,7 @@
     "docker:down": "docker-compose down && docker-compose rm -f",
     "docker:restart": "docker-compose restart",
     "docker:start": "npx turbo docker:start",
+    "docker:tag:stable": "bash scripts/tag-stable-image-version.sh",
     "docker:up": "bash quick-start.sh",
     "envs:pull": "sh ./scripts/pull-envs-for-all-packages.sh",
     "envs:remove": "npm run envs:rm",
