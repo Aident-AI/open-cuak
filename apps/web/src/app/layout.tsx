@@ -17,6 +17,7 @@ const sans = Plus_Jakarta_Sans({ subsets: ['latin'] });
 export const metadata: Metadata = {
   title: 'Open-CUAK by Aident AI',
   description: 'Reliable Automation Agents at Scale. Open-CUAK by Aident AI.',
+  icons: { icon: '/favicon.svg' },
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
