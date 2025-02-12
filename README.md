@@ -23,7 +23,7 @@ That's why we are making it open-sourced, today.
 
 <p align="center"><a href="https://aident.ai"><img src="./apps/web/public/assets/icons/aident-logo-rounded-512.png" alt="Aident AI Logo" width="30" height="30" ></a></p>
 
-<p align="center">❤️ This is built and open-sourced by [Aident AI](https://aident.ai) team. ❤️</p>
+<p align="center">❤️ This is built and open-sourced by <a href="https://aident.ai">Aident AI</a> team. ❤️</p>
 
 ---
 
