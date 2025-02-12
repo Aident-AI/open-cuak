@@ -21,19 +21,9 @@ That's why we are making it open-sourced, today.
 
 ---
 
+<p align="center">❤️ Built and open-sourced by <a href="https://aident.ai">Aident AI</a> team. ❤️</p>
 <p align="center"><a href="https://aident.ai"><img src="./apps/web/public/assets/icons/aident-logo-rounded-512.png" alt="Aident AI Logo" width="30" height="30" ></a></p>
 
-<p align="center">❤️ This is built and open-sourced by <a href="https://aident.ai">Aident AI</a> team. ❤️</p>
-
----
-
-## Demos
-
-1.  ### Expedia Flight Search
-
-    Use built-in remote-browser running locally to search for flight tickets on Expedia.
-
-    https://github.com/user-attachments/assets/e2dd7276-fff7-4ed1-a042-3c1a6bbecef8
 
 
 ## Quick Start
@@ -77,6 +67,40 @@ That's why we are making it open-sourced, today.
    ```
 
 3. Ta-da! It is now ready locally at [http://localhost:3000](http://localhost:3000).
+
+
+
+<p align="center">&nbsp;</p>
+
+## Demos
+
+1.  ### Expedia Flight Search
+
+    Use built-in remote-browser running locally to search for flight tickets on Expedia.
+
+    https://github.com/user-attachments/assets/e2dd7276-fff7-4ed1-a042-3c1a6bbecef8
+
+
+
+<p align="center">&nbsp;</p>
+
+## Core Features
+
+    ✅ Run Operator-like automation workflows locally, ensuring full privacy
+    ✅ Use vision-based automation with more flexibility and reliability, just like a human
+    ✅ Turn any browser into an Operator-companion, with a browser extension
+    ✅ Utilize a dedicated remote browser to mitigate risks associated, without sharing your own
+    ✅ Use any vision-compatible model, whether frontier or open-source (Claude, Gemini, LLaVA, etc.)
+    ✅ Bypass frustrating bot detection, unlocking more automation possibilities
+    🔜 Teach agents new workflows reliably, with SOP-based training
+    🔜 Centralize all account access in one place, managing everything agents have access to
+    ⏳ Monitor and manage a large number of tasks, with built-in observability tools
+    ⏳ Deploy and scale hundreds of agents to execute real-world tasks, in parallel
+    ⏳ Open source a RL-trained CUA model to run automations, for free
+
+
+
+<p align="center">&nbsp;</p>
 
 ## Development Setup
 
