@@ -1,0 +1,57 @@
+{
+  "family": "browserless-family",
+  "containerDefinitions": [
+    {
+      "name": "job-manager",
+      "image": "placeholder",
+      "cpu": 2048,
+      "memory": 4096,
+      "memoryReservation": 512,
+      "portMappings": [
+        {
+          "name": "job-manager-3000-tcp",
+          "containerPort": 3000,
+          "hostPort": 3000,
+          "protocol": "tcp",
+          "appProtocol": "http"
+        },
+        {
+          "name": "websocket-50000-tcp",
+          "containerPort": 50000,
+          "hostPort": 50000,
+          "protocol": "tcp",
+          "appProtocol": "http"
+        }
+      ],
+      "essential": true,
+      "environment": [
+        { "name": "BROWSERLESS_AUTH_TOKEN", "value": "[BROWSERLESS_AUTH_TOKEN]" },
+        { "name": "NEXT_PUBLIC_SUPABASE_URL", "value": "[NEXT_PUBLIC_SUPABASE_URL]" },
+        { "name": "NEXT_PUBLIC_SUPABASE_ANON_KEY", "value": "[NEXT_PUBLIC_SUPABASE_ANON_KEY]" }
+      ],
+      "environmentFiles": [],
+      "mountPoints": [],
+      "volumesFrom": [],
+      "ulimits": [],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-create-group": "true",
+          "awslogs-group": "/ecs/browserless-family",
+          "awslogs-region": "us-west-1",
+          "awslogs-stream-prefix": "ecs"
+        },
+        "secretOptions": []
+      }
+    }
+  ],
+  "executionRoleArn": "arn:aws:iam::975454476157:role/ecsTaskExecutionRole",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["EC2", "FARGATE"],
+  "cpu": "2048",
+  "memory": "4096",
+  "runtimePlatform": {
+    "cpuArchitecture": "X86_64",
+    "operatingSystemFamily": "LINUX"
+  }
+}

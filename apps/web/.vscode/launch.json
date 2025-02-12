@@ -1,0 +1,21 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "request": "launch",
+      "name": "Run Ts-node Script",
+      "type": "node",
+      "program": "${file}",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["ts-node", "-r", "tsconfig-paths/register"],
+      "args": ["--esm"],
+      "cwd": "${workspaceFolder}",
+      "env": { "TS_NODE_PROJECT": "./tsconfig.tsnode.json" },
+      "sourceMaps": true,
+      "outFiles": ["${workspaceFolder}/dist/**/*.js"]
+    }
+  ]
+}

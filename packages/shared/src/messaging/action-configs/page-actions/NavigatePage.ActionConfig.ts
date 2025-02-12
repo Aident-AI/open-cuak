@@ -1,0 +1,73 @@
+import { z } from 'zod';
+import { ActionConfigAutoAttachesToInteractable } from '~shared/decorators/ActionConfigAutoAttachesToInteractable';
+import { TabLifecycleStatus } from '~shared/injection/TabLifecycleStatus';
+import { ALogger } from '~shared/logging/ALogger';
+import { Base_ActionConfig, enforceBaseActionConfigStatic } from '~shared/messaging/action-configs/Base.ActionConfig';
+import { IncludeTreeAfterwards, SimplifiedTreeResponse } from '~shared/messaging/action-configs/page-actions/mixins';
+import { PageNavigationAction } from '~shared/messaging/action-configs/page-actions/types';
+import { ServiceWorkerMessageAction } from '~shared/messaging/service-worker/ServiceWorkerMessageAction';
+import { WaitUtils } from '~shared/utils/WaitUtils';
+
+import type { IActionConfigExecContext } from '~shared/messaging/action-configs/Base.ActionConfig';
+export class NavigatePage_ActionConfig extends Base_ActionConfig {
+  public static action = ServiceWorkerMessageAction.NAVIGATE_PAGE;
+
+  public static description = `Navigate the page using allowed actions.`;
+
+  public static requestPayloadSchema = z.object({
+    action: z.nativeEnum(PageNavigationAction),
+    url: z.string().optional().default('').describe('The target URL for the `goto` action.'),
+    ...IncludeTreeAfterwards,
+  });
+
+  public static responsePayloadSchema = z.object({ ...SimplifiedTreeResponse });
+
+  @ActionConfigAutoAttachesToInteractable
+  public static async exec(
+    payload: z.infer<typeof this.requestPayloadSchema>,
+    context: IActionConfigExecContext,
+  ): Promise<z.infer<typeof this.responsePayloadSchema>> {
+    const its = context.getInteractableService();
+    const { action, url, includeTreeAfterwards } = payload;
+    switch (action) {
+      case PageNavigationAction.GO_BACK:
+        await its.getPageOrThrow().goBack();
+        break;
+      case PageNavigationAction.GO_FORWARD:
+        await its.getPageOrThrow().goForward();
+        break;
+      case PageNavigationAction.GOTO: {
+        if (!url) throw new Error(`Target url is not specified`);
+        let target = url;
+        if (!url.match(/^[a-zA-Z]+:\/\//)) {
+          target = `https://${url}`;
+        }
+        const result = its.getPageCreationResult();
+        if (!result.success || !result.page) await chrome.tabs.update(its.getActiveTab().id, { url: target });
+        else await result.page.goto(target, { waitUntil: 'networkidle2' });
+        ALogger.info({ context: 'Went to the page', url: target });
+
+        await Promise.race([
+          new Promise<void>((resolve) =>
+            context.getActiveTabLifecycleService().waitUntilStatus(TabLifecycleStatus.DOM_COMPLETE, resolve),
+          ),
+          WaitUtils.delayToThrow(5_000, new Error('Timeout waiting for Tab to be DOM_COMPLETE')),
+        ]);
+        ALogger.info({ context: 'Page is now DOM_COMPLETE', url: target });
+
+        break;
+      }
+      case PageNavigationAction.RELOAD:
+        await its.getPageOrThrow().reload();
+        break;
+      default:
+        throw new Error(`Invalid action ${action}`);
+    }
+
+    if (!includeTreeAfterwards) return {};
+
+    return { tree: await its.getInteractableOrThrow().fetchNodeTree() };
+  }
+}
+
+enforceBaseActionConfigStatic(NavigatePage_ActionConfig);

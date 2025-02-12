@@ -1,0 +1,9 @@
+{
+  "name": "browserless-kill-server",
+  "version": "1.0.0",
+  "main": "kill-server.js",
+  "dependencies": {
+    "express": "^4.18.2",
+    "axios": "^1.4.0"
+  }
+}

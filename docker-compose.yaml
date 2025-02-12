@@ -1,0 +1,33 @@
+name: open-cuak-apps
+services:
+  open-cuak-web:
+    image: ghcr.io/aident-ai/open-cuak-web:${OPEN_CUAK_VERSION:-latest} # TODO: fallback to stable tag
+    container_name: open-cuak-web
+    restart: always
+    ports:
+      - '3000:3000'
+    volumes:
+      - .env.production:/app/apps/web/.env.production
+    networks:
+      - app-network
+    platform: linux/amd64
+
+  open-cuak-browserless:
+    image: ghcr.io/aident-ai/open-cuak-browserless:${OPEN_CUAK_VERSION:-latest} # TODO: fallback to stable tag
+    container_name: open-cuak-browserless
+    restart: always
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    ports:
+      - '11975:11975'
+      - '11976:3000'
+      - '50000:50000'
+    volumes:
+      - .env.production:/app/.env.production
+    networks:
+      - app-network
+    platform: linux/amd64
+
+networks:
+  app-network:
+    driver: bridge

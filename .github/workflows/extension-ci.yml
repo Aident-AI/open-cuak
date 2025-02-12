@@ -1,0 +1,107 @@
+name: Companion Extension CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/browserless.yml'
+      - '.github/workflows/extension-ci.yml'
+      - 'apps/browserless/**'
+      - 'apps/extension/**'
+      - 'packages/shared/**'
+
+jobs:
+  prettier:
+    name: Prettier Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Run Prettier
+        id: prettier-run
+        uses: rutajdash/prettier-cli-action@v1.0.0
+        with:
+          config_path: ./.prettierrc
+
+      # This step only runs if Prettier finds errors causing the previous step to fail
+      # This step lists the files where errors were found
+      - name: Prettier Output
+        if: ${{ failure() }}
+        shell: bash
+        run: |
+          echo "The following files are not formatted:"
+          echo "${{steps.prettier-run.outputs.prettier_output}}"
+
+  # ##################################################
+  # TODO: enable Jest check after fixing the tests
+  # ##################################################
+  # jest:
+  #   name: Run Jest Tests
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout Repository
+  #       uses: actions/checkout@v2
+  #
+  #     - name: Install Node Dependencies
+  #       uses: pnpm/action-setup@v4
+  #       with:
+  #         version: 9
+  #         run_install: |
+  #           - recursive: true
+  #             args: [--frozen-lockfile, --strict-peer-dependencies]
+  #           - args: [--global, gulp, prettier, typescript]
+  #
+  #     - name: Run Jest Tests
+  #       run: npx turbo test:ci
+
+  extension-build:
+    name: Companion Extension's Production Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set short git commit SHA
+        id: commit
+        uses: prompt/actions-commit-hash@v2
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      # Install dependencies
+      - name: Install Node Dependencies
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.2.0
+      - name: Cache pnpm packages
+        uses: actions/cache@v4
+        id: cache-pnpm
+        with:
+          path: |
+            ./node_modules
+            ~/.npm
+            ~/.config
+            ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-cache-${{ hashFiles('**/pnpm-lock.yaml') }}
+      - name: pnpm i
+        run: pnpm i
+        working-directory: ./
+      - name: Install Vercel CLI
+        run: npm install -g vercel
+
+      # Build the extension
+      - name: Link Gsed
+        run: sudo ln -s /usr/bin/sed /usr/bin/gsed
+        working-directory: ./apps/extension
+      - name: Pull ENVs
+        run: npm run envs:pull
+        working-directory: ./
+      - name: Package Extension
+        run: npx turbo build --filter @aident/extension
+
+      # Cache the build
+      - name: Cache the build
+        uses: actions/cache/save@v4
+        with:
+          path: ./apps/extension/out
+          key: cache-extension-build:${{ steps.commit.outputs.short }}

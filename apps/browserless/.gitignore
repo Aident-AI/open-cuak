@@ -1,0 +1,26 @@
+# Compiled output
+dist/
+build/
+out/
+
+# Logs
+logs/
+*.log
+
+# Dependency directories
+node_modules/
+packages/*/node_modules/
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Other IDE or editor directories
+.idea/
+*.sublime-project
+*.sublime-workspace

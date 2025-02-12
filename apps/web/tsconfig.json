@@ -1,0 +1,46 @@
+{
+  "ts-node": {
+    "compilerOptions": {
+      "baseUrl": ".",
+      "target": "ESNext",
+      "module": "CommonJS"
+    }
+  },
+  "compilerOptions": {
+    "target": "esnext",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "allowImportingTsExtensions": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "sourceMap": true,
+    "declaration": true,
+    "noImplicitAny": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "~assets/*": ["./public/assets/*"],
+      "~functions/*": ["./supabase/functions/*"],
+      "~src/*": ["./src/*"],
+      "~scripts/*": ["./scripts/*"],
+      "~shared/*": ["../../packages/shared/src/*"],
+      "~types/*": ["./common/types/*"]
+    }
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "../shared/**/*.ts"],
+  "exclude": ["node_modules", "supabase"]
+}

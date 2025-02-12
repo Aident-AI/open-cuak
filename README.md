@@ -1,0 +1,121 @@
+<img src="./apps/web/public/assets/icons/open-cuak-logo.png" alt="Open CUAK Logo">
+
+<h1 align="center">🤖 - Reliable Automation Agents at Scale - 👥</h1>
+
+Open CUA Kit (Computer Use Agent), or Open-CUAK (pronounced "quack" 🦆🗣️), is THE platform for managing automation agents at scale — starting with browsers. The Kubernetes for CUA agents.
+
+### 🎯 Why Open-CUAK?
+
+In the real world, for real businesses, working with real people, reliability is everything.
+When automation becomes reliable, it becomes scalable.
+And when it becomes scalable, it becomes profitable.
+
+That’s why Open-CUAK is designed to run and manage **thousands of** automation agents, ensuring each one is **reliable**.
+
+This project is still in its very early days, but our team is working very hard to make it a reality, soon.
+This is just the beginning of a new era in work, a new way to a world of **abundant productivity**.
+
+And when productivity becomes truly abundant, we want to make sure it is **equally distributed**.
+
+That's why we are making it open-sourced, today.
+
+---
+
+<p align="center"><a href="https://aident.ai"><img src="./apps/web/public/assets/icons/aident-logo-rounded-512.png" alt="Aident AI Logo" width="30" height="30" ></a></p>
+
+<p align="center">❤️ This is built and open-sourced by [Aident AI](https://aident.ai) team. ❤️</p>
+
+---
+
+### Demo
+
+    Coming Soon
+
+## Quick Start
+
+### 🛠️ Environment Setup
+
+1.  Make sure you have `docker` installed on your machine. You can download it from [here](https://www.docker.com/products/docker-desktop).
+2.  Make sure you have `docker-compose` installed as well. Install from [here](https://docs.docker.com/compose/install/).
+3.  Clone the repository and navigate to the root directory.
+
+    ```bash
+    git clone https://github.com/Aident-AI/open-cuak.git
+    cd open-cuak
+    ```
+
+4.  Install `Supabase CLI`.
+
+    ```bash
+    brew install supabase/tap/supabase
+
+    # or (if you prefer `npm`)
+    npm install -g supabase-cli
+    ```
+
+### 👉 Run Production Build
+
+1. Set OpenAI API Key in `.example.env` file. (You can also set that in `.env.production` after Step 2)
+
+   ```bash
+   # [Required] Please add your OpenAI key
+   OPENAI_API_KEY="your-openai-api-key-here"
+   ```
+
+2. Start the services (at repo root).
+
+   ```bash
+   bash quick-start.sh
+
+   # or (if you have `npm` installed)
+   npm run docker:up
+   ```
+
+3. Ta-da! It is now ready locally at [http://localhost:3000](http://localhost:3000).
+
+## Development Setup
+
+### ⚡ Start Development Servers
+
+1.  Install dependencies.
+
+    ```bash
+    # on mac
+    brew install node
+
+    # on linux
+    sudo apt install nodejs npm
+    ```
+
+    ```bash
+    npm install -g pnpm
+    ```
+
+    ```bash
+    # at repo root
+    # on mac
+    npm run init:mac
+
+    # on linux
+    npm run init:linux
+    ```
+
+2.  Start the dev servers.
+
+    ```bash
+    # at repo root
+    npm run dev
+
+    ```
+
+3.  Now, it is ready locally at [http://localhost:3000](http://localhost:3000).
+
+### ▶️ Build and Run Production Build from Local
+
+1. Run local production build (with `docker`).
+
+   ```bash
+   # at repo root
+   npm run docker:start
+
+   ```

@@ -1,0 +1,13 @@
+diff --git a/package.json b/package.json
+index d3d376e0f2c04400bb6258e9360e3721149c0065..794e6066d50cc0faf10d0c3e3ea62ff6ae4c6612 100644
+--- a/package.json
++++ b/package.json
+@@ -30,7 +30,7 @@
+   "typings": "dist/index.d.ts",
+   "exports": {
+     ".": {
+-      "import": "./dist/types.js",
++      "import": ["./dist/types.js", "./dist/index.d.ts"],
+       "require": "./dist/types.umd.cjs"
+     }
+   },

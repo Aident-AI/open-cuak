@@ -1,0 +1,68 @@
+'use client';
+
+import { AcademicCapIcon } from '@heroicons/react/24/solid';
+import cx from 'classnames';
+import { useState } from 'react';
+import DebugInteractionsPage from '~src/app/extension/debug/interactions/DebugInteractionsPage';
+import ChatWithAidenWindow from '~src/app/portal/ChatWithAidenWindow';
+import RemoteBrowserControlIndicator from '~src/app/portal/RemoteBrowserControlIndicator';
+import TeachAidenWindow from '~src/app/portal/TeachAidenWindow';
+import { WebsocketRemoteBrowserWindow } from '~src/app/portal/WebsocketRemoteBrowserWindow';
+import { MeshBackgroundWithUserSession } from '~src/components/MeshBackgroundWithUserSession';
+import { InteractionEventProvider } from '~src/contexts/InteractionEventContext';
+
+export default function PortalPage() {
+  const [remoteBrowserSessionId, setRemoteBrowserSessionId] = useState<string | undefined>(undefined);
+  const [showDebugInteractions, setShowDebugInteractions] = useState(false);
+  const [hideChatWithAiden, setHideChatWithAiden] = useState(false);
+  const [teachModeOn, setTeachModeOn] = useState(false);
+
+  return (
+    <InteractionEventProvider>
+      <MeshBackgroundWithUserSession navigationTargetPath="/home" navigationTitle="Home">
+        <WebsocketRemoteBrowserWindow
+          className="flex h-full w-4/5 flex-1 flex-shrink-0 flex-grow"
+          footer={<RemoteBrowserControlIndicator teachModeOn={teachModeOn} />}
+          remoteBrowserSessionId={remoteBrowserSessionId}
+          setHideChatWithAiden={setHideChatWithAiden}
+          setRemoteBrowserSessionId={setRemoteBrowserSessionId}
+          teachModeOn={teachModeOn}
+          turnOffTeachMode={() => setTeachModeOn(false)}
+        />
+        {!hideChatWithAiden &&
+          (teachModeOn ? (
+            <TeachAidenWindow
+              className="flex w-96 flex-shrink-0 flex-grow-0 p-4 pt-20"
+              remoteBrowserSessionId={remoteBrowserSessionId}
+            />
+          ) : (
+            <ChatWithAidenWindow
+              className="flex w-96 flex-shrink-0 flex-grow-0 p-4 pt-20"
+              remoteBrowserSessionId={remoteBrowserSessionId}
+            />
+          ))}
+
+        <div className="fixed bottom-4 left-4 z-50 flex h-fit w-fit flex-row text-white">
+          <button
+            className={cx(
+              'mx-1 h-fit w-fit rounded-full p-2 text-white shadow-2xl shadow-black',
+              teachModeOn ? 'bg-green-300/50' : 'bg-blue-300/50',
+            )}
+            onClick={() => setTeachModeOn((prev) => !prev)}
+          >
+            <AcademicCapIcon className="h-6 w-6" />
+          </button>
+        </div>
+
+        {showDebugInteractions && (
+          <div className="absolute bottom-0 right-0 z-50 flex h-full w-[20%] flex-shrink-0 flex-grow-0 items-center justify-center bg-black/80 backdrop-blur-sm">
+            <DebugInteractionsPage
+              remoteBrowserSessionId={remoteBrowserSessionId}
+              onClose={() => setShowDebugInteractions(false)}
+            />
+          </div>
+        )}
+      </MeshBackgroundWithUserSession>
+    </InteractionEventProvider>
+  );
+}
