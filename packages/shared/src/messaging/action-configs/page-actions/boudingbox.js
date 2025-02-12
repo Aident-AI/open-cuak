@@ -92,7 +92,7 @@ export function drawInteractableBoundingBoxes() {
       // Assign a number id to each box
       const labelElement = document.createElement('div');
       labelElement.className = 'aident-bounding-box';
-      labelElement.textContent = String(labelCounter++);
+      labelElement.textContent = String(labelCounter);
       labelElement.style.position = 'fixed';
       labelElement.style.zIndex = '999999999';
       labelElement.style.backgroundColor = 'black';
@@ -113,6 +113,8 @@ export function drawInteractableBoundingBoxes() {
         x: Math.round(centerX),
         y: Math.round(centerY),
       });
+
+      labelCounter++;
     });
   });
 
