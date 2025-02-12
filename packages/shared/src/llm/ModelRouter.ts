@@ -4,6 +4,7 @@ import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createVertexAnthropic } from '@ai-sdk/google-vertex/anthropic/edge';
 import { createOpenAI } from '@ai-sdk/openai';
 import { LanguageModel } from 'ai';
+import { isEnvValueSet } from '~shared/env/environment';
 import { VllmServiceHost } from '~shared/llm/vllm/VllmServiceHost';
 import { EnumUtils } from '~shared/utils/EnumUtils';
 
@@ -35,9 +36,22 @@ export type RouterModelConfig = { model: LlmRouterModel; variant?: string };
 
 export class ModelRouter {
   public static async genModel(config: RouterModelConfig): Promise<LanguageModel> {
+    // TODO improve the model selection logic when building model configuration UI
+    const usingOpenAI = isEnvValueSet(process.env.OPENAI_API_KEY);
+    const usingAzure =
+      isEnvValueSet(process.env.AZURE_OPENAI_INSTANCE_NAME) && isEnvValueSet(process.env.AZURE_OPENAI_KEY);
+    if (!usingOpenAI && !usingAzure) {
+      throw new Error(
+        'OPENAI_API_KEY must be set if using OpenAI, or AZURE_OPENAI_INSTANCE_NAME and AZURE_OPENAI_KEY must be set if using Azure',
+      );
+    }
+
     let model = config.model;
-    if (process.env.OPENAI_API_KEY) {
+    if (usingOpenAI) {
       model = LlmRouterModel.OPEN_AI;
+    }
+    if (usingAzure) {
+      model = LlmRouterModel.GPT;
     }
 
     switch (model) {
