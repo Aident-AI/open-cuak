@@ -27,9 +27,14 @@ That's why we are making it open-sourced, today.
 
 ---
 
-### Demo
+## Demos
 
-    Coming Soon
+1.  ### Expedia Flight Search
+
+    Use built-in remote-browser running locally to search for flight tickets on Expedia.
+
+    https://github.com/user-attachments/assets/e2dd7276-fff7-4ed1-a042-3c1a6bbecef8
+
 
 ## Quick Start
 
