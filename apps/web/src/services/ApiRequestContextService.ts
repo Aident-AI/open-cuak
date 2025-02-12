@@ -2,7 +2,6 @@ import { Session, SupabaseClient, User } from '@supabase/supabase-js';
 import { NextRequest } from 'next/server';
 import PgBoss from 'pg-boss';
 import { ApiRequestContext } from '~shared/http/ApiRequestContext';
-import { MOCK_USER_UUID_HEADER } from '~shared/http/headers';
 import { ALogger } from '~shared/logging/ALogger';
 import { ServiceWorkerMessageAction } from '~shared/messaging/service-worker/ServiceWorkerMessageAction';
 import { RuntimeMessage, RuntimeMessageResponse } from '~shared/messaging/types';
@@ -73,19 +72,6 @@ export class ApiRequestContextService {
         return session;
       },
       fetchUser: async (): Promise<User | null> => {
-        const mockUserUuid = options?.mockUserUuid ?? options.req?.headers.get(MOCK_USER_UUID_HEADER);
-        if (mockUserUuid && mockUserUuid.length > 0) {
-          const { data: row, error } = await this.getContext()
-            .getSupabase()
-            .from('mock_users')
-            .select('data')
-            .eq('uuid', mockUserUuid)
-            .single();
-          if (error) throw error;
-          if (!row?.data) throw new Error('Mock user not found.');
-          return row?.data;
-        }
-
         if (this.#user) return this.#user;
         const session = await this.getContext().fetchSession();
         if (!session?.user) return null;

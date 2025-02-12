@@ -55,27 +55,6 @@ export type Database = {
         }
         Relationships: []
       }
-      mock_users: {
-        Row: {
-          created_at: string
-          data: Json
-          id: number
-          uuid: string
-        }
-        Insert: {
-          created_at?: string
-          data: Json
-          id?: number
-          uuid?: string
-        }
-        Update: {
-          created_at?: string
-          data?: Json
-          id?: number
-          uuid?: string
-        }
-        Relationships: []
-      }
       remote_browser_cookies: {
         Row: {
           cookies: Json
