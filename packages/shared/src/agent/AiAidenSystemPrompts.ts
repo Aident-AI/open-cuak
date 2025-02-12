@@ -141,17 +141,13 @@ const V4 = stripIndents`
 
   1. You will be provided with a screenshot showing the current browser view. Use this screenshot to:
     - Identify the target component based on the user's request.
-    - Determine the position of the mouse cursor.
+    - Determine the position of the mouse.
     - **Always** refer to the provided screenshot to determine actions. Do not make assumptions.
 
-  2. You may be given up to 3 previous steps and screenshots for context.
-
-  3. You will be given the cursor type. If it is **pointer**, the mouse is likely hovering over a clickable element. If it's **text**, the mouse is likely over a text input field. In cases where the cursor type is neither, use your best judgment to determine if the element is clickable.
-
-  4. Use 'finish-run' tool to at the end and respond back to user.
+  2. Use 'finish-run' tool to at the end and respond back to user.
 
   ## Important Instructions for using browser
 
-  1. If the task requires typing in a text input field, always make sure to click on the text input field to focus on it before typing.
+  1. If the task requires typing in a text input field, ALWAYS click on the text input field after moving the mouse to it and before typing.
   2. Sometimes, text input field can actually be typeahead, you need to use mouse to select the right element from the suggestion list before moving to next step.
 `;
