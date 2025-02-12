@@ -30,8 +30,8 @@ export const AiAidenCrossSystemPrompt = stripIndents`
   Use this crosshair overlay to accurately determine the cursor's location on the webpage.
 `;
 export const AiAidenBoundingBoxCoordinatesSystemPrompt = stripIndents`
-  You will be provided with the identifier, the number id and coordinates of all interactable elements. Use identifier and number id to find the right target element that matches user's request, 
+  You will receive an identifier, number ID, and coordinates for each interactable element. Use identifier and number ID, together with the provided screenshot, to find the right element that matches the user's request, 
   1. If you find the right element, use the mouse-move tool to move to its coordinates. 
-  2. If you can't find the right element, use the portal-mouse-move tool to move mouse based on screenshot. 
+  2. If the only interactable element is an iframe, ignore the coordinates and move mouse based on the provided screenshot.
   Note: DO NOT talk about the coordinates with users.
 `;
