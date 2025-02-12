@@ -23,7 +23,7 @@ import { IBaseAgentNodeOptions, StepRunHistoryType } from '~shared/agent/IBaseAg
 import { ModelRouter } from '~shared/llm/ModelRouter';
 import { ALogger } from '~shared/logging/ALogger';
 
-export const DEFAULT_MAX_STEPS = 50;
+export const DEFAULT_MAX_STEPS = 100;
 export const RUN_NAME = 'AiAidenNode';
 
 export interface IAiAgentInspectionConfig {
@@ -150,13 +150,15 @@ export class AiAgentNode implements IBaseAgentNode<CoreMessage, LanguageModel, C
               // If toolDict includes think-and-plan tool and the last tool call is not think-and-plan
               // we force the model to use it.
               if (localToolDict[ThinkAndPlanToolName]) {
-                const lastStepMessages = this.getState().stepHistory.filter(
-                  (m) => m.stepNum === this.getState().stepCount - 1,
-                );
-                if (lastStepMessages.some((m) => m.role === 'tool' && m.content[0].toolName !== ThinkAndPlanToolName)) {
-                  localToolDict = Object.fromEntries(
-                    Object.entries(localToolDict).filter(([toolName]) => toolName === ThinkAndPlanToolName),
-                  );
+                const { stepCount, stepHistory } = this.getState();
+                const lastStepMessages = stepHistory.filter((m) => m.stepNum === stepCount - 1);
+
+                if (
+                  stepCount === 0 ||
+                  lastStepMessages.some((m) => m.role === 'tool' && m.content[0].toolName !== ThinkAndPlanToolName)
+                ) {
+                  // Keep only the ThinkAndPlan tool
+                  localToolDict = { [ThinkAndPlanToolName]: localToolDict[ThinkAndPlanToolName] };
                 }
               }
 

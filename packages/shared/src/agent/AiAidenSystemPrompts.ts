@@ -150,8 +150,8 @@ const V4 = stripIndents`
 
   4. Use 'finish-run' tool to at the end and respond back to user.
 
-  ## Other Instructions
+  ## Important Instructions for using browser
 
   1. If the task requires typing in a text input field, always make sure to click on the text input field to focus on it before typing.
-  2. If clicking on the target component does not work, the cursor may not be over the target. Move the mouse slightly and check the cursor type before attempting to click again.
+  2. Sometimes, text input field can actually be typeahead, you need to use mouse to select the right element from the suggestion list before moving to next step.
 `;

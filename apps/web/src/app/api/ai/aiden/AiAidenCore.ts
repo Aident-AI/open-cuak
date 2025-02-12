@@ -23,7 +23,9 @@ import { Screenshot_ActionConfig } from '~shared/messaging/action-configs/page-a
 import { PageScreenshotAction } from '~shared/messaging/action-configs/page-actions/types';
 import { ServiceWorkerMessageAction } from '~shared/messaging/service-worker/ServiceWorkerMessageAction';
 import { RuntimeMessage, RuntimeMessageResponse } from '~shared/messaging/types';
+import { BaseEndpointApi } from '~src/app/api/BaseEndpointApi';
 import { AiAidenApiMessageAnnotation } from '~src/app/api/ai/aiden/AiAidenApi';
+import { MouseMoveApi } from '~src/app/api/extension/control/mouse-move/MouseMoveApi';
 import { AiRegisteredToolSet } from '~src/app/api/llm/agent/AiRegisteredToolSet';
 
 export interface AiAidenCoreConfig {
@@ -48,7 +50,7 @@ export const DefaultAiAidenCoreConfigPart = {
   remoteBrowserConnected: true,
   // remoteBrowserSessionId,
   // sendRuntimeMessage,
-  systemPromptVersion: AiAidenSystemPromptVersion.V1,
+  systemPromptVersion: AiAidenSystemPromptVersion.V4,
   useBoundingBoxOverlay: true,
   useBoundingBoxCoordinates: true,
   useCross: false,
@@ -159,6 +161,12 @@ export class AiAidenCore {
         ...toolDict,
         ...AiRegisteredToolSet[RegisteredToolSetName.PORTAL_BROWSER_CONTROL],
       };
+
+      if (config.useBoundingBoxCoordinates) {
+        const mouseMoveApi = new MouseMoveApi() as BaseEndpointApi;
+        const toolName = mouseMoveApi.EndpointConfig.operationId.replaceAll(':', '-');
+        toolDict[toolName] = mouseMoveApi.toAiTool();
+      }
     }
     if (config.useReAct) toolDict[ThinkAndPlanToolName] = ThinkAndPlanTool;
 
