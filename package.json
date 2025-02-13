@@ -44,7 +44,6 @@
     "supabase:restart": "npm run supabase -- stop && npm run supabase -- start && npm run supabase:gen:types",
     "supabase:status": "npm run supabase -- status",
     "supabase:storage:init": "npm run web:run-script -- ./scripts/init/register-local-storage-buckets.ts",
-    "vercel:build-web": "npm run envs:pull && vercel pull --yes --token eFMlbwRscfzINIAZiPEXTeHr --environment=production && vercel build --token eFMlbwRscfzINIAZiPEXTeHr --prod",
     "web:run-script": "cd apps/web && TS_NODE_PROJECT=./tsconfig.json npx ts-node -r tsconfig-paths/register"
   },
   "dependencies": {
