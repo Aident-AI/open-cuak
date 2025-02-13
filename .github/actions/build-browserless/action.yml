@@ -6,8 +6,6 @@ runs:
     - name: Set short git commit SHA
       id: commit
       uses: prompt/actions-commit-hash@v2
-    - name: Checkout code
-      uses: actions/checkout@v3
 
     # Prepare extension app
     - name: Restore extension build cache
@@ -17,20 +15,24 @@ runs:
         key: cache-extension-build:${{ steps.commit.outputs.short }}
     - name: Use browserless config for extension
       working-directory: ./apps/browserless
+      shell: bash
       run: |
         cp -f ./extension-override.config.json ./extension-out/config.json
 
     # Prepare dependencies
     - name: Install dependencies and build Vite bundle
       working-directory: ./apps/browserless
+      shell: bash
       run: |
         npm install -g pnpm
         pnpm install
         npm run vite-build-ts
     - name: Pull ENVs
+      shell: bash
       run: npm run envs:pull
       working-directory: ./
     - name: Use .env.production as .env
+      shell: bash
       run: |
         mv .env .env.local
         cp .env.production .env
@@ -42,6 +44,7 @@ runs:
     - name: Build docker image
       id: build-image
       working-directory: ./apps/browserless
+      shell: bash
       run: |
         cp -r ../extension/out ./out
         docker build -f Dockerfile.production -t ${{ env.DOCK_IMAGE_NAME }}:${{ steps.commit.outputs.short }} .

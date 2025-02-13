@@ -3,8 +3,6 @@ description: Installs dependencies and builds Next.js
 runs:
   using: composite
   steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
     - name: Install Node Dependencies
       uses: pnpm/action-setup@v4
       with:
@@ -21,11 +19,14 @@ runs:
         key: ${{ runner.os }}-pnpm-cache-${{ hashFiles('**/pnpm-lock.yaml') }}
 
     - name: Install dependencies
+      shell: bash
       run: pnpm i
 
     - name: Build NextJS App
+      shell: bash
       run: npm run envs:reset
 
     - name: Build NextJS App
       working-directory: ./apps/web
+      shell: bash
       run: pnpm run build
