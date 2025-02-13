@@ -37,6 +37,8 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
       - name: Build NextJS App
         uses: ./.github/actions/build-web-app
 
@@ -46,6 +48,8 @@ jobs:
     needs: next-build
     if: github.event_name == 'push'
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
       - name: Build NextJS App
         uses: ./.github/actions/build-web-app
 
