@@ -1,6 +1,7 @@
+import { LanguageModel } from 'ai';
+
 import { createOpenAI } from '@ai-sdk/openai';
 import { ChatOpenAI } from '@langchain/openai';
-import { LanguageModel } from 'ai';
 
 import type { OpenAIProvider } from '@ai-sdk/openai';
 
@@ -36,8 +37,8 @@ export class VllmServiceHost {
   }
 
   static #genCreateProvider(): OpenAIProvider {
-    const baseUrl = this.getFetchBaseUrlOrThrow();
+    const baseURL = this.getFetchBaseUrlOrThrow();
     const apiKey = this.getFetchApiKey();
-    return createOpenAI({ baseUrl, apiKey, compatibility: 'compatible', name: 'vllm' });
+    return createOpenAI({ baseURL, apiKey, compatibility: 'compatible', name: 'vllm' });
   }
 }
