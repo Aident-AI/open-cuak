@@ -4,7 +4,7 @@ import { DEFAULT_MAX_STEPS } from '~shared/agent/AiAgentNode';
 import { AiAidenSystemPromptVersion } from '~shared/agent/AiAidenSystemPrompts';
 import { StepRunHistoryType } from '~shared/agent/IBaseAgentNodeOptions';
 import { AiAgentNodeBuilder } from '~shared/agent/builders/AiAgentNodeBuilder';
-import { GPTVariant, LlmRouterModel, ModelRouter, RouterModelConfig } from '~shared/llm/ModelRouter';
+import { GPTVariant, ModelRouter, RouterModelConfig } from '~shared/llm/ModelRouter';
 import { ALogger } from '~shared/logging/ALogger';
 import { AiAidenApi, AiAidenStreamDataSchema, AiAidenStreamStateInfoSchema } from '~src/app/api/ai/aiden/AiAidenApi';
 import { AiAidenCore, AiAidenCoreConfig, AiAidenCoreInstance } from '~src/app/api/ai/aiden/AiAidenCore';
@@ -22,7 +22,7 @@ export const POST = simpleRequestWrapper<z.infer<typeof api.RequestSchema.schema
   async (request, context, _path, signal) => {
     const user = await context.fetchUserOrThrow();
 
-    const modelConfig = { model: LlmRouterModel.GPT, variant: GPTVariant.GPT_4O } as RouterModelConfig;
+    const modelConfig = { variant: GPTVariant.GPT_4O } as RouterModelConfig;
     const systemPromptVersion = AiAidenSystemPromptVersion.V4;
     const useBoundingBoxOverlay = true;
     const useBoundingBoxCoordinates = true;

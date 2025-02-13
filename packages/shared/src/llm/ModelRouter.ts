@@ -11,7 +11,7 @@ import { EnumUtils } from '~shared/utils/EnumUtils';
 export enum LlmRouterModel {
   CLAUDE = 'claude',
   GEMINI = 'gemini',
-  GPT = 'gpt',
+  AZURE_OAI = 'azure-oai',
   VLLM = 'vllm',
   OPEN_AI = 'openai',
 }
@@ -32,7 +32,7 @@ export enum GPTVariant {
   GPT_4O = 'gpt-4o',
 }
 
-export type RouterModelConfig = { model: LlmRouterModel; variant?: string };
+export type RouterModelConfig = { model?: LlmRouterModel; variant?: string };
 
 export class ModelRouter {
   public static async genModel(config: RouterModelConfig): Promise<LanguageModel> {
@@ -51,7 +51,7 @@ export class ModelRouter {
       model = LlmRouterModel.OPEN_AI;
     }
     if (usingAzure) {
-      model = LlmRouterModel.GPT;
+      model = LlmRouterModel.AZURE_OAI;
     }
 
     switch (model) {
@@ -83,7 +83,7 @@ export class ModelRouter {
         const modelName = EnumUtils.getEnumValue(GeminiVariant, config.variant ?? '') ?? GeminiVariant.FLASH_2_0;
         return google(modelName);
       }
-      case LlmRouterModel.GPT: {
+      case LlmRouterModel.AZURE_OAI: {
         const resourceName = process.env.AZURE_OPENAI_INSTANCE_NAME;
         const apiKey = process.env.AZURE_OPENAI_KEY;
         if (!resourceName || !apiKey) throw new Error('AZURE_OPENAI_INSTANCE_NAME and AZURE_OPENAI_KEY must be set');

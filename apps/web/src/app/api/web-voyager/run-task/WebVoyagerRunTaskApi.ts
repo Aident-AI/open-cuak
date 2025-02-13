@@ -88,7 +88,7 @@ export class WebVoyagerRunTaskApi extends BaseEndpointApi {
         sendRuntimeMessage,
         userId: SERVICE_ROLE_USER_ID,
       } as AiAidenCoreConfig;
-      const model = await ModelRouter.genModel({ model: LlmRouterModel.GPT, variant: GPTVariant.GPT_4O });
+      const model = await ModelRouter.genModel({ model: LlmRouterModel.AZURE_OAI, variant: GPTVariant.GPT_4O });
       const core = new AiAidenCoreInstance();
       const toolDict = AiAidenCore.getToolDict(coreConfig);
 

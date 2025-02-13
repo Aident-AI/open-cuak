@@ -154,7 +154,7 @@ export class AutoEval {
       { role: 'user', content: [{ type: 'text', text: 'Your verdict:\n' }] } as CoreUserMessage,
     ];
 
-    const model = await ModelRouter.genModel({ model: LlmRouterModel.GPT, variant: GPTVariant.GPT_4O });
+    const model = await ModelRouter.genModel({ model: LlmRouterModel.AZURE_OAI, variant: GPTVariant.GPT_4O });
     while (true) {
       try {
         console.log('Calling gpt4o API to get the auto evaluation......');
