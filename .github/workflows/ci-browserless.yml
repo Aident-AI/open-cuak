@@ -1,11 +1,16 @@
 name: CI Browserless
 
 on:
-  workflow_run:
-    workflows: ['Companion Extension CI']
-    types:
-      - completed
-  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/browserless.yml'
+      - '.github/workflows/extension-ci.yml'
+      - 'apps/browserless/**'
+      - 'apps/extension/**'
+      - 'packages/shared/**'
 
 permissions:
   contents: read
@@ -15,30 +20,67 @@ env:
   DOCK_IMAGE_NAME: aident-ai/open-cuak-browserless
 
 jobs:
-  on-failure:
-    name: Previous Workflows Failed
+  prettier:
+    name: Prettier Check
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
     steps:
-      - run: echo "Previous workflow failed. Skipping deployment."
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+      - name: Run Prettier
+        id: prettier-run
+        uses: rutajdash/prettier-cli-action@v1.0.0
+        with:
+          config_path: ./.prettierrc
+      - name: Prettier Output
+        if: ${{ failure() }}
+        shell: bash
+        run: |
+          echo "The following files are not formatted:"
+          echo "${{steps.prettier-run.outputs.prettier_output}}"
 
-  on-success-pull-request:
+  # ##################################################
+  # TODO: enable Jest check after fixing the tests
+  # ##################################################
+  # jest:
+  #   name: Run Jest Tests
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout Repository
+  #       uses: actions/checkout@v2
+  #
+  #     - name: Install Node Dependencies
+  #       uses: pnpm/action-setup@v4
+  #       with:
+  #         version: 9
+  #         run_install: |
+  #           - recursive: true
+  #             args: [--frozen-lockfile, --strict-peer-dependencies]
+  #           - args: [--global, gulp, prettier, typescript]
+  #
+  #     - name: Run Jest Tests
+  #       run: npx turbo test:ci
+
+  on-pull-request:
     name: Build Browserless
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'pull_request' }}
+    if: github.event_name == 'pull_request'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+      - name: Build Extension
+        uses: ./.github/actions/build-extension
       - name: Build Browserless
         uses: ./.github/actions/build-browserless
 
-  on-success-push:
+  on-push:
     name: Deploy Browserless
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' }}
+    if: github.event_name == 'push'
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+      - name: Build Extension
+        uses: ./.github/actions/build-extension
       - name: Build Browserless
         uses: ./.github/actions/build-browserless
 
