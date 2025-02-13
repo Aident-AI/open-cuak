@@ -4,6 +4,9 @@ import { LanguageModel } from 'ai';
 
 import type { OpenAIProvider } from '@ai-sdk/openai';
 
+/**
+ *  @deprecated Use `ModelRouter.OPEN_AI` instead.
+ */
 export class VllmServiceHost {
   public static getFetchBaseUrlOrThrow(): string {
     const url = process.env.VLLM_API_URL;
@@ -35,6 +38,6 @@ export class VllmServiceHost {
   static #genCreateProvider(): OpenAIProvider {
     const baseUrl = this.getFetchBaseUrlOrThrow();
     const apiKey = this.getFetchApiKey();
-    return createOpenAI({ baseURL: baseUrl, apiKey, compatibility: 'compatible', name: 'vllm' });
+    return createOpenAI({ baseUrl, apiKey, compatibility: 'compatible', name: 'vllm' });
   }
 }
