@@ -21,8 +21,8 @@
       "path": "docs",
     },
     {
-      "name": "⚙️ Workflows",
-      "path": ".github/workflows",
+      "name": "⚙️ Github Actions",
+      "path": ".github/",
     },
     {
       "name": "🌱 Repo Root",

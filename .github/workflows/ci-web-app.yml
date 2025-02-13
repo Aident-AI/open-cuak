@@ -38,7 +38,7 @@ jobs:
     if: github.event_name == 'pull_request'
     steps:
       - name: Build NextJS App
-        uses: ./.github/workflows/composites/action-build-web-app
+        uses: ./.github/actions/build-web-app
 
   docker-build:
     name: Deploy Web App
@@ -47,7 +47,7 @@ jobs:
     if: github.event_name == 'push'
     steps:
       - name: Build NextJS App
-        uses: ./.github/workflows/composites/action-build-web-app
+        uses: ./.github/actions/build-web-app
 
       # Build and push Docker image
       - name: Set short git commit SHA

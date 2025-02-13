@@ -28,7 +28,7 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'pull_request' }}
     steps:
       - name: Build Browserless
-        uses: ./.github/workflows/composites/action-build-browserless
+        uses: ./.github/actions/build-browserless
 
   on-success-push:
     name: Deploy Browserless
@@ -36,7 +36,7 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' }}
     steps:
       - name: Build Browserless
-        uses: ./.github/workflows/composites/action-build-browserless
+        uses: ./.github/actions/build-browserless
 
       # Publish to GHCR
       - name: Set short git commit SHA

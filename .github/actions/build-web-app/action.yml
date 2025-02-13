@@ -6,9 +6,9 @@ runs:
     - name: Checkout code
       uses: actions/checkout@v3
     - name: Install Node Dependencies
-    uses: pnpm/action-setup@v4
-    with:
-      version: 9.2.0
+      uses: pnpm/action-setup@v4
+      with:
+        version: 9.2.0
 
     - name: Cache pnpm packages
       uses: actions/cache@v4
