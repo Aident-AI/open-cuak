@@ -58,7 +58,7 @@ jobs:
   #       run: npx turbo test:ci
 
   extension-build:
-    name: Companion Extension's Production Build
+    name: Build Extension
     runs-on: ubuntu-latest
 
     steps:
