@@ -1,7 +1,9 @@
 import { lowerCase } from 'lodash';
 
+export const getEnvValue = (key?: string | null) => (isEnvValueSet(key) ? (key as string) : undefined);
 export const isEnvValueSet = (key?: string | null) => key !== undefined && key !== null && key.trim() !== '';
 export const isStringConfigOn = (key?: string | null) => lowerCase(key ?? '') === 'true';
+
 export const isDevelopment = () => process.env.NEXT_PUBLIC_BUILD_ENV === 'development';
 export const isDocker = () => {
   if (process.env.DOCKER_ENV !== undefined) {
