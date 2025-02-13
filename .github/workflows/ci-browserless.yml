@@ -1,0 +1,58 @@
+name: CI Browserless
+
+on:
+  workflow_run:
+    workflows: ['Companion Extension CI']
+    types:
+      - completed
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  DOCK_IMAGE_NAME: aident-ai/open-cuak-browserless
+
+jobs:
+  on-failure:
+    name: Previous Workflows Failed
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    steps:
+      - run: echo "Previous workflow failed. Skipping deployment."
+
+  on-success-pull-request:
+    name: Build Browserless
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'pull_request' }}
+    steps:
+      - name: Build Browserless
+        uses: ./.github/workflows/composites/action-build-browserless
+
+  on-success-push:
+    name: Deploy Browserless
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' }}
+    steps:
+      - name: Build Browserless
+        uses: ./.github/workflows/composites/action-build-browserless
+
+      # Publish to GHCR
+      - name: Set short git commit SHA
+        id: commit
+        uses: prompt/actions-commit-hash@v2
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Tag Docker image for GHCR
+        run: |
+          docker tag ${{ env.DOCK_IMAGE_NAME }}:${{ steps.commit.outputs.short }} ghcr.io/${{ env.DOCK_IMAGE_NAME }}:${{ steps.commit.outputs.short }}
+          docker tag ${{ env.DOCK_IMAGE_NAME }}:${{ steps.commit.outputs.short }} ghcr.io/${{ env.DOCK_IMAGE_NAME }}:latest
+      - name: Push Docker image to GitHub Container Registry
+        run: |
+          docker push ghcr.io/${{ env.DOCK_IMAGE_NAME }}:${{ steps.commit.outputs.short }}
+          docker push ghcr.io/${{ env.DOCK_IMAGE_NAME }}:latest

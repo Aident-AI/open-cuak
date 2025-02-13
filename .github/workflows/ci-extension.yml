@@ -1,4 +1,4 @@
-name: Companion Extension CI
+name: CI Extension
 
 on:
   pull_request:

@@ -1,11 +1,11 @@
-name: Web App CI
+name: CI Web App
 
-# This action works with pull requests and pushes on the main branch
 on:
   pull_request:
   push:
     branches:
       - main
+
 permissions:
   contents: read
   packages: write
@@ -20,15 +20,11 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
-
       - name: Run Prettier
         id: prettier-run
         uses: rutajdash/prettier-cli-action@v1.0.0
         with:
           config_path: ./.prettierrc
-
-      # This step only runs if Prettier finds errors causing the previous step to fail
-      # This step lists the files where errors were found
       - name: Prettier Output
         if: ${{ failure() }}
         shell: bash
@@ -37,49 +33,31 @@ jobs:
           echo "${{steps.prettier-run.outputs.prettier_output}}"
 
   next-build:
-    name: Next Build
+    name: Build Web App
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
     steps:
+      - name: Build NextJS App
+        uses: ./.github/workflows/composites/action-build-web-app
+
+  docker-build:
+    name: Deploy Web App
+    runs-on: ubuntu-latest
+    needs: next-build
+    if: github.event_name == 'push'
+    steps:
+      - name: Build NextJS App
+        uses: ./.github/workflows/composites/action-build-web-app
+
+      # Build and push Docker image
       - name: Set short git commit SHA
         id: commit
         uses: prompt/actions-commit-hash@v2
-      - name: Checkout code
-        uses: actions/checkout@v3
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-
-      # Install dependencies
-      - name: Install Node Dependencies
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.2.0
-      - name: Cache pnpm packages
-        uses: actions/cache@v4
-        id: cache-pnpm
-        with:
-          path: |
-            ./node_modules
-            ~/.npm
-            ~/.config
-            ~/.pnpm-store
-          key: ${{ runner.os }}-pnpm-cache-${{ hashFiles('**/pnpm-lock.yaml') }}
-      - name: pnpm i
-        working-directory: ./
-        run: pnpm i
-
-      # Build the app and image
-      - name: Build NextJS App
-        working-directory: ./
-        run: npm run envs:reset
-      - name: Build NextJS App
-        working-directory: ./apps/web
-        run: pnpm run build
       - name: Build docker image
-        id: build-image
         working-directory: ./apps/web
         run: docker build -f Dockerfile -t ${{ env.DOCK_IMAGE_NAME }}:${{ steps.commit.outputs.short }} ../../
-
-      # Publish to GHCR
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v2
         with:
