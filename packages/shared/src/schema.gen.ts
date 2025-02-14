@@ -60,7 +60,6 @@ export type Database = {
           cookies: Json
           created_at: string
           domain: string
-          id: number
           updated_at: string
           user_id: string
         }
@@ -68,7 +67,6 @@ export type Database = {
           cookies: Json
           created_at?: string
           domain?: string
-          id?: number
           updated_at?: string
           user_id: string
         }
@@ -76,7 +74,6 @@ export type Database = {
           cookies?: Json
           created_at?: string
           domain?: string
-          id?: number
           updated_at?: string
           user_id?: string
         }
