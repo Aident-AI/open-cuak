@@ -23,7 +23,7 @@ export class ConnectionManager {
     const { sessionId } = config;
     const browser = await RemoteBrowser.connect({ execSessionId: sessionId, timeout: 0, endpoint: BROWSERLESS_URL });
     const viewport = RemoteBrowserConfigs.defaultViewport;
-    const page = await browser.newPage({ viewport });
+    const [_, page] = await Promise.all([browser.genSetCookies(socket.user?.id!), browser.newPage({ viewport })]);
     await page.setUserAgent(USER_AGENT);
 
     const rsp = await browser.sendRuntimeMessageToExtension({

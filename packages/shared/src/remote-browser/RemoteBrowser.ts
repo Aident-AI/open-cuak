@@ -11,6 +11,7 @@ import {
 import { ServiceWorkerMessageAction } from '~shared/messaging/service-worker/ServiceWorkerMessageAction';
 import { RuntimeMessage, RuntimeMessageResponse } from '~shared/messaging/types';
 import { RemoteBrowserConfigs } from '~shared/remote-browser/RemoteBrowserConfigs';
+import { SupabaseClientForServer } from '~shared/supabase/client/SupabaseClientForServer';
 import { WaitUtils } from '~shared/utils/WaitUtils';
 
 export interface RemoteBrowserOptions {
@@ -401,19 +402,15 @@ export class RemoteBrowser {
       downloadPath: DOWNLOAD_PATH,
     });
 
-    // TODO: fix this to use `remote_browser_cookies` to set cookies domains
-    // const url = 'https://github.com';
-    // const domain = new URL(url).hostname;
-    // const cookies = await supabase
-    //   .from('remote_browser_cookies')
-    //   .select('cookies')
-    //   .eq('domain', domain)
-    //   .eq('user_id', user.id);
-    // if (!cookies || typeof cookies !== 'object' || !Array.isArray(cookies)) throw new Error('Invalid cookies');
-    // await this.#browser.setCookie(...cookies);
-
     if (options?.gotoUrl) await page.goto(options.gotoUrl);
     ALogger.info({ context: 'New page opened with cookies set', url: page.url() });
+  }
+
+  public async genSetCookies(userId: string): Promise<void> {
+    const supabase = SupabaseClientForServer.createServiceRole();
+    const { data, error } = await supabase.from('remote_browser_cookies').select('cookies').eq('user_id', userId);
+    if (error) throw new Error('Failed to fetch cookies');
+    await this.puppeteerBrowser.setCookie(...data[0].cookies);
   }
 
   public async close(): Promise<void> {
