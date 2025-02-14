@@ -1,5 +1,8 @@
 import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
+import { CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/solid';
+import { Tooltip } from '@mui/material';
 import { useState } from 'react';
+import { isStringConfigOn } from '~shared/env/environment';
 
 interface CookieModalProps {
   isOpen: boolean;
@@ -7,7 +10,6 @@ interface CookieModalProps {
 }
 
 export default function CookieModal({ isOpen, onClose }: CookieModalProps) {
-  const [autoSave, setAutoSave] = useState(false);
   const [cookies, setCookies] = useState<{ website: string }[]>([]);
 
   const deleteCookie = (website: string) => {
@@ -21,15 +23,21 @@ export default function CookieModal({ isOpen, onClose }: CookieModalProps) {
         <DialogPanel className="mx-auto rounded bg-white p-6">
           <DialogTitle className="mb-6 text-center text-xl font-medium text-gray-500">Cookies</DialogTitle>
           <div className="flex flex-col gap-4">
-            <label className="inline-flex items-center space-x-2">
+            <div className="inline-flex items-center space-x-2">
               <span className="text-gray-500">Automatically save &amp; apply cookies</span>
-              <input
-                type="checkbox"
-                checked={autoSave}
-                onChange={(e) => setAutoSave(e.target.checked)}
-                className="form-checkbox"
-              />
-            </label>
+              <Tooltip
+                placement="bottom"
+                arrow
+                title={<p className="text-xs">This setting is controlled by NEXT_PUBLIC_AUTO_SAVE_COOKIES in env</p>}
+                enterDelay={300}
+              >
+                {isStringConfigOn(process.env.NEXT_PUBLIC_AUTO_SAVE_COOKIES) ? (
+                  <CheckCircleIcon className="h-6 w-6 text-green-500" />
+                ) : (
+                  <XCircleIcon className="h-6 w-6 text-red-500" />
+                )}
+              </Tooltip>
+            </div>
             <hr className="my-4" />
             {cookies.length === 0 ? (
               <div className="text-gray-500">No saved cookies</div>
