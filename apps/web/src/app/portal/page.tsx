@@ -1,10 +1,11 @@
 'use client';
 
-import { AcademicCapIcon } from '@heroicons/react/24/solid';
+import { AcademicCapIcon, KeyIcon } from '@heroicons/react/24/solid';
 import cx from 'classnames';
 import { useState } from 'react';
 import DebugInteractionsPage from '~src/app/extension/debug/interactions/DebugInteractionsPage';
 import ChatWithAidenWindow from '~src/app/portal/ChatWithAidenWindow';
+import CookieModal from '~src/app/portal/CookieModal';
 import RemoteBrowserControlIndicator from '~src/app/portal/RemoteBrowserControlIndicator';
 import TeachAidenWindow from '~src/app/portal/TeachAidenWindow';
 import { WebsocketRemoteBrowserWindow } from '~src/app/portal/WebsocketRemoteBrowserWindow';
@@ -16,6 +17,7 @@ export default function PortalPage() {
   const [showDebugInteractions, setShowDebugInteractions] = useState(false);
   const [hideChatWithAiden, setHideChatWithAiden] = useState(false);
   const [teachModeOn, setTeachModeOn] = useState(false);
+  const [showCookieModal, setShowCookieModal] = useState(false);
 
   return (
     <InteractionEventProvider>
@@ -52,6 +54,12 @@ export default function PortalPage() {
           >
             <AcademicCapIcon className="h-6 w-6" />
           </button>
+          <button
+            className="mx-1 h-fit w-fit rounded-full bg-blue-300/50 p-2 text-white shadow-2xl shadow-black"
+            onClick={() => setShowCookieModal(true)}
+          >
+            <KeyIcon className="h-6 w-6" />
+          </button>
         </div>
 
         {showDebugInteractions && (
@@ -62,6 +70,7 @@ export default function PortalPage() {
             />
           </div>
         )}
+        {showCookieModal && <CookieModal isOpen={showCookieModal} onClose={() => setShowCookieModal(false)} />}
       </MeshBackgroundWithUserSession>
     </InteractionEventProvider>
   );
