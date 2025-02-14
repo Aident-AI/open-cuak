@@ -36,8 +36,8 @@ export class VllmServiceHost {
   }
 
   static #genCreateProvider(): OpenAIProvider {
-    const baseUrl = this.getFetchBaseUrlOrThrow();
+    const baseURL = this.getFetchBaseUrlOrThrow();
     const apiKey = this.getFetchApiKey();
-    return createOpenAI({ baseUrl, apiKey, compatibility: 'compatible', name: 'vllm' });
+    return createOpenAI({ baseURL, apiKey, compatibility: 'compatible', name: 'vllm' });
   }
 }
