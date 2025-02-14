@@ -410,7 +410,9 @@ export class RemoteBrowser {
     const supabase = SupabaseClientForServer.createServiceRole();
     const { data, error } = await supabase.from('remote_browser_cookies').select('cookies').eq('user_id', userId);
     if (error) throw new Error('Failed to fetch cookies');
-    await this.puppeteerBrowser.setCookie(...data[0].cookies);
+    if (!data || data.length < 1) return;
+    const allCookies = data.flatMap((row) => row.cookies);
+    await this.puppeteerBrowser.setCookie(...allCookies);
   }
 
   public async close(): Promise<void> {
