@@ -106,7 +106,7 @@ export class ModelRouter {
       case LlmRouterModel.OPEN_AI_COMPATIBLE: {
         if (!process.env.OPENAI_MODEL_NAME) throw new Error('OPENAI_MODEL_NAME must be set for OpenAI compatible API');
         const openAiProvider = createOpenAI({
-          baseURL: process.env.OPENAI_BASE_URL,
+          baseUrl: process.env.OPENAI_BASE_URL,
           apiKey: process.env.OPENAI_API_KEY,
           compatibility: 'compatible',
           name: process.env.OPENAI_COMPATIBLE_API_NAME ?? 'openai-compatible',
