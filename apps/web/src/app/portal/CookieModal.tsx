@@ -1,8 +1,10 @@
 import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
 import { CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/solid';
 import { Tooltip } from '@mui/material';
-import { useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { isStringConfigOn } from '~shared/env/environment';
+import { SupabaseClientForClient } from '~shared/supabase/client/SupabaseClientForClient';
+import { UserSessionContext } from '~src/contexts/UserSessionContext';
 
 interface CookieModalProps {
   isOpen: boolean;
@@ -10,10 +12,28 @@ interface CookieModalProps {
 }
 
 export default function CookieModal({ isOpen, onClose }: CookieModalProps) {
-  const [cookies, setCookies] = useState<{ website: string }[]>([]);
+  const [cookies, setCookies] = useState<{ domain: string }[]>([]);
+  const { user } = useContext(UserSessionContext);
 
-  const deleteCookie = (website: string) => {
-    setCookies((prev) => prev.filter((c) => c.website !== website));
+  const supabase = SupabaseClientForClient.createForClientComponent();
+
+  useEffect(() => {
+    const fetchCookies = async () => {
+      const { data, error } = await supabase.from('remote_browser_cookies').select('domain').eq('user_id', user!.id);
+      if (error) throw error;
+      setCookies(data.map((d) => ({ domain: d.domain })));
+    };
+    fetchCookies();
+  }, []);
+
+  const deleteCookie = async (domain: string) => {
+    const { error } = await supabase
+      .from('remote_browser_cookies')
+      .delete()
+      .eq('domain', domain)
+      .eq('user_id', user!.id);
+    if (error) throw error;
+    setCookies((prev) => prev.filter((c) => c.domain !== domain));
   };
 
   return (
@@ -44,10 +64,10 @@ export default function CookieModal({ isOpen, onClose }: CookieModalProps) {
             ) : (
               <ul className="flex flex-col gap-2">
                 {cookies.map((cookie) => (
-                  <li key={cookie.website} className="flex items-center justify-between rounded bg-gray-100 p-2">
-                    <span className="text-black">{cookie.website}</span>
+                  <li key={cookie.domain} className="flex items-center justify-between rounded bg-gray-100 p-2">
+                    <span className="text-black">{cookie.domain}</span>
                     <button
-                      onClick={() => deleteCookie(cookie.website)}
+                      onClick={() => deleteCookie(cookie.domain)}
                       className="rounded bg-red-500 px-2 py-1 text-white hover:bg-red-600"
                     >
                       Delete
