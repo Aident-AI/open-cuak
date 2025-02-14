@@ -1,4 +1,6 @@
 import { z } from 'zod';
+import { isStringConfigOn } from '~shared/env/environment';
+import { ALogger } from '~shared/logging/ALogger';
 import { Base_ActionConfig, enforceBaseActionConfigStatic } from '~shared/messaging/action-configs/Base.ActionConfig';
 import { ServiceWorkerMessageAction } from '~shared/messaging/service-worker/ServiceWorkerMessageAction';
 
@@ -17,6 +19,11 @@ export class CacheCookies_ActionConfig extends Base_ActionConfig {
     payload: z.infer<typeof this.requestPayloadSchema>,
     context: IActionConfigExecContext,
   ): Promise<z.infer<typeof this.responsePayloadSchema>> {
+    if (!isStringConfigOn(process.env.NEXT_PUBLIC_AUTO_SAVE_COOKIES)) {
+      ALogger.warn('NEXT_PUBLIC_AUTO_SAVE_COOKIES is set to false, skipping cookie caching');
+      return;
+    }
+
     const userId = payload;
     const allCookies = await chrome.cookies.getAll({});
 
