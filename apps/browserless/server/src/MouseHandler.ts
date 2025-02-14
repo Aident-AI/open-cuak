@@ -8,7 +8,7 @@ import { RemoteCursorPosition, RemoteCursorPositionSchema } from '~shared/portal
 export class MouseHandler {
   public static async genSetupMousePositionListener(getConnection: () => RemoteBrowserConnection): Promise<void> {
     const { sessionId, page } = getConnection();
-    const cdp = await page.target().createCDPSession();
+    const cdp = await page.createCDPSession();
     const setupMouseTracking = async (page: Page, cdp: CDPSession) => {
       await cdp.send('Runtime.addBinding', { name: 'reportMousePosition' });
       await page.evaluateOnNewDocument(`
@@ -59,8 +59,7 @@ export class MouseHandler {
       const broadcastEvent = { type: BroadcastEventType.MOUSE_POSITION_UPDATED, identifier: tabId };
 
       await browser.genSendBroadcastEvent(broadcastEvent, RemoteCursorPositionSchema.parse(updatedPosition)),
-
-      await page.mouse.move(position.x, position.y);
+        await page.mouse.move(position.x, position.y);
       switch (position.event) {
         case 'mousedown':
           await page.mouse.down();

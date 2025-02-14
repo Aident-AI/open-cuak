@@ -4,7 +4,7 @@ import { RemoteBrowserConnection } from '~browserless/server/src/RemoteBrowserCo
 export class ScreencastHandler {
   public static async genStopScreencast(connection: RemoteBrowserConnection): Promise<void> {
     const page = await connection.genEnsurePageIsActive();
-    const cdp = await page.target().createCDPSession();
+    const cdp = await page.createCDPSession();
     await cdp.send('Page.stopScreencast');
   }
 
@@ -41,7 +41,7 @@ export class ScreencastHandler {
     if (!socket) throw new Error('Socket not found');
 
     const page = await connection.genEnsurePageIsActive();
-    const cdp = await page.target().createCDPSession();
+    const cdp = await page.createCDPSession();
     let isScreencastActive = true;
 
     socket.on('disconnect', () => {

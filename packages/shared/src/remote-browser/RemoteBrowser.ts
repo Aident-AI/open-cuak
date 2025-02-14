@@ -395,7 +395,7 @@ export class RemoteBrowser {
     }
 
     // Set download behavior for the new page
-    const client = await page.target().createCDPSession();
+    const client = await page.createCDPSession();
     await client.send('Page.setDownloadBehavior', {
       behavior: 'allow',
       downloadPath: DOWNLOAD_PATH,
