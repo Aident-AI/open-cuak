@@ -36,7 +36,9 @@ export interface AiAidenCoreConfig {
   remoteBrowserSessionId: string | undefined;
   sendRuntimeMessage: (message: RuntimeMessage) => Promise<RuntimeMessageResponse>;
   systemPromptVersion: AiAidenSystemPromptVersion;
+  /** @deprecated clean this up as we completely migrate to OmniParser */
   useBoundingBoxCoordinates: boolean;
+  /** @deprecated clean this up as we completely migrate to OmniParser */
   useBoundingBoxOverlay: boolean;
   useCross: boolean;
   useInteractableTree: boolean;
