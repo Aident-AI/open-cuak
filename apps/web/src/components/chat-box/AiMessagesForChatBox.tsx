@@ -68,7 +68,7 @@ export default function AiMessagesForChatBox(props: Props) {
           if (finalText) {
             if (messageText.length > 0) messageText += '\n\n';
             if (renderTextToolInvocation.toolName === ThinkAndPlanToolName) {
-              messageText += `💭 ${finalText}`;
+              messageText += `> 💭 ${finalText}`;
             } else {
               messageText += finalText;
             }
@@ -84,7 +84,6 @@ export default function AiMessagesForChatBox(props: Props) {
             <div
               key={`message-${id}`}
               className={cx('messageChildren text-sm first:mt-0', {
-                // 'mt-4': m.role === InteractableNodeRole.PARAGRAPH,
                 'animate-fade': role === 'user' || role === 'assistant',
                 'prose prose-sm prose-blue prose-h1:my-3 prose-h2:my-2 prose-pre:bg-transparent prose-li:marker:text-blue-600':
                   role === 'assistant',
