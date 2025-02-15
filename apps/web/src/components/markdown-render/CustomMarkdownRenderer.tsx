@@ -34,6 +34,12 @@ export const CustomMarkdownRenderer = ({ content, tooltipSource }: Props) => {
 
       return <a {...props} />;
     },
+    blockquote: ({ children }) => (
+      <blockquote className="my-2 border-white/70 text-sm font-extralight not-italic text-gray-500">
+        {children}
+      </blockquote>
+    ),
+    p: ({ children }) => <p className="my-0">{children}</p>,
   };
 
   return <ReactMarkdown components={customComponents}>{content}</ReactMarkdown>;
