@@ -142,6 +142,7 @@ export * from './schema.gen';
 export * from './services/IActiveTabLifecycleServiceStatic';
 export * from './services/IBaseServiceStatic';
 export * from './services/ITabInjectionServiceStatic';
+export * from './services/OmniParserService';
 export * from './shadow-mode/IRRReplayerWorkerServiceStatic';
 export * from './shadow-mode/IShadowModeWorkerServiceStatic';
 export * from './shadow-mode/RREvent';

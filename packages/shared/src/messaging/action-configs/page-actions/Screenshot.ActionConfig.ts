@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { BroadcastEventType } from '~shared/broadcast/types';
 import { ActionConfigAutoAttachesToInteractable } from '~shared/decorators/ActionConfigAutoAttachesToInteractable';
 import { getHost } from '~shared/env/environment';
+import { ALogger } from '~shared/logging/ALogger';
 import { Base_ActionConfig, enforceBaseActionConfigStatic } from '~shared/messaging/action-configs/Base.ActionConfig';
 import { genResetMouseAtPageCenterArea } from '~shared/messaging/action-configs/control-actions/MouseReset.ActionConfig';
 import { addCross } from '~shared/messaging/action-configs/page-actions/addCross.js';
@@ -13,6 +14,7 @@ import { PageScreenshotAction } from '~shared/messaging/action-configs/page-acti
 import { ServiceWorkerMessageAction } from '~shared/messaging/service-worker/ServiceWorkerMessageAction';
 import { RemoteCursorPosition } from '~shared/portal/RemoteBrowserTypes';
 import { SupportedRemoteCursorTypes } from '~shared/remote-browser/RemoteCursor';
+import { OmniParserBoundingBox, OmniParserService } from '~shared/services/OmniParserService';
 
 import type { IActionConfigExecContext } from '~shared/messaging/action-configs/Base.ActionConfig';
 
@@ -79,7 +81,7 @@ export class Screenshot_ActionConfig extends Base_ActionConfig {
 
     const { action, config } = payload;
     let screenshot: Buffer | null = null;
-    let boundingBoxCoordinates: BoundingBoxInfo[] = [];
+    const boundingBoxCoordinates: BoundingBoxInfo[] = [];
     switch (action) {
       case PageScreenshotAction.PDF:
         screenshot = Buffer.from(await page.pdf({ path: config?.path }));
@@ -90,8 +92,17 @@ export class Screenshot_ActionConfig extends Base_ActionConfig {
           const cdp = its.getCdpSessionOrThrow();
           const tabId = context.getActiveTab().id;
           let mousePosition = undefined;
-          if (config?.useBoundingBoxOverlay) {
-            boundingBoxCoordinates = await page.evaluate(drawInteractableBoundingBoxes);
+
+          const useOmniparser =
+            config?.useBoundingBoxOverlay &&
+            process.env.BOUNDING_BOX_GENERATOR === 'omniparser' &&
+            OmniParserService.isConfigured();
+          const useJsBoundingBoxes = config?.useBoundingBoxOverlay && !useOmniparser;
+          ALogger.info({ useOmniparser, useJsBoundingBoxes });
+
+          if (useJsBoundingBoxes) {
+            const bboxes = await page.evaluate(drawInteractableBoundingBoxes);
+            boundingBoxCoordinates.push(...bboxes);
           }
           if (config?.useCross) {
             const event = { type: BroadcastEventType.MOUSE_POSITION_UPDATED, identifier: tabId };
@@ -99,10 +110,44 @@ export class Screenshot_ActionConfig extends Base_ActionConfig {
             if (mousePosition) await page.evaluate(addCross, mousePosition.x, mousePosition.y);
           }
 
-          const { data } = await cdp.send('Page.captureScreenshot', { format: 'jpeg', quality: 100 });
-          if (!config?.withCursor) return { base64: data };
+          let { data: screenshot } = await cdp.send('Page.captureScreenshot', { format: 'jpeg', quality: 100 });
+          if (useOmniparser) {
+            const opResponse = await OmniParserService.genParseImage(screenshot);
+            screenshot = opResponse.base64;
 
-          if (config?.useBoundingBoxOverlay)
+            const metadataRsp = await fetch(getHost() + '/api/utils/sharp-metadata', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ base64: screenshot }),
+            });
+            if (!metadataRsp.ok) throw new Error(`Failed to get image metadata: ${metadataRsp.statusText}`);
+            const metadata = await metadataRsp.json();
+            const { width, height } = metadata;
+            if (!width || !height) throw new Error('Failed to get image dimensions');
+
+            opResponse.boundingBoxes.forEach((box: Partial<OmniParserBoundingBox>, i: number) => {
+              if (!box.bbox) throw new Error('Bounding box coordinates not found');
+              if (!box.interactivity) return;
+
+              const x = round(((box.bbox[0] + box.bbox[2]) / 2) * width, 2);
+              const y = round(((box.bbox[1] + box.bbox[3]) / 2) * height, 2);
+              const boxInfo = { labelCounter: i, identifier: box.content, x, y } as BoundingBoxInfo;
+
+              boundingBoxCoordinates.push(boxInfo);
+            });
+            ALogger.info({
+              context: 'received omniparser response',
+              rsp: {
+                base64Length: screenshot.length,
+                numberOfBoxes: opResponse.boundingBoxes.length,
+                latency: opResponse.latency,
+                numberOfParsedBoundingBoxes: boundingBoxCoordinates.length,
+              },
+            });
+          }
+
+          // reset content injection
+          if (useJsBoundingBoxes)
             await page.evaluate(() => {
               const boxes = document.querySelectorAll('.aident-bounding-box');
               boxes.forEach((box) => box.remove());
@@ -112,6 +157,8 @@ export class Screenshot_ActionConfig extends Base_ActionConfig {
               const cross = document.querySelector('.aident-cross');
               if (cross) cross.remove();
             });
+
+          if (!config?.withCursor) return { base64: screenshot };
           if (!config?.useCross) {
             const event = { type: BroadcastEventType.MOUSE_POSITION_UPDATED, identifier: tabId };
             mousePosition = await context.getBroadcastService().fetch<RemoteCursorPosition>(event);
@@ -123,18 +170,13 @@ export class Screenshot_ActionConfig extends Base_ActionConfig {
           const response = await fetch(getHost() + '/api/utils/sharp', {
             headers: { 'Content-Type': 'application/json' },
             method: 'POST',
-            body: JSON.stringify({ backgroundBase64: data, overlayOffset, cursorType }),
+            body: JSON.stringify({ backgroundBase64: screenshot, overlayOffset, cursorType }),
           });
           if (!response.ok) throw new Error(`Failed to overlay mouse cursor on screenshot: ${response.statusText}`);
 
           const json = await response.json();
-          if (!config?.useBoundingBoxCoordinates) {
-            return { base64: json.base64 };
-          }
-          return {
-            base64: json.base64,
-            boundingBoxCoordinates: JSON.stringify(boundingBoxCoordinates),
-          };
+          if (!config?.useBoundingBoxCoordinates) return { base64: json.base64 };
+          return { base64: json.base64, boundingBoxCoordinates: JSON.stringify(boundingBoxCoordinates) };
         }
 
         const node = its.getInteractableOrThrow().getNodeById(targetNodeId.toString());
