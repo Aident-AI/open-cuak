@@ -24,7 +24,6 @@ export const POST = simpleRequestWrapper<z.infer<typeof api.RequestSchema.schema
 
     const modelConfig = { variant: GPTVariant.GPT_4O } as RouterModelConfig;
     const systemPromptVersion = AiAidenSystemPromptVersion.V4;
-    const useInteractableTree = false;
     const useReAct = true;
     const useCross = false;
     let model;
@@ -48,7 +47,6 @@ export const POST = simpleRequestWrapper<z.infer<typeof api.RequestSchema.schema
       sendRuntimeMessage,
       systemPromptVersion,
       useCross,
-      useInteractableTree,
       useReAct,
       userId: user.id,
     } as AiAidenCoreConfig;

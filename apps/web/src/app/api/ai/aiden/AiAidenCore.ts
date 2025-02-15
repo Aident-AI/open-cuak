@@ -35,7 +35,6 @@ export interface AiAidenCoreConfig {
   sendRuntimeMessage: (message: RuntimeMessage) => Promise<RuntimeMessageResponse>;
   systemPromptVersion: AiAidenSystemPromptVersion;
   useCross: boolean;
-  useInteractableTree: boolean;
   useReAct: boolean;
   userId: string;
 }
@@ -48,7 +47,6 @@ export const DefaultAiAidenCoreConfigPart = {
   // sendRuntimeMessage,
   systemPromptVersion: AiAidenSystemPromptVersion.V4,
   useCross: false,
-  useInteractableTree: false,
   useReAct: false,
   // user,
 } as Partial<AiAidenCoreConfig>;
