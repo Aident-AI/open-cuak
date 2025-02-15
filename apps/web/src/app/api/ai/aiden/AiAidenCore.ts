@@ -23,9 +23,7 @@ import { Screenshot_ActionConfig } from '~shared/messaging/action-configs/page-a
 import { PageScreenshotAction } from '~shared/messaging/action-configs/page-actions/types';
 import { ServiceWorkerMessageAction } from '~shared/messaging/service-worker/ServiceWorkerMessageAction';
 import { RuntimeMessage, RuntimeMessageResponse } from '~shared/messaging/types';
-import { BaseEndpointApi } from '~src/app/api/BaseEndpointApi';
 import { AiAidenApiMessageAnnotation } from '~src/app/api/ai/aiden/AiAidenApi';
-import { MouseMoveApi } from '~src/app/api/extension/control/mouse-move/MouseMoveApi';
 import { AiRegisteredToolSet } from '~src/app/api/llm/agent/AiRegisteredToolSet';
 
 export interface AiAidenCoreConfig {
@@ -36,10 +34,6 @@ export interface AiAidenCoreConfig {
   remoteBrowserSessionId: string | undefined;
   sendRuntimeMessage: (message: RuntimeMessage) => Promise<RuntimeMessageResponse>;
   systemPromptVersion: AiAidenSystemPromptVersion;
-  /** @deprecated clean this up as we completely migrate to OmniParser */
-  useBoundingBoxCoordinates: boolean;
-  /** @deprecated clean this up as we completely migrate to OmniParser */
-  useBoundingBoxOverlay: boolean;
   useCross: boolean;
   useInteractableTree: boolean;
   useReAct: boolean;
@@ -53,8 +47,6 @@ export const DefaultAiAidenCoreConfigPart = {
   // remoteBrowserSessionId,
   // sendRuntimeMessage,
   systemPromptVersion: AiAidenSystemPromptVersion.V4,
-  useBoundingBoxOverlay: true,
-  useBoundingBoxCoordinates: true,
   useCross: false,
   useInteractableTree: false,
   useReAct: false,
@@ -85,8 +77,6 @@ export class AiAidenCore {
     // fetch screenshot
     const screenshotConfig = {
       withCursor: true,
-      useBoundingBoxOverlay: config.useBoundingBoxOverlay,
-      useBoundingBoxCoordinates: config.useBoundingBoxCoordinates,
       useCross: config.useCross,
     };
     const response = await config.sendRuntimeMessage({
@@ -97,11 +87,9 @@ export class AiAidenCore {
     if (!response || !response.success) throw new Error('Failed to send runtime message to extension.');
     const { base64, boundingBoxCoordinates } = Screenshot_ActionConfig.responsePayloadSchema.parse(response.data);
     if (!base64) throw new Error('Failed to fetch screenshot.');
-    if (config.useBoundingBoxCoordinates && !boundingBoxCoordinates)
-      throw new Error('Failed to fetch bounding box coordinates.');
-
+    if (!boundingBoxCoordinates) throw new Error('Failed to fetch bounding box coordinates.');
+    anno.boundingBoxCoordinates = boundingBoxCoordinates;
     anno.beforeStateBase64 = 'data:image/png;base64,' + base64;
-    if (config.useBoundingBoxCoordinates) anno.boundingBoxCoordinates = boundingBoxCoordinates;
 
     // fetch mouse cursor type
     const cursorTypeResponse = await config.sendRuntimeMessage({
@@ -135,14 +123,12 @@ export class AiAidenCore {
       role: 'system',
       content: AiAidenSystemPrompts.getPrompt(config.systemPromptVersion),
     } as CoreMessage);
+    systemMessages.push({ role: 'system', content: AiAidenBoundingBoxCoordinatesSystemPrompt } as CoreMessage);
 
     if (config.useReAct) systemMessages.push({ role: 'system', content: AiAidenReActSystemPrompt } as CoreMessage);
     if (config.useCross) systemMessages.push({ role: 'system', content: AiAidenCrossSystemPrompt } as CoreMessage);
     if (config.isBenchmark)
       systemMessages.push({ role: 'system', content: AiAidenBenchmarkSystemPrompt } as CoreMessage);
-    if (config.useBoundingBoxCoordinates) {
-      systemMessages.push({ role: 'system', content: AiAidenBoundingBoxCoordinatesSystemPrompt } as CoreMessage);
-    }
 
     const browserConnectionPrompt = config.remoteBrowserConnected
       ? AiAidenBrowserConnectedSystemPrompt
@@ -163,12 +149,6 @@ export class AiAidenCore {
         ...toolDict,
         ...AiRegisteredToolSet[RegisteredToolSetName.PORTAL_BROWSER_CONTROL],
       };
-
-      if (config.useBoundingBoxCoordinates) {
-        const mouseMoveApi = new MouseMoveApi() as BaseEndpointApi;
-        const toolName = mouseMoveApi.EndpointConfig.operationId.replaceAll(':', '-');
-        toolDict[toolName] = mouseMoveApi.toAiTool();
-      }
     }
     if (config.useReAct) toolDict[ThinkAndPlanToolName] = ThinkAndPlanTool;
 

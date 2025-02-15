@@ -10,9 +10,12 @@ import { NavigatePageApi } from '~src/app/api/extension/page/navigate/NavigatePa
 import { PortalMouseControlApi } from '~src/app/api/portal/mouse-control/PortalMouseControlApi';
 import { PortalWaitToolApi } from '~src/app/api/portal/wait-tool/PortalWaitToolApi';
 
+import { MouseMoveApi } from '../extension/control/mouse-move/MouseMoveApi';
+
 const MouseControlApis = [
   KeyboardTypeApi,
   MouseClickApi,
+  MouseMoveApi,
   MouseResetApi,
   MouseWheelApi,
   NavigatePageApi,
