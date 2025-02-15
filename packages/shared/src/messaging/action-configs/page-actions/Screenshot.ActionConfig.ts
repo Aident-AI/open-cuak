@@ -46,12 +46,6 @@ export class Screenshot_ActionConfig extends Base_ActionConfig {
         withCursor: z.boolean().optional().default(false).describe(oneLine`
           Whether to overlay the cursor on the screenshot. Default to false.
         `),
-        useBoundingBoxOverlay: z.boolean().optional().default(false).describe(oneLine`
-          Whether to overlay the bounding boxes on the screenshot. Default to false.
-        `),
-        useBoundingBoxCoordinates: z.boolean().optional().default(false).describe(oneLine`
-          Whether to return the bounding box coordinates. Default to false.
-        `),
         useCross: z.boolean().optional().default(false).describe(oneLine`
           Whether to overlay the cross on the screenshot. Default to false.
         `),
@@ -93,12 +87,11 @@ export class Screenshot_ActionConfig extends Base_ActionConfig {
           const tabId = context.getActiveTab().id;
           let mousePosition = undefined;
 
-          const useOmniparser =
-            config?.useBoundingBoxOverlay &&
-            process.env.BOUNDING_BOX_GENERATOR === 'omniparser' &&
-            OmniParserService.isConfigured();
-          const useJsBoundingBoxes = config?.useBoundingBoxOverlay && !useOmniparser;
-          ALogger.info({ useOmniparser, useJsBoundingBoxes });
+          const useOmniparser = process.env.BOUNDING_BOX_GENERATOR === 'omniparser' && OmniParserService.isConfigured();
+          const useJsBoundingBoxes = !useOmniparser;
+          ALogger.info({
+            context: `useOmniparser: ${useOmniparser}, useJsBoundingBoxes: ${useJsBoundingBoxes}`,
+          });
 
           if (useJsBoundingBoxes) {
             const bboxes = await page.evaluate(drawInteractableBoundingBoxes);
@@ -175,7 +168,6 @@ export class Screenshot_ActionConfig extends Base_ActionConfig {
           if (!response.ok) throw new Error(`Failed to overlay mouse cursor on screenshot: ${response.statusText}`);
 
           const json = await response.json();
-          if (!config?.useBoundingBoxCoordinates) return { base64: json.base64 };
           return { base64: json.base64, boundingBoxCoordinates: JSON.stringify(boundingBoxCoordinates) };
         }
 

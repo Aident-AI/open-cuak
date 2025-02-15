@@ -24,8 +24,6 @@ export const POST = simpleRequestWrapper<z.infer<typeof api.RequestSchema.schema
 
     const modelConfig = { variant: GPTVariant.GPT_4O } as RouterModelConfig;
     const systemPromptVersion = AiAidenSystemPromptVersion.V4;
-    const useBoundingBoxOverlay = true;
-    const useBoundingBoxCoordinates = true;
     const useInteractableTree = false;
     const useReAct = true;
     const useCross = false;
@@ -49,8 +47,6 @@ export const POST = simpleRequestWrapper<z.infer<typeof api.RequestSchema.schema
       remoteBrowserSessionId,
       sendRuntimeMessage,
       systemPromptVersion,
-      useBoundingBoxCoordinates,
-      useBoundingBoxOverlay,
       useCross,
       useInteractableTree,
       useReAct,
