@@ -74,11 +74,18 @@ That's why we are making it open-sourced, today.
 
 ## Demos
 
-1.  ### Expedia Flight Search
-
-    Use built-in remote-browser running locally to search for flight tickets on Expedia.
+1.  ### Agent Demo: Expedia Flight Search
+    An agent uses built-in remote-browser running locally to search for flight tickets on Expedia.
 
     https://github.com/user-attachments/assets/e2dd7276-fff7-4ed1-a042-3c1a6bbecef8
+    
+
+
+2.  ### Feature Demo: Account Management 
+    Account Management lets agents use your account and tools on your behalf.
+
+    https://github.com/user-attachments/assets/1de1069d-053f-408f-b07b-61b399bfcc1f
+
 
 
 
