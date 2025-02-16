@@ -68,7 +68,7 @@ export default function AiMessagesForChatBox(props: Props) {
           if (finalText) {
             if (messageText.length > 0) messageText += '\n\n';
             if (renderTextToolInvocation.toolName === ThinkAndPlanToolName) {
-              messageText += `> 💭 ${finalText}`;
+              messageText += '> ' + finalText.replaceAll('\n', '\n> ');
             } else {
               messageText += finalText;
             }
