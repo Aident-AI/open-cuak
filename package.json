@@ -15,7 +15,7 @@
     "build": "npx turbo build",
     "clear-node-modules": "rm -rf node_modules && rm -rf apps/web/node_modules && rm -rf apps/extension/node_modules && rm -rf apps/docs/node_modules && rm -rf packages/shared/node_modules && rm -rf packages/ui/node_modules && rm -rf packages/eslint-config/node_modules && rm -rf packages/typescript-config/node_modules",
     "dev": "npm run envs:pull && npm run supabase:storage:init && npm run supabase:mock-user:init && npx turbo dev --concurrency 20",
-    "docker:down": "docker-compose down && docker-compose rm -f",
+    "docker:down": "docker-compose down && docker-compose rm -f && docker container rm -f open-cuak-browserless && docker container rm -f open-cuak-web",
     "docker:restart": "docker-compose restart",
     "docker:start": "npx turbo docker:start",
     "docker:tag:stable": "bash scripts/tag-stable-image-version.sh",
