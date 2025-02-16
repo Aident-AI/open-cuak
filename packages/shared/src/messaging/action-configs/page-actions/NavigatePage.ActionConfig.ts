@@ -1,12 +1,10 @@
 import { z } from 'zod';
 import { ActionConfigAutoAttachesToInteractable } from '~shared/decorators/ActionConfigAutoAttachesToInteractable';
-import { TabLifecycleStatus } from '~shared/injection/TabLifecycleStatus';
 import { ALogger } from '~shared/logging/ALogger';
 import { Base_ActionConfig, enforceBaseActionConfigStatic } from '~shared/messaging/action-configs/Base.ActionConfig';
 import { IncludeTreeAfterwards, SimplifiedTreeResponse } from '~shared/messaging/action-configs/page-actions/mixins';
 import { PageNavigationAction } from '~shared/messaging/action-configs/page-actions/types';
 import { ServiceWorkerMessageAction } from '~shared/messaging/service-worker/ServiceWorkerMessageAction';
-import { WaitUtils } from '~shared/utils/WaitUtils';
 
 import type { IActionConfigExecContext } from '~shared/messaging/action-configs/Base.ActionConfig';
 export class NavigatePage_ActionConfig extends Base_ActionConfig {
@@ -46,14 +44,6 @@ export class NavigatePage_ActionConfig extends Base_ActionConfig {
         if (!result.success || !result.page) await chrome.tabs.update(its.getActiveTab().id, { url: target });
         else await result.page.goto(target, { waitUntil: 'networkidle2' });
         ALogger.info({ context: 'Went to the page', url: target });
-
-        await Promise.race([
-          new Promise<void>((resolve) =>
-            context.getActiveTabLifecycleService().waitUntilStatus(TabLifecycleStatus.DOM_COMPLETE, resolve),
-          ),
-          WaitUtils.delayToThrow(5_000, new Error('Timeout waiting for Tab to be DOM_COMPLETE')),
-        ]);
-        ALogger.info({ context: 'Page is now DOM_COMPLETE', url: target });
 
         break;
       }
