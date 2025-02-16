@@ -4,7 +4,6 @@ import { ChromeTabSchema } from '~shared/chrome/Tab';
 import { ActionConfigAutoAttachesToInteractable } from '~shared/decorators/ActionConfigAutoAttachesToInteractable';
 import { InteractableNodeTreeConfig } from '~shared/interactable/types';
 import { Base_ActionConfig, enforceBaseActionConfigStatic } from '~shared/messaging/action-configs/Base.ActionConfig';
-import { BrowserUseDomTreeFormat } from '~shared/messaging/action-configs/page-actions/BrowserUseDomTreeFormat';
 import { ServiceWorkerMessageAction } from '~shared/messaging/service-worker/ServiceWorkerMessageAction';
 
 import type { IActionConfigExecContext } from '~shared/messaging/action-configs/Base.ActionConfig';
@@ -27,9 +26,6 @@ export class ReadScreen_ActionConfig extends Base_ActionConfig {
     includeTabInfo: z.boolean().optional().default(false).describe(oneLine`
       Include tab info in the response. Defaulting to false.
     `),
-    experimental_testBrowserUseDomTreeFormat: z.boolean().optional().default(false).describe(oneLine`
-      Test the browser-use dom tree format. Defaulting to false.
-    `),
   });
 
   public static responsePayloadSchema = z.object({
@@ -51,15 +47,10 @@ export class ReadScreen_ActionConfig extends Base_ActionConfig {
   ): Promise<z.infer<typeof this.responsePayloadSchema>> {
     const it = context.getInteractableService().getInteractableOrThrow();
     await it.refresh();
-    const { includeTabInfo, experimental_testBrowserUseDomTreeFormat, ...config } = payload;
-    if (experimental_testBrowserUseDomTreeFormat) {
-      const tree = await BrowserUseDomTreeFormat.genDomTree(it);
-      return { tree };
-    } else {
-      const fetchConfig = { ...config, onlyInView: true };
-      const tree = await it.fetchNodeTree(undefined, fetchConfig as InteractableNodeTreeConfig);
-      return includeTabInfo ? { tree, tabInfo: context.getActiveTab() } : { tree };
-    }
+    const { includeTabInfo, ...config } = payload;
+    const fetchConfig = { ...config, onlyInView: true };
+    const tree = await it.fetchNodeTree(undefined, fetchConfig as InteractableNodeTreeConfig);
+    return includeTabInfo ? { tree, tabInfo: context.getActiveTab() } : { tree };
   }
 }
 
