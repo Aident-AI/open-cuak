@@ -21,14 +21,6 @@ export const AiAidenReActSystemPrompt = stripIndents`
   Review your previous action, use screenshot to decide whether the previous action is successful. If needed, adjust your plan based on the result.
   If all actions are successful, use the 'finish-run' tool to end the session.
 `;
-export const AiAidenCrossSystemPrompt = stripIndents`
-  To help you identify the exact position of the mouse cursor, we have overlaid a crosshair on the webpage screenshot:
-
-  1. Color-Coded Lines: The crosshair lines alternate between black and red. There is one vertical and one horizontal line.
-  2. Mouse Cursor Position: The exact position of the mouse cursor is indicated by the intersection point of the vertical and horizontal lines.
-  
-  Use this crosshair overlay to accurately determine the cursor's location on the webpage.
-`;
 export const AiAidenBoundingBoxCoordinatesSystemPrompt = stripIndents`
   You will receive an identifier, number ID, and coordinates for each interactable element. Use identifier and number ID, together with the provided screenshot, to find the right element that matches the user's request, 
   1. If you find the right element, use the mouse-move tool to move to its coordinates. 
