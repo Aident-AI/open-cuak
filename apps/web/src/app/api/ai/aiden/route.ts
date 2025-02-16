@@ -25,7 +25,6 @@ export const POST = simpleRequestWrapper<z.infer<typeof api.RequestSchema.schema
     const modelConfig = { variant: GPTVariant.GPT_4O } as RouterModelConfig;
     const systemPromptVersion = AiAidenSystemPromptVersion.V4;
     const useReAct = true;
-    const useCross = false;
     let model;
     try {
       model = await ModelRouter.genModel(modelConfig);
@@ -46,7 +45,6 @@ export const POST = simpleRequestWrapper<z.infer<typeof api.RequestSchema.schema
       remoteBrowserSessionId,
       sendRuntimeMessage,
       systemPromptVersion,
-      useCross,
       useReAct,
       userId: user.id,
     } as AiAidenCoreConfig;

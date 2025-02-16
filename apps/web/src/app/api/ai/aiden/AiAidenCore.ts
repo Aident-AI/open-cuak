@@ -12,7 +12,6 @@ import {
   AiAidenBoundingBoxCoordinatesSystemPrompt,
   AiAidenBrowserConnectedSystemPrompt,
   AiAidenBrowserDisconnectedSystemPrompt,
-  AiAidenCrossSystemPrompt,
   AiAidenReActSystemPrompt,
 } from '~shared/agent/AiAidenConfigBasedPrompts';
 import { AiAidenSystemPromptVersion, AiAidenSystemPrompts } from '~shared/agent/AiAidenSystemPrompts';
@@ -34,7 +33,6 @@ export interface AiAidenCoreConfig {
   remoteBrowserSessionId: string | undefined;
   sendRuntimeMessage: (message: RuntimeMessage) => Promise<RuntimeMessageResponse>;
   systemPromptVersion: AiAidenSystemPromptVersion;
-  useCross: boolean;
   useReAct: boolean;
   userId: string;
 }
@@ -46,7 +44,6 @@ export const DefaultAiAidenCoreConfigPart = {
   // remoteBrowserSessionId,
   // sendRuntimeMessage,
   systemPromptVersion: AiAidenSystemPromptVersion.V4,
-  useCross: false,
   useReAct: false,
   // user,
 } as Partial<AiAidenCoreConfig>;
@@ -75,7 +72,6 @@ export class AiAidenCore {
     // fetch screenshot
     const screenshotConfig = {
       withCursor: true,
-      useCross: config.useCross,
     };
     const response = await config.sendRuntimeMessage({
       receiver: RuntimeMessageReceiver.SERVICE_WORKER,
@@ -124,7 +120,6 @@ export class AiAidenCore {
     systemMessages.push({ role: 'system', content: AiAidenBoundingBoxCoordinatesSystemPrompt } as CoreMessage);
 
     if (config.useReAct) systemMessages.push({ role: 'system', content: AiAidenReActSystemPrompt } as CoreMessage);
-    if (config.useCross) systemMessages.push({ role: 'system', content: AiAidenCrossSystemPrompt } as CoreMessage);
     if (config.isBenchmark)
       systemMessages.push({ role: 'system', content: AiAidenBenchmarkSystemPrompt } as CoreMessage);
 

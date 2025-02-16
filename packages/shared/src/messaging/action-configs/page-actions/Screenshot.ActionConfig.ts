@@ -7,7 +7,6 @@ import { getHost } from '~shared/env/environment';
 import { ALogger } from '~shared/logging/ALogger';
 import { Base_ActionConfig, enforceBaseActionConfigStatic } from '~shared/messaging/action-configs/Base.ActionConfig';
 import { genResetMouseAtPageCenterArea } from '~shared/messaging/action-configs/control-actions/MouseReset.ActionConfig';
-import { addCross } from '~shared/messaging/action-configs/page-actions/addCross.js';
 import { drawInteractableBoundingBoxes } from '~shared/messaging/action-configs/page-actions/boudingbox.js';
 import { TargetNodeIdSchema } from '~shared/messaging/action-configs/page-actions/mixins';
 import { PageScreenshotAction } from '~shared/messaging/action-configs/page-actions/types';
@@ -45,9 +44,6 @@ export class Screenshot_ActionConfig extends Base_ActionConfig {
         `),
         withCursor: z.boolean().optional().default(false).describe(oneLine`
           Whether to overlay the cursor on the screenshot. Default to false.
-        `),
-        useCross: z.boolean().optional().default(false).describe(oneLine`
-          Whether to overlay the cross on the screenshot. Default to false.
         `),
       })
       .optional(),
@@ -97,11 +93,6 @@ export class Screenshot_ActionConfig extends Base_ActionConfig {
             const bboxes = await page.evaluate(drawInteractableBoundingBoxes);
             boundingBoxCoordinates.push(...bboxes);
           }
-          if (config?.useCross) {
-            const event = { type: BroadcastEventType.MOUSE_POSITION_UPDATED, identifier: tabId };
-            mousePosition = await context.getBroadcastService().fetch<RemoteCursorPosition>(event);
-            if (mousePosition) await page.evaluate(addCross, mousePosition.x, mousePosition.y);
-          }
 
           let { data: screenshot } = await cdp.send('Page.captureScreenshot', { format: 'jpeg', quality: 100 });
           if (useOmniparser) {
@@ -145,19 +136,12 @@ export class Screenshot_ActionConfig extends Base_ActionConfig {
               const boxes = document.querySelectorAll('.aident-bounding-box');
               boxes.forEach((box) => box.remove());
             });
-          if (config?.useCross)
-            await page.evaluate(() => {
-              const cross = document.querySelector('.aident-cross');
-              if (cross) cross.remove();
-            });
 
           if (!config?.withCursor) return { base64: screenshot };
-          if (!config?.useCross) {
-            const event = { type: BroadcastEventType.MOUSE_POSITION_UPDATED, identifier: tabId };
-            mousePosition = await context.getBroadcastService().fetch<RemoteCursorPosition>(event);
-          }
-          if (!mousePosition) mousePosition = await genResetMouseAtPageCenterArea(context, sendBroadcastEvent, tabId);
 
+          const event = { type: BroadcastEventType.MOUSE_POSITION_UPDATED, identifier: tabId };
+          mousePosition = await context.getBroadcastService().fetch<RemoteCursorPosition>(event);
+          if (!mousePosition) mousePosition = await genResetMouseAtPageCenterArea(context, sendBroadcastEvent, tabId);
           const cursorType = SupportedRemoteCursorTypes.has(mousePosition.cursor) ? mousePosition.cursor : 'default';
           const overlayOffset = { x: round(mousePosition.x), y: round(mousePosition.y) };
           const response = await fetch(getHost() + '/api/utils/sharp', {
