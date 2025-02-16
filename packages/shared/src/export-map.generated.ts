@@ -148,6 +148,7 @@ export * from './shadow-mode/RRSnapshot';
 export * from './shadow-mode/ShadowModeEvent';
 export * from './shadow-mode/ShadowModeSession';
 export * from './shadow-mode/ShadowModeWorkflowEnvironment';
+export * from './sop/AiAgentSOP';
 export * from './supabase/MockSupabaseUser';
 export * from './supabase/SupabaseAuthTokens';
 export * from './supabase/SupabaseChannelEvent';
