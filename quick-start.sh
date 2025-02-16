@@ -57,4 +57,6 @@ if [ -f .env.production ]; then
   echo "OPEN_CUAK_VERSION: $OPEN_CUAK_VERSION"
   export OPEN_CUAK_VERSION
 fi
-$DOCKER_COMPOSE_CMD --env-file .env.production up --force-recreate --pull always
+$DOCKER_COMPOSE_CMD --env-file .env.production up --force-recreate --pull always -d
+
+echo "Open-CUAK service is now running @ http://localhost:3000"
