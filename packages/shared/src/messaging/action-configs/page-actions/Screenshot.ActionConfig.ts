@@ -127,7 +127,6 @@ export class Screenshot_ActionConfig extends Base_ActionConfig {
 
             opResponse.boundingBoxes.forEach((box: Partial<OmniParserBoundingBox>, i: number) => {
               if (!box.bbox) throw new Error('Bounding box coordinates not found');
-              if (!box.interactivity) return;
 
               const x = round(((box.bbox[0] + box.bbox[2]) / 2) * width, 2);
               const y = round(((box.bbox[1] + box.bbox[3]) / 2) * height, 2);
