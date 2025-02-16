@@ -21,23 +21,37 @@ export class RemoteBrowserConnection {
   }
 
   public attachPageListeners(): void {
-    this.page.on('framenavigated', (frame) => {
+    this.page.on('framenavigated', async (frame) => {
       if (frame === this.page.mainFrame()) {
         this.socket?.emit('page-navigated', {
           sessionId: this.sessionId,
           url: frame.url(),
         });
-      }
-    });
 
-    this.page.on('load', async () => {
-      this.socket?.emit('page-loaded');
-      const tabId = this.getActiveTabId();
-      this.socket?.emit('tab-title-updated', {
-        tabId,
-        newTitle: await this.page.title(),
-        url: this.page.url(),
-      });
+        const loadEventPromise = new Promise<void>((resolve) => {
+          this.page.once('load', () => {
+            console.log('Load event fired after main frame navigation');
+            resolve();
+          });
+        });
+
+        const timeoutPromise = new Promise<void>((resolve) => {
+          setTimeout(() => {
+            console.warn('Load event did not fire within timeout after navigation.');
+            resolve();
+          }, 5000);
+        });
+
+        await Promise.race([loadEventPromise, timeoutPromise]);
+
+        this.socket?.emit('page-loaded');
+        const tabId = this.getActiveTabId();
+        this.socket?.emit('tab-title-updated', {
+          tabId,
+          newTitle: await this.page.title(),
+          url: this.page.url(),
+        });
+      }
     });
   }
 
