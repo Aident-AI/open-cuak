@@ -403,7 +403,6 @@ export class AiAgentNode implements IBaseAgentNode<CoreMessage, LanguageModel, C
     messages: CoreMessage[],
   ) => CoreMessage[] | Promise<CoreMessage[]>;
   public inspectionConfig?: IAiAgentInspectionConfig;
-  public stepRunHistoryCustomGenerator?: (state: IAgentRunState<CoreMessage>) => CoreMessage[] | Promise<CoreMessage[]>;
 
   constructor(options: IAiAgentNodeOptions) {
     this.eventHandlers = options.eventHandlers ?? {};
@@ -434,12 +433,7 @@ export class AiAgentNode implements IBaseAgentNode<CoreMessage, LanguageModel, C
     );
     if (!this.toolDict[DefaultAiFinishRunToolName]) this.toolDict[DefaultAiFinishRunToolName] = DefaultAiFinishRunTool;
 
-    if (this.stepRunHistoryCustomGenerator && options.stepRunHistoryType !== StepRunHistoryType.CUSTOM)
-      throw new Error('stepRunHistoryCustomGenerator can only be used with CUSTOM step run history type');
-    if (options.stepRunHistoryType === StepRunHistoryType.CUSTOM && !this.stepRunHistoryCustomGenerator)
-      throw new Error('stepRunHistoryCustomGenerator is required when stepRunHistoryType is CUSTOM');
     this.stepRunHistoryType = options.stepRunHistoryType ?? StepRunHistoryType.COMPLETE;
-    this.stepRunHistoryCustomGenerator = options.stepRunHistoryCustomGenerator;
     this.dataStream = options.dataStream;
     this.abortSignal = options.abortSignal;
     this.inspectionConfig = options.inspectionConfig;
@@ -449,10 +443,6 @@ export class AiAgentNode implements IBaseAgentNode<CoreMessage, LanguageModel, C
     switch (this.stepRunHistoryType) {
       case StepRunHistoryType.COMPLETE: {
         return state.stepHistory;
-      }
-      case StepRunHistoryType.CUSTOM: {
-        if (!this.stepRunHistoryCustomGenerator) throw new Error('unexpected undefined stepRunHistoryCustomGenerator');
-        return await this.stepRunHistoryCustomGenerator(state);
       }
       case StepRunHistoryType.LAST_ONE_WITH_ENV_STATE: {
         const lastStepMessages = state.stepHistory.filter((m) => m.stepNum === this.getState().stepCount - 1);
