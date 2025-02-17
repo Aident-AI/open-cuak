@@ -3,6 +3,7 @@ import { isStringConfigOn } from '~shared/env/environment';
 import { ALogger } from '~shared/logging/ALogger';
 import { Base_ActionConfig, enforceBaseActionConfigStatic } from '~shared/messaging/action-configs/Base.ActionConfig';
 import { ServiceWorkerMessageAction } from '~shared/messaging/service-worker/ServiceWorkerMessageAction';
+import { parseDomain, fromUrl } from 'tldts';
 
 import type { IActionConfigExecContext } from '~shared/messaging/action-configs/Base.ActionConfig';
 
@@ -27,10 +28,10 @@ export class CacheCookies_ActionConfig extends Base_ActionConfig {
     const userId = payload;
     const allCookies = await chrome.cookies.getAll({});
 
-    // Group cookies by domain
+    // Group cookies by effective domain (eTLD+1)
     const cookiesByDomain = allCookies.reduce(
       (acc, cookie) => {
-        const domain = cookie.domain;
+        const domain = parseDomain(fromUrl(cookie.domain)).domain;
         if (!acc[domain]) acc[domain] = [];
         acc[domain].push(cookie);
         return acc;
@@ -40,7 +41,7 @@ export class CacheCookies_ActionConfig extends Base_ActionConfig {
 
     const supabase = context.getSupabaseClient();
 
-    // Upsert cookie groups by domain for the user.
+    // Upsert cookie groups by effective domain for the user.
     for (const [domain, cookies] of Object.entries(cookiesByDomain)) {
       const { error } = await supabase.from('remote_browser_cookies').upsert({
         user_id: userId,
