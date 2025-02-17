@@ -3,7 +3,6 @@ import { Close_ActionConfig } from '~shared/messaging/action-configs/Close.Actio
 import { FetchBackendNodeIdForDomTree_ActionConfig } from '~shared/messaging/action-configs/FetchBackendNodeIdForDomTree.ActionConfig';
 import { FetchCurrentCursorType_ActionConfig } from '~shared/messaging/action-configs/FetchCurrentCursorType.ActionConfig';
 import { FetchLiveRecordingEvents_ActionConfig } from '~shared/messaging/action-configs/FetchLiveRecordingEvents.ActionConfig';
-import { LogToConsole_ActionConfig } from '~shared/messaging/action-configs/LogToConsole.ActionConfig';
 import { Ping_ActionConfig } from '~shared/messaging/action-configs/Ping.ActionConfig';
 import { Untyped_ActionConfig } from '~shared/messaging/action-configs/Untyped.ActionConfig';
 import { CloseTab_ActionConfig } from '~shared/messaging/action-configs/browser-actions/CloseTab.ActionConfig';
@@ -42,7 +41,6 @@ import { ServiceWorkerMessageAction } from '~shared/messaging/service-worker/Ser
 export const ActionConfigRegistry = {
   [ServiceWorkerMessageAction.PING]: Ping_ActionConfig,
   [ServiceWorkerMessageAction.CLOSE]: Close_ActionConfig,
-  [ServiceWorkerMessageAction.LOG_TO_CONSOLE]: LogToConsole_ActionConfig,
   [ServiceWorkerMessageAction.GO_LOGIN]: Untyped_ActionConfig,
   [ServiceWorkerMessageAction.GET_USER_SESSION]: Untyped_ActionConfig,
   [ServiceWorkerMessageAction.OPEN_POPUP]: Untyped_ActionConfig,

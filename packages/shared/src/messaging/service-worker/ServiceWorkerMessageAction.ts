@@ -1,7 +1,6 @@
 export enum ServiceWorkerMessageAction {
   PING = 'ping',
   CLOSE = 'close',
-  LOG_TO_CONSOLE = 'log-to-console',
   GO_LOGIN = 'go-login',
   GET_USER_SESSION = 'get-user-session',
   OPEN_POPUP = 'open-popup',
