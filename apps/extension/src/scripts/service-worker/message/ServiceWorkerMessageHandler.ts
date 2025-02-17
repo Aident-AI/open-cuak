@@ -107,7 +107,6 @@ export class ServiceWorkerMessageHandler {
 
         case ServiceWorkerMessageAction.PING:
         case ServiceWorkerMessageAction.CLOSE:
-        case ServiceWorkerMessageAction.LOG_TO_CONSOLE:
         case ServiceWorkerMessageAction.CACHE_COOKIES:
         case ServiceWorkerMessageAction.CURRENT_CURSOR_TYPE:
 
