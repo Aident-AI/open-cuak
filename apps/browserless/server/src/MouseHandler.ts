@@ -73,14 +73,24 @@ export class MouseHandler {
           await page.mouse.up();
           break;
         case 'mousemove':
-          // do nothing
+          // do nothing. already handled above
           break;
         default:
           throw new Error(`Unknown event: ${position.event}`);
       }
       await element.dispose();
     } catch (error) {
-      console.error(`Failed to broadcast cursor position for connection ${sessionId}:`, error);
+      if ((error as Error).message === "'left' is already pressed.") {
+        ALogger.warn({
+          context: 'mouse-handler',
+          message: 'Left mouse button is already pressed',
+          resolution: 'Reset the button',
+        });
+        await page.mouse.reset();
+        return;
+      }
+
+      ALogger.error({ context: `Failed to broadcast cursor position for connection ${sessionId}`, error });
       socket.emit('error', { message: 'Failed to broadcast cursor position' });
       socket.disconnect(true);
     }
