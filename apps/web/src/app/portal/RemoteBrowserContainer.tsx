@@ -24,20 +24,23 @@ import { RemoteBrowserWindowStatus } from '~src/app/portal/WebsocketRemoteBrowse
 import { useRemoteBrowserMessaging } from '~src/hooks/useRemoteBrowserMessaging';
 
 interface Props {
+  browserSocket: Socket | null;
   browserStatus: RemoteBrowserWindowStatus;
   children: React.ReactNode;
-  sessionUUID?: string;
+  mediaRecorder: MediaRecorder | null;
+  remoteControlOn: boolean;
+
   attachToBrowser: () => void;
   detachFromBrowser: () => void;
   killBrowser: () => void;
-  remoteControlOn: boolean;
   setRemoteControlOn: (remoteControlOn: boolean) => void;
 
   classNameContainer?: string;
   classNameContent?: string;
+  sessionUUID?: string;
+
+  onActiveTabChange?: (activeTabId?: number) => void;
   onContentSizeChange?: (contentSize: { width: number; height: number }) => void;
-  browserSocket: Socket | null;
-  mediaRecorder: MediaRecorder | null;
 }
 
 const DEFAULT_ASPECT_RATIO = 16 / 9;
@@ -57,7 +60,11 @@ export default function RemoteBrowserContainer(props: Props) {
   const [isPageLoading, setIsPageLoading] = useState(false);
   const [pageUrlToLoad, setPageUrlToLoad] = useState<string | undefined>(undefined);
   const [tabs, setTabs] = useState<RemoteBrowserTab[]>([]);
-  const [activeTabId, setActiveTabId] = useState<string | undefined>(undefined);
+  const [activeTabId, setActiveTabIdState] = useState<number | undefined>(undefined);
+  const setActiveTabId = (tabId?: number) => {
+    setActiveTabIdState(tabId);
+    if (props.onActiveTabChange) props.onActiveTabChange(tabId);
+  };
 
   const isTooWide = containerDimension.width / containerDimension.height > DEFAULT_ASPECT_RATIO;
   const contentDimension = {

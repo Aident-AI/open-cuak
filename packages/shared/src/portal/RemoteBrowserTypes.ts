@@ -11,7 +11,7 @@ export const RemoteCursorPositionSchema = z.object({
 export type RemoteCursorPosition = z.infer<typeof RemoteCursorPositionSchema>;
 
 export const RemoteBrowserTabSchema = z.object({
-  id: z.string(),
+  id: z.number(),
   url: z.string(),
   title: z.string(),
 });
