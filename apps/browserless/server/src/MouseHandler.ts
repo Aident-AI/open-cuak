@@ -46,7 +46,8 @@ export class MouseHandler {
     sessionId: string,
     position: RemoteCursorPosition,
   ): Promise<void> {
-    const { browser, page, tabId } = connection;
+    const { browser, page } = connection;
+    const activeTabId = connection.getActiveTabId();
 
     try {
       const element = await page.evaluateHandle((x, y) => document.elementFromPoint(x, y), position.x, position.y);
@@ -55,11 +56,14 @@ export class MouseHandler {
         return window.getComputedStyle(el as Element).cursor;
       }, element);
 
-      const updatedPosition = { ...position, cursor: cursorStyle ?? 'default', ts: Date.now(), tabId };
-      const broadcastEvent = { type: BroadcastEventType.MOUSE_POSITION_UPDATED, identifier: tabId };
+      const updatedPosition = { ...position, cursor: cursorStyle ?? 'default', ts: Date.now() };
+      if (updatedPosition.tabId < 0) updatedPosition.tabId = activeTabId;
+      const broadcastEvent = { type: BroadcastEventType.MOUSE_POSITION_UPDATED, identifier: updatedPosition.tabId };
 
-      await browser.genSendBroadcastEvent(broadcastEvent, RemoteCursorPositionSchema.parse(updatedPosition)),
-        await page.mouse.move(position.x, position.y);
+      await Promise.all([
+        browser.genSendBroadcastEvent(broadcastEvent, RemoteCursorPositionSchema.parse(updatedPosition)),
+        page.mouse.move(position.x, position.y),
+      ]);
       switch (position.event) {
         case 'mousedown':
           await page.mouse.down();
@@ -82,10 +86,8 @@ export class MouseHandler {
   }
 
   public static async genGetCursorPosition(connection: RemoteBrowserConnection): Promise<RemoteCursorPosition | null> {
-    const { browser, tabId } = connection;
-
-    const event = { type: BroadcastEventType.MOUSE_POSITION_UPDATED, identifier: tabId };
-    const position = await browser.genFetchExtensionBroadcastEvent<object>(event);
+    const event = { type: BroadcastEventType.MOUSE_POSITION_UPDATED, identifier: connection.getActiveTabId() };
+    const position = await connection.browser.genFetchExtensionBroadcastEvent<object>(event);
     if (!position) return null;
     return RemoteCursorPositionSchema.parse(position);
   }

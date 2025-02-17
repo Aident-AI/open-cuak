@@ -1,8 +1,10 @@
 import { Page } from 'puppeteer-core';
 import { Socket } from 'socket.io';
-import { v4 as UUID } from 'uuid';
 import { BrowserConnectionData, USER_AGENT } from '~browserless/server/src/ConnectionManager';
 import { ScreencastHandler } from '~browserless/server/src/ScreencastHandler';
+import { ChromeTab } from '~shared/chrome/Tab';
+import { RuntimeMessageReceiver } from '~shared/messaging/RuntimeMessageReceiver';
+import { ServiceWorkerMessageAction } from '~shared/messaging/service-worker/ServiceWorkerMessageAction';
 import { RemoteBrowserTab } from '~shared/portal/RemoteBrowserTypes';
 import { RemoteBrowser } from '~shared/remote-browser/RemoteBrowser';
 import { RemoteBrowserConfigs } from '~shared/remote-browser/RemoteBrowserConfigs';
@@ -60,7 +62,7 @@ export class RemoteBrowserConnection {
       const page = await target.page();
       if (!page) return;
       await this.browser.genSetupNewPage(page, { viewport: RemoteBrowserConfigs.defaultViewport });
-      const tabId = this.addTab(page);
+      const tabId = await this.genAddTab(page);
       this.switchTab(tabId);
       this.socket?.emit('all-tabs', { tabs: await this.getAllTabs() });
       this.socket?.emit('active-tab-id', { tabId });
@@ -71,21 +73,27 @@ export class RemoteBrowserConnection {
     this.socket = null;
   }
 
-  public getTabId(page: Page): string | undefined {
+  public getTabId(page: Page): number | undefined {
     return this.pageToTabIdMap.get(page);
   }
 
-  public getPageByTabId(tabId: string): Page | undefined {
+  public getPageByTabId(tabId: number): Page | undefined {
     return Array.from(this.pageToTabIdMap.entries()).find(([_, id]) => id === tabId)?.[0];
   }
 
-  public addTab(page: Page): string {
-    const tabId = UUID();
-    this.pageToTabIdMap.set(page, tabId);
-    return tabId;
+  public async genAddTab(page: Page): Promise<number> {
+    const rsp = await this.browser.sendRuntimeMessageToExtension({
+      receiver: RuntimeMessageReceiver.SERVICE_WORKER,
+      action: ServiceWorkerMessageAction.GET_CURRENT_TAB,
+    });
+    if (!rsp || !rsp.success) throw new Error('Failed to get current tab');
+
+    const tab = rsp.data as ChromeTab;
+    this.pageToTabIdMap.set(page, tab.id);
+    return tab.id;
   }
 
-  public async removeTabAndSwitchToNext(tabId: string): Promise<string | undefined> {
+  public async removeTabAndSwitchToNext(tabId: number): Promise<number | undefined> {
     const page = this.getPageByTabId(tabId);
     if (!page) return;
 
@@ -123,7 +131,7 @@ export class RemoteBrowserConnection {
       }));
   }
 
-  public switchTab(tabId: string) {
+  public switchTab(tabId: number) {
     const page = this.getPageByTabId(tabId);
     if (!page) return;
     this.page = page;
@@ -132,7 +140,7 @@ export class RemoteBrowserConnection {
     ScreencastHandler.genStartScreencast(this);
   }
 
-  public getActiveTabId(): string {
+  public getActiveTabId(): number {
     return this.pageToTabIdMap.get(this.page)!;
   }
 
@@ -142,19 +150,18 @@ export class RemoteBrowserConnection {
   public page: Page;
   public sessionId: string;
   public socket: Socket | null = null;
-  public tabId: number;
   public userId: string;
-  private pageToTabIdMap = new Map<Page, string>();
+
+  private pageToTabIdMap = new Map<Page, number>();
 
   constructor(browser: RemoteBrowser, page: Page, config: BrowserConnectionData, tabId: number, userId: string) {
     this.browser = browser;
     this.keepAlive = config.keepAlive ?? false;
     this.page = page;
     this.sessionId = config.sessionId;
-    this.tabId = tabId;
     this.userId = userId;
-    this.pageToTabIdMap.set(page, UUID());
 
     this.attachPuppeteerListeners();
+    this.pageToTabIdMap.set(page, tabId);
   }
 }

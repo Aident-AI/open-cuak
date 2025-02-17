@@ -63,6 +63,7 @@ export function WebsocketRemoteBrowserWindow(props: Props) {
   });
   const { isAdminUser, user } = useContext(UserSessionContext);
 
+  const activeTabIdRef = useRef<number | null>(null);
   const canvasImageWorkerRef = useRef<Worker | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const currentFrameTsRef = useRef<number>(-1); // Add this ref to track frame sequence
@@ -212,7 +213,7 @@ export function WebsocketRemoteBrowserWindow(props: Props) {
     const position: RemoteCursorPosition = {
       x,
       y,
-      tabId: 0, // TODO use actual tabId
+      tabId: activeTabIdRef.current ?? -1,
       ts: Date.now(),
       cursor: 'default', // This will be updated by the server with actual cursor style
       event: event.type,
@@ -386,16 +387,17 @@ export function WebsocketRemoteBrowserWindow(props: Props) {
     <div className={cx('relative flex flex-col items-center justify-center', props.className)}>
       <RemoteBrowserContainer
         classNameContent="relative rounded-3xl shadow-2xl shadow-blue-600 backdrop-blur-md hover:ring-8 hover:ring-blue-500 overflow-hidden"
+        attachToBrowser={attachToBrowser}
+        browserSocket={browserSocket}
         browserStatus={browserStatus}
+        detachFromBrowser={() => detachFromBrowser(false)}
+        killBrowser={() => detachFromBrowser(true)}
+        mediaRecorder={mediaRecorderRef.current}
+        onActiveTabChange={(tabId) => (activeTabIdRef.current = tabId ?? null)}
         onContentSizeChange={handleContentSizeChange}
         remoteControlOn={remoteControlOn}
         sessionUUID={props.remoteBrowserSessionId}
         setRemoteControlOn={setRemoteControlOn}
-        attachToBrowser={attachToBrowser}
-        detachFromBrowser={() => detachFromBrowser(false)}
-        killBrowser={() => detachFromBrowser(true)}
-        browserSocket={browserSocket}
-        mediaRecorder={mediaRecorderRef.current}
       >
         {renderMainContent()}
       </RemoteBrowserContainer>
