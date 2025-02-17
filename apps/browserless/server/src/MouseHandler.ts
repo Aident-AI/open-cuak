@@ -7,7 +7,8 @@ import { RemoteCursorPosition, RemoteCursorPositionSchema } from '~shared/portal
 
 export class MouseHandler {
   public static async genSetupMousePositionListener(getConnection: () => RemoteBrowserConnection): Promise<void> {
-    const { sessionId, page } = getConnection();
+    const connection = getConnection();
+    const page = connection.getActivePage();
     const cdp = await page.createCDPSession();
     const setupMouseTracking = async (page: Page, cdp: CDPSession) => {
       await cdp.send('Runtime.addBinding', { name: 'reportMousePosition' });
@@ -33,7 +34,7 @@ export class MouseHandler {
         const event = RemoteCursorPositionSchema.parse(payload);
         const socket = getConnection().socket;
         if (!socket) throw new Error('Socket not found');
-        socket.emit('cursor-update', { sessionId, position: event });
+        socket.emit('cursor-update', { sessionId: connection.sessionId, position: event });
       } catch (error) {
         ALogger.error('Error handling mouse tracking binding:', error);
       }
@@ -46,7 +47,7 @@ export class MouseHandler {
     sessionId: string,
     position: RemoteCursorPosition,
   ): Promise<void> {
-    const { browser, page } = connection;
+    const page = connection.getActivePage();
     const activeTabId = connection.getActiveTabId();
 
     try {
@@ -61,7 +62,7 @@ export class MouseHandler {
       const broadcastEvent = { type: BroadcastEventType.MOUSE_POSITION_UPDATED, identifier: updatedPosition.tabId };
 
       await Promise.all([
-        browser.genSendBroadcastEvent(broadcastEvent, RemoteCursorPositionSchema.parse(updatedPosition)),
+        connection.browser.genSendBroadcastEvent(broadcastEvent, RemoteCursorPositionSchema.parse(updatedPosition)),
         page.mouse.move(position.x, position.y),
       ]);
       switch (position.event) {

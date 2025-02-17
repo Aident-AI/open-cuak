@@ -61,7 +61,7 @@ export function WebsocketRemoteBrowserWindow(props: Props) {
     onSessionIdChange: (sessionId: string) => props.setRemoteBrowserSessionId(sessionId),
     teachModeOn: props.teachModeOn,
   });
-  const { isAdminUser, user } = useContext(UserSessionContext);
+  const { isAdminUser } = useContext(UserSessionContext);
 
   const activeTabIdRef = useRef<number | null>(null);
   const canvasImageWorkerRef = useRef<Worker | null>(null);

@@ -132,7 +132,8 @@ io.on('connection', (socket: AuthenticatedSocket) => {
       if (!connection) throw new Error('Connection not found');
       connection.enableInteractionEvents = true;
     } catch (error) {
-      socket.emit('error', { message: 'Failed to get tabs' });
+      ALogger.error({ context: 'Failed to enable interaction events:', error });
+      socket.emit('error', { message: 'Failed to enable interaction events' });
     }
   });
 
@@ -145,7 +146,8 @@ io.on('connection', (socket: AuthenticatedSocket) => {
       if (!connection) throw new Error('Connection not found');
       connection.enableInteractionEvents = false;
     } catch (error) {
-      socket.emit('error', { message: 'Failed to get tabs' });
+      ALogger.error({ context: 'Failed to disable interaction events:', error });
+      socket.emit('error', { message: 'Failed to disable interaction events' });
     }
   });
 
@@ -156,15 +158,15 @@ io.on('connection', (socket: AuthenticatedSocket) => {
     try {
       const connection = connectionManager.getConnectionBySessionId(sessionId);
       if (!connection) throw new Error('Connection not found');
-      const tabs = await connection.getAllTabs();
-      socket.emit('all-tabs', { tabs });
+      socket.emit('all-tabs', { tabs: await connection.genAllTabs() });
       socket.emit('active-tab-id', { tabId: connection.getActiveTabId() });
     } catch (error) {
+      ALogger.error({ context: 'Failed to get tabs:', error });
       socket.emit('error', { message: 'Failed to get tabs' });
     }
   });
 
-  socket.on('switch-tab', async (data: { sessionId: string; tabId: string }) => {
+  socket.on('switch-tab', async (data: { sessionId: string; tabId: number }) => {
     const { sessionId, tabId } = data;
     if (!sessionId) return;
     const connection = connectionManager.getConnectionBySessionId(sessionId);
@@ -172,13 +174,13 @@ io.on('connection', (socket: AuthenticatedSocket) => {
     connection.switchTab(tabId);
   });
 
-  socket.on('close-tab', async (data: { sessionId: string; tabId: string }) => {
+  socket.on('close-tab', async (data: { sessionId: string; tabId: number }) => {
     const { sessionId, tabId } = data;
     if (!sessionId) return;
     const connection = connectionManager.getConnectionBySessionId(sessionId);
     if (!connection) throw new Error('Connection not found');
     const nextTabId = await connection.removeTabAndSwitchToNext(tabId);
-    socket.emit('all-tabs', { tabs: await connection.getAllTabs() });
+    socket.emit('all-tabs', { tabs: await connection.genAllTabs() });
     socket.emit('active-tab-id', { tabId: nextTabId });
   });
 
