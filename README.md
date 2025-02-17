@@ -19,6 +19,8 @@ And when productivity becomes truly abundant, we want to make sure it is **equal
 
 That's why we are making it open-sourced, today.
 
+_Read more in our [launch blog](https://aident.ai/blog/openai-operator-open-source-alternative)._
+
 ---
 
 <p align="center">❤️ Built and open-sourced by <a href="https://aident.ai">Aident AI</a> team. ❤️</p>
