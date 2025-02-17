@@ -66,13 +66,6 @@ export abstract class BaseAgentNodeBuilder<
     return this;
   }
 
-  public withStepRunHistoryCustomGenerator(
-    stepRunHistoryCustomGenerator: (state: IAgentRunState<Msg>) => Msg[] | Promise<Msg[]>,
-  ): this {
-    this.options.stepRunHistoryCustomGenerator = stepRunHistoryCustomGenerator;
-    return this;
-  }
-
   public options: Partial<Options> = {};
 
   abstract build(): IBaseAgentNode<Msg, Mdl, Tool, ToolCall>;
