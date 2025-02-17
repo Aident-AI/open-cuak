@@ -232,8 +232,8 @@ io.on('connection', (socket: AuthenticatedSocket) => {
       if (!connection) throw new Error('Connection not found');
 
       await MouseHandler.genHandleCursorTracking(connection, socket, sessionId, position);
-      if (connection?.enableInteractionEvents)
-        socket.emit('interaction-event', { type: 'mouse', data, ts: Date.now() });
+      if (!connection?.enableInteractionEvents) return;
+      socket.emit('interaction-event', { type: 'mouse', data, ts: Date.now() });
     } catch (error) {
       socket.emit('error', { message: 'Failed to handle cursor tracking' });
     }
