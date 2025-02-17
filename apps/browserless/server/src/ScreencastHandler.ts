@@ -37,7 +37,7 @@ export class ScreencastHandler {
   }
 
   static async #genSetupScreencastSession(connection: RemoteBrowserConnection): Promise<void> {
-    const { socket, sessionId, userId } = connection;
+    const { socket, sessionId } = connection;
     if (!socket) throw new Error('Socket not found');
 
     const page = await connection.genEnsurePageIsActive();

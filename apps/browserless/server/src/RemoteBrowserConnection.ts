@@ -11,11 +11,12 @@ import { RemoteBrowserConfigs } from '~shared/remote-browser/RemoteBrowserConfig
 
 export class RemoteBrowserConnection {
   public async genEnsurePageIsActive(): Promise<Page> {
-    if (this.page.isClosed()) {
-      this.page = await this.browser.newPage();
-      await this.page.setUserAgent(USER_AGENT);
-    }
-    return this.page;
+    if (!this.getActivePage().isClosed()) return this.getActivePage();
+
+    const newPage = await this.browser.newPage();
+    await newPage.setUserAgent(USER_AGENT);
+    void this.genAddTabByPage(newPage);
+    return newPage;
   }
 
   public attachSocketToConnection(socket: Socket) {
@@ -23,15 +24,15 @@ export class RemoteBrowserConnection {
   }
 
   public attachPageListeners(): void {
-    this.page.on('framenavigated', async (frame) => {
-      if (frame === this.page.mainFrame()) {
+    this.getActivePage().on('framenavigated', async (frame) => {
+      if (frame === this.getActivePage().mainFrame()) {
         this.socket?.emit('page-navigated', {
           sessionId: this.sessionId,
           url: frame.url(),
         });
 
         const loadEventPromise = new Promise<void>((resolve) => {
-          this.page.once('load', () => {
+          this.getActivePage().once('load', () => {
             console.log('Load event fired after main frame navigation');
             resolve();
           });
@@ -47,11 +48,10 @@ export class RemoteBrowserConnection {
         await Promise.race([loadEventPromise, timeoutPromise]);
 
         this.socket?.emit('page-loaded');
-        const tabId = this.getActiveTabId();
         this.socket?.emit('tab-title-updated', {
-          tabId,
-          newTitle: await this.page.title(),
-          url: this.page.url(),
+          tabId: this.getActiveTabId(),
+          newTitle: await this.getActivePage().title(),
+          url: this.getActivePage().url(),
         });
       }
     });
@@ -62,9 +62,9 @@ export class RemoteBrowserConnection {
       const page = await target.page();
       if (!page) return;
       await this.browser.genSetupNewPage(page, { viewport: RemoteBrowserConfigs.defaultViewport });
-      const tabId = await this.genAddTab(page);
+      const tabId = await this.genAddTabByPage(page);
       this.switchTab(tabId);
-      this.socket?.emit('all-tabs', { tabs: await this.getAllTabs() });
+      this.socket?.emit('all-tabs', { tabs: await this.genAllTabs() });
       this.socket?.emit('active-tab-id', { tabId });
     });
   }
@@ -73,15 +73,11 @@ export class RemoteBrowserConnection {
     this.socket = null;
   }
 
-  public getTabId(page: Page): number | undefined {
-    return this.pageToTabIdMap.get(page);
-  }
-
   public getPageByTabId(tabId: number): Page | undefined {
-    return Array.from(this.pageToTabIdMap.entries()).find(([_, id]) => id === tabId)?.[0];
+    return this.tabIdToPageMap.get(tabId);
   }
 
-  public async genAddTab(page: Page): Promise<number> {
+  public async genAddTabByPage(page: Page): Promise<number> {
     const rsp = await this.browser.sendRuntimeMessageToExtension({
       receiver: RuntimeMessageReceiver.SERVICE_WORKER,
       action: ServiceWorkerMessageAction.GET_CURRENT_TAB,
@@ -89,7 +85,7 @@ export class RemoteBrowserConnection {
     if (!rsp || !rsp.success) throw new Error('Failed to get current tab');
 
     const tab = rsp.data as ChromeTab;
-    this.pageToTabIdMap.set(page, tab.id);
+    this.tabIdToPageMap.set(tab.id, page);
     return tab.id;
   }
 
@@ -97,71 +93,62 @@ export class RemoteBrowserConnection {
     const page = this.getPageByTabId(tabId);
     if (!page) return;
 
-    const allTabs = Array.from(this.pageToTabIdMap.entries());
-    const currentIndex = allTabs.findIndex(([p]) => p === page);
+    const allTabIds = Array.from(this.tabIdToPageMap.keys());
+    const currentIndex = allTabIds.findIndex((id) => id === tabId);
 
-    this.pageToTabIdMap.delete(page);
     await page.close();
+    this.tabIdToPageMap.delete(tabId);
+    const remainingTabCount = this.tabIdToPageMap.size;
+    if (remainingTabCount < 1) return undefined;
 
-    const remainingTabs = Array.from(this.pageToTabIdMap.entries());
-
-    if (remainingTabs.length > 0) {
-      const nextIndex = currentIndex >= remainingTabs.length ? remainingTabs.length - 1 : currentIndex;
-      const [_, nextTabId] = remainingTabs[nextIndex];
-      this.switchTab(nextTabId);
-      return nextTabId;
-    }
-    return undefined;
+    const nextIndex = currentIndex >= remainingTabCount ? remainingTabCount - 1 : currentIndex;
+    const nextTabId = Array.from(this.tabIdToPageMap.keys())[nextIndex];
+    this.switchTab(nextTabId);
+    return nextTabId;
   }
 
-  public async getAllTabs(): Promise<RemoteBrowserTab[]> {
-    const pages = Array.from(this.pageToTabIdMap.keys());
+  public async genAllTabs(): Promise<RemoteBrowserTab[]> {
+    const pages = Array.from(this.tabIdToPageMap.entries()).map(([tabId, page]) => ({ id: tabId, page }));
     const pagesWithTitles = await Promise.all(
-      pages.map(async (page) => ({
-        page,
-        title: await page.title(),
-      })),
+      pages.map(async ({ id, page }) => ({ id, url: page.url(), title: await page.title() })),
     );
-    return pagesWithTitles
-      .filter(({ title }) => title !== '[AidentAI] Extension API Page')
-      .map(({ page, title }) => ({
-        id: this.getTabId(page)!,
-        url: page.url(),
-        title,
-      }));
+    console.log('pagesWithTitles=', JSON.stringify(pagesWithTitles));
+    return pagesWithTitles.filter(({ title }) => title !== '[AidentAI] Extension API Page');
   }
 
   public switchTab(tabId: number) {
-    const page = this.getPageByTabId(tabId);
-    if (!page) return;
-    this.page = page;
-    this.page.bringToFront();
+    this.activeTabId = tabId;
     this.attachPageListeners();
-    ScreencastHandler.genStartScreencast(this);
+    void this.getActivePage().bringToFront();
+    void ScreencastHandler.genStartScreencast(this);
   }
 
   public getActiveTabId(): number {
-    return this.pageToTabIdMap.get(this.page)!;
+    return this.activeTabId;
   }
 
+  public getActivePage(): Page {
+    return this.tabIdToPageMap.get(this.activeTabId)!;
+  }
+
+  public activeTabId: number;
   public browser: RemoteBrowser;
   public enableInteractionEvents = false;
   public keepAlive: boolean;
-  public page: Page;
   public sessionId: string;
   public socket: Socket | null = null;
   public userId: string;
 
-  private pageToTabIdMap = new Map<Page, number>();
+  private tabIdToPageMap = new Map<number, Page>();
 
   constructor(browser: RemoteBrowser, page: Page, config: BrowserConnectionData, tabId: number, userId: string) {
+    this.activeTabId = tabId;
     this.browser = browser;
     this.keepAlive = config.keepAlive ?? false;
-    this.page = page;
     this.sessionId = config.sessionId;
     this.userId = userId;
+    this.tabIdToPageMap.set(tabId, page);
 
     this.attachPuppeteerListeners();
-    this.pageToTabIdMap.set(page, tabId);
   }
 }
