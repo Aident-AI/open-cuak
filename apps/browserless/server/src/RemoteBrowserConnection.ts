@@ -78,9 +78,10 @@ export class RemoteBrowserConnection {
   }
 
   public async genAddTabByPage(page: Page): Promise<number> {
+    // TODO: we currently assume the new page is always the active tab. support for adding background tabs
     const rsp = await this.browser.sendRuntimeMessageToExtension({
       receiver: RuntimeMessageReceiver.SERVICE_WORKER,
-      action: ServiceWorkerMessageAction.GET_CURRENT_TAB,
+      action: ServiceWorkerMessageAction.GET_ACTIVE_TAB,
     });
     if (!rsp || !rsp.success) throw new Error('Failed to get current tab');
 
