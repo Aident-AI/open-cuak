@@ -10,20 +10,23 @@ import { TabLifecycleInjectionService } from '~src/common/services/tab/TabLifecy
 export class MouseTrackingInjection {
   public static init(): void {
     const currentTabId = TabLifecycleInjectionService.getCurrentTabId();
-    const broadcastEvent = { type: BroadcastEventType.MOUSE_POSITION_UPDATED, identifier: currentTabId };
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const eventHandler = (event: any) =>
-      window.postMessage(JSON.stringify({ type: 'mousePositionRequest', payload: event }), '*');
+    const broadcastEvent = { type: BroadcastEventType.MOUSE_POSITION_UPDATED };
+    const eventHandler = (position?: RemoteCursorPosition): void => {
+      if (!position) {
+        void sendRuntimeMessage({
+          receiver: RuntimeMessageReceiver.SERVICE_WORKER,
+          action: ServiceWorkerMessageAction.MOUSE_RESET,
+          payload: {},
+        });
+        return;
+      } else {
+        window.postMessage(JSON.stringify({ type: 'mousePositionRequest', payload: position }), '*');
+      }
+    };
     const publishCursorPosition = () =>
-      BroadcastService.fetch<RemoteCursorPosition>(broadcastEvent).then((cursorPosition) => {
-        if (cursorPosition) eventHandler(cursorPosition);
-        else
-          sendRuntimeMessage({
-            receiver: RuntimeMessageReceiver.SERVICE_WORKER,
-            action: ServiceWorkerMessageAction.MOUSE_RESET,
-            payload: {},
-          });
-      });
+      BroadcastService.fetch<RemoteCursorPosition>(broadcastEvent).then((cursorPosition) =>
+        eventHandler(cursorPosition),
+      );
 
     BroadcastService.subscribe<RemoteCursorPosition>(broadcastEvent, eventHandler);
     publishCursorPosition();

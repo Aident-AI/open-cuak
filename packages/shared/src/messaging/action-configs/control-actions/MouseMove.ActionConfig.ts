@@ -36,7 +36,7 @@ export const genSetMousePosition = async (
   const eventPayload = { x: position.x, y: position.y, cursor, ts: Date.now(), tabId, event: 'mousemove' };
   const cursorPosition = RemoteCursorPositionSchema.parse(eventPayload);
 
-  const mousePositionBroadcastEvent = { type: BroadcastEventType.MOUSE_POSITION_UPDATED, identifier: tabId };
+  const mousePositionBroadcastEvent = { type: BroadcastEventType.MOUSE_POSITION_UPDATED };
   await sendBroadcastEvent(mousePositionBroadcastEvent, cursorPosition);
 
   return cursorPosition;

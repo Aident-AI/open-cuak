@@ -138,7 +138,7 @@ export class Screenshot_ActionConfig extends Base_ActionConfig {
 
           if (!config?.withCursor) return { base64: screenshot };
 
-          const event = { type: BroadcastEventType.MOUSE_POSITION_UPDATED, identifier: tabId };
+          const event = { type: BroadcastEventType.MOUSE_POSITION_UPDATED };
           mousePosition = await context.getBroadcastService().fetch<RemoteCursorPosition>(event);
           if (!mousePosition) mousePosition = await genResetMouseAtPageCenterArea(context, sendBroadcastEvent, tabId);
           const cursorType = SupportedRemoteCursorTypes.has(mousePosition.cursor) ? mousePosition.cursor : 'default';

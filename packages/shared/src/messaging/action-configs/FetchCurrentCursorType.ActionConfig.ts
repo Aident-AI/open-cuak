@@ -24,13 +24,12 @@ export class FetchCurrentCursorType_ActionConfig extends Base_ActionConfig {
     payload: z.infer<typeof this.requestPayloadSchema>,
     context: IActionConfigExecContext,
   ): Promise<z.infer<typeof this.responsePayloadSchema>> {
-    const its = context.getInteractableService();
-    const sendBroadcastEvent = context.getBroadcastService().send;
+    const broadcast = context.getBroadcastService();
+    const event = { type: BroadcastEventType.MOUSE_POSITION_UPDATED };
+    let mousePosition = await broadcast.fetch<RemoteCursorPosition>(event);
+
     const tabId = context.getActiveTab().id;
-    let mousePosition = await context.getBroadcastService().fetch<RemoteCursorPosition>({
-      type: BroadcastEventType.MOUSE_POSITION_UPDATED,
-      identifier: tabId,
-    });
+    const sendBroadcastEvent = context.getBroadcastService().send;
     if (!mousePosition) mousePosition = await genResetMouseAtPageCenterArea(context, sendBroadcastEvent, tabId);
     const type = SupportedRemoteCursorTypes.has(mousePosition.cursor) ? mousePosition.cursor : 'default';
     return { type, position: { x: mousePosition.x, y: mousePosition.y } };

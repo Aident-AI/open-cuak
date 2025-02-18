@@ -1,6 +1,5 @@
 import { BroadcastEventType } from '~shared/broadcast/types';
 import { RuntimeMessageReceiver } from '~shared/messaging/RuntimeMessageReceiver';
-import { GetActiveTab_ActionConfig } from '~shared/messaging/action-configs/tab/GetActiveTab.ActionConfig';
 import { ServiceWorkerMessageAction } from '~shared/messaging/service-worker/ServiceWorkerMessageAction';
 import { RuntimeMessage, RuntimeMessageResponse } from '~shared/messaging/types';
 import { RemoteCursorPosition, RemoteCursorPositionSchema } from '~shared/portal/RemoteBrowserTypes';
@@ -41,18 +40,10 @@ export class RemoteCursorHelper {
   public static async genFetchCurrentPosition(
     sendRuntimeMessage: (message: RuntimeMessage) => Promise<RuntimeMessageResponse>,
   ): Promise<RemoteCursorPosition | undefined> {
-    const tabRsp = await sendRuntimeMessage({
-      receiver: RuntimeMessageReceiver.SERVICE_WORKER,
-      action: ServiceWorkerMessageAction.GET_ACTIVE_TAB,
-    });
-    if (!tabRsp.success) throw new Error('Failed to get active tab');
-    const tab = GetActiveTab_ActionConfig.responsePayloadSchema.parse(tabRsp.data);
-
-    const tabId = tab.id;
     const beforePositionRsp = await sendRuntimeMessage({
       receiver: RuntimeMessageReceiver.SERVICE_WORKER,
       action: ServiceWorkerMessageAction.BROADCAST_FETCH,
-      payload: { event: { type: BroadcastEventType.MOUSE_POSITION_UPDATED, identifier: tabId } },
+      payload: { event: { type: BroadcastEventType.MOUSE_POSITION_UPDATED } },
     });
     if (!beforePositionRsp.success) throw new Error('Failed to get current mouse position');
     if (!beforePositionRsp.data) return undefined;
