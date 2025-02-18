@@ -19,5 +19,5 @@ export type AiAgentSOP = z.infer<typeof AiAgentSOPSchema>;
 
 export interface AiAgentSOPRunState {
   sop: AiAgentSOP;
-  currentStepId: number;
+  currentStepIndex: number;
 }
