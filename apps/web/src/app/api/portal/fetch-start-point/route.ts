@@ -19,12 +19,11 @@ export const POST = simpleRequestWrapper<z.infer<typeof requestSchema>>(
     });
     if (!activeTabRsp.success) throw new Error('Failed to get active tab');
     const tab = GetActiveTab_ActionConfig.responsePayloadSchema.parse(activeTabRsp.data);
-    const tabId = tab.id;
 
     const broadcastFetchRsp = await context.sendRuntimeMessage({
       receiver: RuntimeMessageReceiver.SERVICE_WORKER,
       action: ServiceWorkerMessageAction.BROADCAST_FETCH,
-      payload: { event: { type: BroadcastEventType.MOUSE_POSITION_UPDATED, identifier: tabId } },
+      payload: { event: { type: BroadcastEventType.MOUSE_POSITION_UPDATED } },
     });
     if (!broadcastFetchRsp.success) throw new Error('Failed to get current mouse position');
     const position = RemoteCursorPositionSchema.parse(broadcastFetchRsp.data);

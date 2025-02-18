@@ -36,9 +36,7 @@ export class PortalMouseControl_ActionConfig extends Base_ActionConfig {
     payload: z.infer<typeof this.requestPayloadSchema>,
     context: IActionConfigExecContext,
   ): Promise<z.infer<typeof this.responsePayloadSchema>> {
-    const its = context.getInteractableService();
-    const tabId = its.getActiveTab().id;
-    const mousePositionBroadcastEvent = { type: BroadcastEventType.MOUSE_POSITION_UPDATED, identifier: tabId };
+    const mousePositionBroadcastEvent = { type: BroadcastEventType.MOUSE_POSITION_UPDATED };
     const origin = await context.getBroadcastService().fetch<RemoteCursorPosition>(mousePositionBroadcastEvent);
     if (!origin) throw new Error('Failed to get current mouse position');
 

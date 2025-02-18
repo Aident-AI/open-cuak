@@ -6,9 +6,12 @@ import { ALogger } from '~shared/logging/ALogger';
 import { RemoteCursorPosition, RemoteCursorPositionSchema } from '~shared/portal/RemoteBrowserTypes';
 
 export class MouseHandler {
-  public static async genSetupMousePositionListener(getConnection: () => RemoteBrowserConnection): Promise<void> {
+  public static async genSetupMousePositionListener(
+    getConnection: () => RemoteBrowserConnection,
+    targetPage?: Page,
+  ): Promise<void> {
     const connection = getConnection();
-    const page = connection.getActivePage();
+    const page = targetPage ?? connection.getActivePage();
     const cdp = await page.createCDPSession();
     const setupMouseTracking = async (page: Page, cdp: CDPSession) => {
       await cdp.send('Runtime.addBinding', { name: 'reportMousePosition' });
@@ -32,7 +35,7 @@ export class MouseHandler {
       try {
         const payload = JSON.parse(data.payload);
         const event = RemoteCursorPositionSchema.parse(payload);
-        const socket = getConnection().socket;
+        const socket = connection.socket;
         if (!socket) throw new Error('Socket not found');
         socket.emit('cursor-update', { sessionId: connection.sessionId, position: event });
       } catch (error) {
@@ -59,7 +62,7 @@ export class MouseHandler {
 
       const updatedPosition = { ...position, cursor: cursorStyle ?? 'default', ts: Date.now() };
       if (updatedPosition.tabId < 0) updatedPosition.tabId = activeTabId;
-      const broadcastEvent = { type: BroadcastEventType.MOUSE_POSITION_UPDATED, identifier: updatedPosition.tabId };
+      const broadcastEvent = { type: BroadcastEventType.MOUSE_POSITION_UPDATED };
 
       await Promise.all([
         connection.browser.genSendBroadcastEvent(broadcastEvent, RemoteCursorPositionSchema.parse(updatedPosition)),
@@ -97,7 +100,7 @@ export class MouseHandler {
   }
 
   public static async genGetCursorPosition(connection: RemoteBrowserConnection): Promise<RemoteCursorPosition | null> {
-    const event = { type: BroadcastEventType.MOUSE_POSITION_UPDATED, identifier: connection.getActiveTabId() };
+    const event = { type: BroadcastEventType.MOUSE_POSITION_UPDATED };
     const position = await connection.browser.genFetchExtensionBroadcastEvent<object>(event);
     if (!position) return null;
     return RemoteCursorPositionSchema.parse(position);

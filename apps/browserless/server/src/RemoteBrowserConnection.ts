@@ -1,6 +1,7 @@
 import { Page } from 'puppeteer-core';
 import { Socket } from 'socket.io';
 import { BrowserConnectionData, USER_AGENT } from '~browserless/server/src/ConnectionManager';
+import { MouseHandler } from '~browserless/server/src/MouseHandler';
 import { ScreencastHandler } from '~browserless/server/src/ScreencastHandler';
 import { ChromeTab } from '~shared/chrome/Tab';
 import { RuntimeMessageReceiver } from '~shared/messaging/RuntimeMessageReceiver';
@@ -87,6 +88,7 @@ export class RemoteBrowserConnection {
 
     const tab = rsp.data as ChromeTab;
     this.tabIdToPageMap.set(tab.id, page);
+    await MouseHandler.genSetupMousePositionListener(() => this, page);
     return tab.id;
   }
 
@@ -113,7 +115,6 @@ export class RemoteBrowserConnection {
     const pagesWithTitles = await Promise.all(
       pages.map(async ({ id, page }) => ({ id, url: page.url(), title: await page.title() })),
     );
-    console.log('pagesWithTitles=', JSON.stringify(pagesWithTitles));
     return pagesWithTitles.filter(({ title }) => title !== '[AidentAI] Extension API Page');
   }
 
