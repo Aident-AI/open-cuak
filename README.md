@@ -96,6 +96,10 @@ _Read more in our [launch blog](https://aident.ai/blog/openai-operator-open-sour
     https://github.com/user-attachments/assets/1de1069d-053f-408f-b07b-61b399bfcc1f
 
 
+<p align="center">&nbsp;</p>
+<p align="center">Watch more on our <a href="https://www.youtube.com/@aident-ai">Youtube channel</a>, and subscribe to see more.</p>
+
+
 
 
 <p align="center">&nbsp;</p>
