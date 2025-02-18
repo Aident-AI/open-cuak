@@ -76,17 +76,28 @@ _Read more in our [launch blog](https://aident.ai/blog/openai-operator-open-sour
 
 ## Demos
 
-1.  ### Agent Demo: Expedia Flight Search
+1. ### Agent Demo #1: Canva Use Agent
+    An automation agent uses Canva to create a poster for President Day. When it encounters issues, such as whether to use Pro templates (require a Canva paid plan), it proactively asks the user for additional instructions.
+
+    https://github.com/user-attachments/assets/f283189b-bc90-4875-8bd5-75b2a6a4bf9f
+
+
+
+2.  ### Agent Demo #2: Expedia Flight Search
     An agent uses built-in remote-browser running locally to search for flight tickets on Expedia.
 
     https://github.com/user-attachments/assets/e2dd7276-fff7-4ed1-a042-3c1a6bbecef8
     
 
 
-2.  ### Feature Demo: Account Management 
+3.  ### Feature Demo: Account Management 
     Account Management lets agents use your account and tools on your behalf.
 
     https://github.com/user-attachments/assets/1de1069d-053f-408f-b07b-61b399bfcc1f
+
+
+<p align="center">&nbsp;</p>
+<p align="center">Watch more on our <a href="https://www.youtube.com/@aident-ai">Youtube channel</a>, and subscribe to see more.</p>
 
 
 
