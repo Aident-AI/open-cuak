@@ -1,7 +1,6 @@
-import { CoreMessage, CoreTool, DataStreamWriter, LanguageModel, ToolInvocation } from 'ai';
+import { CoreMessage, CoreTool, LanguageModel, ToolInvocation } from 'ai';
 import { AiAgentSOPNode, IAiAgentSOPNodeOptions } from '~shared/agent/AiAgentSOPNode';
 import { BaseAgentNodeBuilder } from '~shared/agent/builders/BaseAgentNodeBuilder';
-import { IAiAgentInspectionConfig } from '~shared/export-map.generated';
 import { AiAgentSOP } from '~shared/sop/AiAgentSOP';
 
 export class AiAgentSOPNodeBuilder extends BaseAgentNodeBuilder<
@@ -24,18 +23,6 @@ export class AiAgentSOPNodeBuilder extends BaseAgentNodeBuilder<
     const node = new AiAgentSOPNode(this.options as IAiAgentSOPNodeOptions);
     this.options = {};
     return node;
-  }
-
-  // TODO move this to BaseAgentNodeBuilder
-  public withDataStream(dataStream: DataStreamWriter): this {
-    this.options.dataStream = dataStream;
-    return this;
-  }
-
-  // TODO move this to BaseAgentNodeBuilder
-  public withInspectionConfig(config: IAiAgentInspectionConfig): this {
-    this.options.inspectionConfig = config;
-    return this;
   }
 
   public withSOP(sop: AiAgentSOP): this {
