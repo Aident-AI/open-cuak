@@ -4,6 +4,7 @@
 
 export * from './agent/AgentRunResult';
 export * from './agent/AiAgentNode';
+export * from './agent/AiAgentSOPNode';
 export * from './agent/AiAidenConfigBasedPrompts';
 export * from './agent/AiAidenSystemPrompts';
 export * from './agent/AiMessageSchema';
@@ -14,6 +15,7 @@ export * from './agent/IBaseAgentNode';
 export * from './agent/IBaseAgentNodeOptions';
 export * from './agent/RegisteredToolSetName';
 export * from './agent/builders/AiAgentNodeBuilder';
+export * from './agent/builders/AiAgentSOPNodeBuilder';
 export * from './agent/builders/BaseAgentNodeBuilder';
 export * from './app-settings/types';
 export * from './broadcast/InteractableRefreshedValueSchema';
