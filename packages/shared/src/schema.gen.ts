@@ -55,6 +55,30 @@ export type Database = {
         }
         Relationships: []
       }
+      prebuilt_sops: {
+        Row: {
+          created_at: string
+          description: string
+          id: string
+          name: string
+          steps: Json
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          id?: string
+          name: string
+          steps: Json
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          id?: string
+          name?: string
+          steps?: Json
+        }
+        Relationships: []
+      }
       remote_browser_cookies: {
         Row: {
           cookies: Json
