@@ -26,7 +26,10 @@ export class MouseClick_ActionConfig extends Base_ActionConfig {
     const its = context.getInteractableService();
     const page = its.getPageOrThrow();
     await page.mouse.down({ button: payload.button });
-    if (payload.doubleClick) await page.mouse.down({ button: payload.button });
+    if (payload.doubleClick) {
+      await page.mouse.up({ button: payload.button });
+      await page.mouse.down({ button: payload.button });
+    }
 
     const randomWaitTime = Math.floor(Math.random() * 300) + 100;
     await WaitUtils.wait(randomWaitTime);
