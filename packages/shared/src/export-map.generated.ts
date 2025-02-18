@@ -155,7 +155,6 @@ export * from './supabase/SupabaseChannelEvent';
 export * from './supabase/client/SupabaseClientForClient';
 export * from './supabase/client/SupabaseClientForServer';
 export * from './utils/ArrayUtils';
-export * from './utils/CronUtils';
 export * from './utils/DateTimeUtils';
 export * from './utils/EnforceStatic';
 export * from './utils/EnumUtils';
