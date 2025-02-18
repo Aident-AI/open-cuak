@@ -25,7 +25,7 @@ export const genResetMouseAtPageCenterArea = async (
 export class MouseReset_ActionConfig extends Base_ActionConfig {
   public static action = ServiceWorkerMessageAction.MOUSE_RESET;
 
-  public static description = `Reset the mouse to be around the center area of the page.`;
+  public static description = `Reset the mouse to be around the center area of the page (cancelling held clicks as well).`;
 
   // TODO: update `BaseEndpointApiSpec.getFunctionCallDefinition` to support empty request payload
   public static requestPayloadSchema = z.object({}).describe(
@@ -46,6 +46,7 @@ export class MouseReset_ActionConfig extends Base_ActionConfig {
     const tabId = its.getActiveTab().id;
     const sendBroadcastEvent = context.getBroadcastService().send;
 
+    await its.getPageOrThrow().mouse.reset();
     const position = await genResetMouseAtPageCenterArea(context, sendBroadcastEvent, tabId);
     return { success: true, position };
   }
