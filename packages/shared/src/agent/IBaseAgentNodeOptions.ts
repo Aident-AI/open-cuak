@@ -1,5 +1,7 @@
+import { DataStreamWriter } from 'ai';
 import { IAgentRunState } from '~shared/agent/IAgentRunState';
 import { IBaseAgentNodeEvents } from '~shared/agent/IBaseAgentNode';
+import { IAiAgentInspectionConfig } from '~shared/export-map.generated';
 
 export enum StepRunHistoryType {
   COMPLETE = 'complete',
@@ -24,4 +26,6 @@ export interface IBaseAgentNodeOptions<Msg, Mdl, Tool, ToolCall> {
   eventHandlers?: Partial<IBaseAgentNodeEvents<Msg, ToolCall>>;
   genStepStateMessages?: (state: IAgentRunState<Msg>, messages: Msg[]) => Msg[] | Promise<Msg[]>;
   stepRunHistoryType?: StepRunHistoryType;
+  dataStream?: DataStreamWriter;
+  inspectionConfig?: IAiAgentInspectionConfig;
 }

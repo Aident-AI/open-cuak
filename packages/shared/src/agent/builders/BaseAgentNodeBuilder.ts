@@ -1,6 +1,8 @@
+import { DataStreamWriter } from 'ai';
 import { IAgentRunState } from '~shared/agent/IAgentRunState';
 import { IBaseAgentNode, IBaseAgentNodeEvents } from '~shared/agent/IBaseAgentNode';
 import { IBaseAgentNodeOptions, StepRunHistoryType } from '~shared/agent/IBaseAgentNodeOptions';
+import { IAiAgentInspectionConfig } from '~shared/export-map.generated';
 
 export abstract class BaseAgentNodeBuilder<
   Msg,
@@ -63,6 +65,16 @@ export abstract class BaseAgentNodeBuilder<
 
   public withMaxSteps(maxSteps?: number): this {
     this.options.maxSteps = maxSteps;
+    return this;
+  }
+
+  public withDataStream(dataStream: DataStreamWriter): this {
+    this.options.dataStream = dataStream;
+    return this;
+  }
+
+  public withInspectionConfig(config: IAiAgentInspectionConfig): this {
+    this.options.inspectionConfig = config;
     return this;
   }
 
