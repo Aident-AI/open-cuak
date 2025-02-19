@@ -3,8 +3,7 @@
 import { AcademicCapIcon, KeyIcon } from '@heroicons/react/24/solid';
 import cx from 'classnames';
 import { useSearchParams } from 'next/navigation';
-import { useMemo, useState } from 'react';
-import { AiAgentSOP } from '~shared/sop/AiAgentSOP';
+import { useEffect, useMemo, useState } from 'react';
 import DebugInteractionsPage from '~src/app/extension/debug/interactions/DebugInteractionsPage';
 import ChatWithAidenWindow from '~src/app/portal/ChatWithAidenWindow';
 import CookieModal from '~src/app/portal/CookieModal';
@@ -21,15 +20,21 @@ export default function PortalPage() {
   const [hideChatWithAiden, setHideChatWithAiden] = useState(false);
   const [teachModeOn, setTeachModeOn] = useState(false);
   const [showCookieModal, setShowCookieModal] = useState(false);
-  const [startSop, setStartSop] = useState(false);
+  const [shouldStartSop, setShouldStartSop] = useState(false);
+
+  const { sops, isLoading, fetchSops } = useSopStore();
 
   const searchParams = useSearchParams();
   const sopId = searchParams?.get('sopId');
-  let selectedSop: AiAgentSOP | undefined = undefined;
-  if (sopId) {
-    const { sops } = useSopStore();
-    selectedSop = useMemo(() => sops.find((s) => s.id === sopId), [sops, sopId]);
-  }
+
+  useEffect(() => {
+    if (!sopId) return;
+    if (sops.length === 0 && !isLoading) fetchSops();
+  }, [sopId]);
+
+  const selectedSop = useMemo(() => {
+    return sopId && sops.length > 0 ? sops.find((s) => s.id === sopId) : undefined;
+  }, [sopId, sops]);
 
   return (
     <InteractionEventProvider>
@@ -42,7 +47,7 @@ export default function PortalPage() {
           setRemoteBrowserSessionId={setRemoteBrowserSessionId}
           teachModeOn={teachModeOn}
           turnOffTeachMode={() => setTeachModeOn(false)}
-          setStartSop={selectedSop ? setStartSop : undefined}
+          setShouldStartSop={selectedSop ? setShouldStartSop : undefined}
         />
         {!hideChatWithAiden &&
           (teachModeOn ? (
@@ -55,7 +60,7 @@ export default function PortalPage() {
               className="flex w-96 flex-shrink-0 flex-grow-0 p-4 pt-20"
               remoteBrowserSessionId={remoteBrowserSessionId}
               sop={selectedSop}
-              startSop={startSop}
+              shouldStartSop={shouldStartSop}
             />
           ))}
 

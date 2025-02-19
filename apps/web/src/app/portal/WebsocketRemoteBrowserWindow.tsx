@@ -32,7 +32,7 @@ interface Props {
   setHideChatWithAiden?: (hide: boolean) => void;
   teachModeOn?: boolean;
   turnOffTeachMode?: () => void;
-  setStartSop?: (startSop: boolean) => void;
+  setShouldStartSop?: (startSop: boolean) => void;
 }
 
 export enum RemoteBrowserWindowStatus {
@@ -114,7 +114,7 @@ export function WebsocketRemoteBrowserWindow(props: Props) {
     });
     sendBroadcastEvent({ type: BroadcastEventType.ON_REMOTE_CONNECTION_ATTACHED }, undefined);
 
-    if (props.setStartSop) props.setStartSop(true);
+    if (props.setShouldStartSop) props.setShouldStartSop(true);
 
     return () => detachFromBrowser();
 
