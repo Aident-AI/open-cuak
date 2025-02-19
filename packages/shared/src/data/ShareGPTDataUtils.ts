@@ -6,7 +6,7 @@ import {
   ShareGPTDataSchema,
   ShareGPTMessage,
   ShareGPTMessageSchema,
-} from '~shared/sft/ShareGPTDataSchema';
+} from '~shared/data/ShareGPTDataSchema';
 
 export class ShareGPTDataUtils {
   public static convertCoreMessageToShareGPTMessages(message: CoreMessage): {
