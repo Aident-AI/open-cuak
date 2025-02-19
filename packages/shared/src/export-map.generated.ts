@@ -90,6 +90,7 @@ export * from './messaging/action-configs/browser-actions/OpenNewWindow.ActionCo
 export * from './messaging/action-configs/browser-actions/QueryTabs.ActionConfig';
 export * from './messaging/action-configs/control-actions/KeyboardType.ActionConfig';
 export * from './messaging/action-configs/control-actions/MouseClick.ActionConfig';
+export * from './messaging/action-configs/control-actions/MouseDrag.ActionConfig';
 export * from './messaging/action-configs/control-actions/MouseMove.ActionConfig';
 export * from './messaging/action-configs/control-actions/MouseReset.ActionConfig';
 export * from './messaging/action-configs/control-actions/MouseWheel.ActionConfig';

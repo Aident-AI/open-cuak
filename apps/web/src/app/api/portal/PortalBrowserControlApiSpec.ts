@@ -4,17 +4,18 @@ import { BaseEndpointApi } from '~src/app/api/BaseEndpointApi';
 import { BaseEndpointApiSpec } from '~src/app/api/BaseEndpointApiSpec';
 import { KeyboardTypeApi } from '~src/app/api/extension/control/keyboard-type/KeyboardTypeApi';
 import { MouseClickApi } from '~src/app/api/extension/control/mouse-click/MouseClickApi';
+import { MouseDragApi } from '~src/app/api/extension/control/mouse-drag/MouseDragApi';
+import { MouseMoveApi } from '~src/app/api/extension/control/mouse-move/MouseMoveApi';
 import { MouseResetApi } from '~src/app/api/extension/control/mouse-reset/MouseResetApi';
 import { MouseWheelApi } from '~src/app/api/extension/control/mouse-wheel/MouseWheelApi';
 import { NavigatePageApi } from '~src/app/api/extension/page/navigate/NavigatePageApi';
 import { PortalMouseControlApi } from '~src/app/api/portal/mouse-control/PortalMouseControlApi';
 import { PortalWaitToolApi } from '~src/app/api/portal/wait-tool/PortalWaitToolApi';
 
-import { MouseMoveApi } from '../extension/control/mouse-move/MouseMoveApi';
-
 const MouseControlApis = [
   KeyboardTypeApi,
   MouseClickApi,
+  MouseDragApi,
   MouseMoveApi,
   MouseResetApi,
   MouseWheelApi,

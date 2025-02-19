@@ -9,6 +9,15 @@ import { RemoteCursorPosition } from '~shared/portal/RemoteBrowserTypes';
 
 import type { IActionConfigExecContext } from '~shared/messaging/action-configs/Base.ActionConfig';
 
+export const genMouseCurrentPositionOrThrow = async (
+  context: IActionConfigExecContext,
+): Promise<RemoteCursorPosition> => {
+  const mousePositionBroadcastEvent = { type: BroadcastEventType.MOUSE_POSITION_UPDATED };
+  const origin = await context.getBroadcastService().fetch<RemoteCursorPosition>(mousePositionBroadcastEvent);
+  if (!origin) throw new Error('Failed to get current mouse position');
+  return origin;
+};
+
 export class PortalMouseControl_ActionConfig extends Base_ActionConfig {
   public static action = ServiceWorkerMessageAction.PORTAL_MOUSE_CONTROL;
 
@@ -36,10 +45,7 @@ export class PortalMouseControl_ActionConfig extends Base_ActionConfig {
     payload: z.infer<typeof this.requestPayloadSchema>,
     context: IActionConfigExecContext,
   ): Promise<z.infer<typeof this.responsePayloadSchema>> {
-    const mousePositionBroadcastEvent = { type: BroadcastEventType.MOUSE_POSITION_UPDATED };
-    const origin = await context.getBroadcastService().fetch<RemoteCursorPosition>(mousePositionBroadcastEvent);
-    if (!origin) throw new Error('Failed to get current mouse position');
-
+    const origin = await genMouseCurrentPositionOrThrow(context);
     const position = { x: round(origin.x + (payload.deltaX ?? 0), 2), y: round(origin.y + (payload.deltaY ?? 0), 2) };
     const result = await MouseMove_ActionConfig.exec(position, context);
     if (!result) return { status: 'failed' };
