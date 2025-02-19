@@ -16,7 +16,7 @@ export class MouseClick_ActionConfig extends Base_ActionConfig {
     doubleClick: z.boolean().optional().default(false).describe('Whether to double click.'),
   });
 
-  public static responsePayloadSchema = z.object({ status: z.literal('clicked') });
+  public static responsePayloadSchema = z.object({ status: z.enum(['clicked', 'double-clicked']) });
 
   @ActionConfigAutoAttachesToInteractable
   public static async exec(
@@ -35,7 +35,7 @@ export class MouseClick_ActionConfig extends Base_ActionConfig {
     await WaitUtils.wait(randomWaitTime);
 
     await page.mouse.up({ button: payload.button });
-    return { status: 'clicked' };
+    return { status: payload.doubleClick ? 'double-clicked' : 'clicked' };
   }
 }
 
