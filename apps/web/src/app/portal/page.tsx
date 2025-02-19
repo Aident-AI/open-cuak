@@ -2,7 +2,9 @@
 
 import { AcademicCapIcon, KeyIcon } from '@heroicons/react/24/solid';
 import cx from 'classnames';
-import { useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { useMemo, useState } from 'react';
+import { AiAgentSOP } from '~shared/sop/AiAgentSOP';
 import DebugInteractionsPage from '~src/app/extension/debug/interactions/DebugInteractionsPage';
 import ChatWithAidenWindow from '~src/app/portal/ChatWithAidenWindow';
 import CookieModal from '~src/app/portal/CookieModal';
@@ -11,6 +13,7 @@ import TeachAidenWindow from '~src/app/portal/TeachAidenWindow';
 import { WebsocketRemoteBrowserWindow } from '~src/app/portal/WebsocketRemoteBrowserWindow';
 import { MeshBackgroundWithUserSession } from '~src/components/MeshBackgroundWithUserSession';
 import { InteractionEventProvider } from '~src/contexts/InteractionEventContext';
+import { useSopStore } from '~src/store/sopStore';
 
 export default function PortalPage() {
   const [remoteBrowserSessionId, setRemoteBrowserSessionId] = useState<string | undefined>(undefined);
@@ -18,6 +21,14 @@ export default function PortalPage() {
   const [hideChatWithAiden, setHideChatWithAiden] = useState(false);
   const [teachModeOn, setTeachModeOn] = useState(false);
   const [showCookieModal, setShowCookieModal] = useState(false);
+
+  const searchParams = useSearchParams();
+  const sopId = searchParams?.get('sopId');
+  let selectedSop: AiAgentSOP | undefined = undefined;
+  if (sopId) {
+    const { sops } = useSopStore();
+    selectedSop = useMemo(() => sops.find((s) => s.id === sopId), [sops, sopId]);
+  }
 
   return (
     <InteractionEventProvider>
@@ -41,6 +52,7 @@ export default function PortalPage() {
             <ChatWithAidenWindow
               className="flex w-96 flex-shrink-0 flex-grow-0 p-4 pt-20"
               remoteBrowserSessionId={remoteBrowserSessionId}
+              sop={selectedSop}
             />
           ))}
 

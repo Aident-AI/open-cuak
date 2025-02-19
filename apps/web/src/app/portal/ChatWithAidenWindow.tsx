@@ -4,6 +4,7 @@ import { ChatBubbleLeftRightIcon, ChevronDownIcon, PencilSquareIcon } from '@her
 import { useChat } from 'ai/react';
 import { useEffect, useRef, useState } from 'react';
 import { X_REMOTE_BROWSER_SESSION_ID_HEADER } from '~shared/http/headers';
+import { AiAgentSOP } from '~shared/sop/AiAgentSOP';
 import { AiAidenApiMessageAnnotation, AiAidenStreamDataSchema } from '~src/app/api/ai/aiden/AiAidenApi';
 import { AiMessageChatBoxInput } from '~src/components/chat-box/AiMessageChatBoxInput';
 import AiMessagesForChatBox from '~src/components/chat-box/AiMessagesForChatBox';
@@ -12,6 +13,7 @@ import { ScrollToBottomButton } from '~src/components/chat-box/ScrollToBottomBut
 interface Props {
   className?: string;
   remoteBrowserSessionId?: string;
+  sop?: AiAgentSOP;
 }
 
 export default function ChatWithAidenWindow(props: Props) {
