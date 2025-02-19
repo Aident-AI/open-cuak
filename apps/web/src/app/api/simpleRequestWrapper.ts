@@ -79,9 +79,8 @@ export async function simpleRequestWrapperInner<T>(
       loggingBody = { ...body, backgroundBase64: '[skipped]' };
       if ('overlayBase64' in (loggingBody as object)) loggingBody = { ...loggingBody, overlayBase64: '[skipped]' };
     }
-    if (req.url.includes('/api/ai')) {
-      loggingBody = sanitizeBase64(body);
-    }
+    if (req.url.includes('/utils/sharp-metadata')) loggingBody = { ...body, base64: '[skipped]' };
+    loggingBody = sanitizeBase64(body);
 
     ALogger.info({ context: 'simpleRequestWrapper', requestUrl: req.url, requestBody: loggingBody });
   } catch (error) {
