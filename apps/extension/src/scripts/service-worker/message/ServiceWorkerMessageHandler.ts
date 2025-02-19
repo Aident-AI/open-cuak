@@ -135,6 +135,7 @@ export class ServiceWorkerMessageHandler {
         // Control Actions
         case ServiceWorkerMessageAction.KEYBOARD_TYPE:
         case ServiceWorkerMessageAction.MOUSE_CLICK:
+        case ServiceWorkerMessageAction.MOUSE_DRAG:
         case ServiceWorkerMessageAction.MOUSE_MOVE:
         case ServiceWorkerMessageAction.MOUSE_RESET:
         case ServiceWorkerMessageAction.MOUSE_WHEEL:

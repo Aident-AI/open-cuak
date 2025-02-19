@@ -149,6 +149,7 @@ export default function TeachAidenWindow(props: Props) {
               const result = JSON.stringify(tool.responsePayloadSchema.parse({ status: 'clicked' }));
               return createMessage({ state: 'result', toolCallId: UUID(), toolName, args, result } as ToolInvocation);
             }
+            // TODO: add the support of mouse-drag actions
             case 'scroll': {
               const tool = MouseWheel_ActionConfig;
               const toolName = tool.action.replace(':', '-');

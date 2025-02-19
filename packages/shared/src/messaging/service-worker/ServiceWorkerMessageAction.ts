@@ -34,6 +34,7 @@ export enum ServiceWorkerMessageAction {
   // Control Actions
   KEYBOARD_TYPE = 'keyboard:type',
   MOUSE_CLICK = 'mouse:click',
+  MOUSE_DRAG = 'mouse:drag',
   MOUSE_MOVE = 'mouse:move',
   MOUSE_RESET = 'mouse:reset',
   MOUSE_WHEEL = 'mouse:wheel',

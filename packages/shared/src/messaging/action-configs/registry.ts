@@ -12,6 +12,7 @@ import { OpenNewWindow_ActionConfig } from '~shared/messaging/action-configs/bro
 import { QueryTabs_ActionConfig } from '~shared/messaging/action-configs/browser-actions/QueryTabs.ActionConfig';
 import { KeyboardType_ActionConfig } from '~shared/messaging/action-configs/control-actions/KeyboardType.ActionConfig';
 import { MouseClick_ActionConfig } from '~shared/messaging/action-configs/control-actions/MouseClick.ActionConfig';
+import { MouseDrag_ActionConfig } from '~shared/messaging/action-configs/control-actions/MouseDrag.ActionConfig';
 import { MouseMove_ActionConfig } from '~shared/messaging/action-configs/control-actions/MouseMove.ActionConfig';
 import { MouseReset_ActionConfig } from '~shared/messaging/action-configs/control-actions/MouseReset.ActionConfig';
 import { MouseWheel_ActionConfig } from '~shared/messaging/action-configs/control-actions/MouseWheel.ActionConfig';
@@ -74,6 +75,7 @@ export const ActionConfigRegistry = {
   // Control Actions
   [ServiceWorkerMessageAction.KEYBOARD_TYPE]: KeyboardType_ActionConfig,
   [ServiceWorkerMessageAction.MOUSE_CLICK]: MouseClick_ActionConfig,
+  [ServiceWorkerMessageAction.MOUSE_DRAG]: MouseDrag_ActionConfig,
   [ServiceWorkerMessageAction.MOUSE_MOVE]: MouseMove_ActionConfig,
   [ServiceWorkerMessageAction.MOUSE_RESET]: MouseReset_ActionConfig,
   [ServiceWorkerMessageAction.MOUSE_WHEEL]: MouseWheel_ActionConfig,
