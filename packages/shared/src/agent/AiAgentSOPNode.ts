@@ -12,11 +12,15 @@ export interface IAiAgentSOPNodeOptions
   sop: AiAgentSOP;
 }
 
+const RETRY_COUNT = 3;
+
 export class AiAgentSOPNode extends AiAgentNode {
   // loop through sop steps
   public async genRunSOP(): Promise<AgentRunResult> {
     if (!this.sopRunState) throw new Error('SOP is not set, please set it using the withSOP method');
     let runResult: AgentRunResult | undefined = undefined;
+    let retryCount = 0;
+
     while (this.sopRunState.currentStepIndex < this.sopRunState.sop.steps.length) {
       ALogger.info({ context: 'Running SOP step', stepIndex: this.sopRunState.currentStepIndex });
       const step = this.sopRunState.sop.steps[this.sopRunState.currentStepIndex];
@@ -29,9 +33,13 @@ export class AiAgentSOPNode extends AiAgentNode {
       if (this.sopRunState.currentStepIndex > 0) this.resetBeforeSOPStep();
       runResult = await this.genRun(message);
 
-      // TODO re-run the failed step
-      if (!runResult.success) throw new Error(`Step ${step.id} failed`);
-      this.sopRunState.currentStepIndex++;
+      if (!runResult.success) {
+        if (retryCount >= RETRY_COUNT) throw new Error(`Step ${step.id} failed after ${RETRY_COUNT} retries`);
+        retryCount++;
+      } else {
+        this.sopRunState.currentStepIndex++;
+        retryCount = 0;
+      }
     }
     return runResult!;
   }
