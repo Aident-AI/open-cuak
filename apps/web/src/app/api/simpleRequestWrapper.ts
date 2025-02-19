@@ -74,13 +74,23 @@ export async function simpleRequestWrapperInner<T>(
     body = requestSchema.parse(q) as T;
 
     // override body for logging
-    let loggingBody = body;
+    let loggingBody = { ...body } as object;
     if (req.url.includes('/utils/sharp')) {
-      loggingBody = { ...body, backgroundBase64: '[skipped]' };
-      if ('overlayBase64' in (loggingBody as object)) loggingBody = { ...loggingBody, overlayBase64: '[skipped]' };
+      if ('backgroundBase64' in loggingBody) {
+        delete loggingBody.backgroundBase64;
+        loggingBody.backgroundBase64 = '[skipped]';
+      }
+      if ('overlayBase64' in loggingBody) {
+        delete loggingBody.overlayBase64;
+        loggingBody.overlayBase64 = '[skipped]';
+      }
+      if ('base64' in loggingBody) {
+        // for `/api/utils/sharp-metadata`
+        delete loggingBody.base64;
+        loggingBody.base64 = '[skipped]';
+      }
     }
-    if (req.url.includes('/utils/sharp-metadata')) loggingBody = { ...body, base64: '[skipped]' };
-    loggingBody = sanitizeBase64(body);
+    loggingBody = sanitizeBase64(loggingBody);
 
     ALogger.info({ context: 'simpleRequestWrapper', requestUrl: req.url, requestBody: loggingBody });
   } catch (error) {
