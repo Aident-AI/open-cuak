@@ -14,6 +14,7 @@ interface Props {
   className?: string;
   remoteBrowserSessionId?: string;
   sop?: AiAgentSOP;
+  startSop?: boolean;
 }
 
 export default function ChatWithAidenWindow(props: Props) {
@@ -36,6 +37,9 @@ export default function ChatWithAidenWindow(props: Props) {
     headers: props.remoteBrowserSessionId
       ? { [X_REMOTE_BROWSER_SESSION_ID_HEADER]: props.remoteBrowserSessionId }
       : undefined,
+    body: {
+      sopId: props.sop ? props.sop.id : undefined,
+    },
   });
   const data = rawData?.map((d) => AiAidenStreamDataSchema.parse(d)) ?? [];
   const stateInfos = data.filter((d) => d.type === 'state-info');
@@ -56,6 +60,11 @@ export default function ChatWithAidenWindow(props: Props) {
     if (isScrolledToBottom) scrollToBottom();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [messages]);
+
+  useEffect(() => {
+    if (!props.startSop || !props.sop || messages.length > 0) return;
+    append({ role: 'user', content: 'Start SOP execution' });
+  }, [props.startSop, props.sop]);
 
   // scroll
   const getScrollableProps = () => {

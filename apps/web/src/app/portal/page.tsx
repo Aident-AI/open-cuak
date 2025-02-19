@@ -21,6 +21,7 @@ export default function PortalPage() {
   const [hideChatWithAiden, setHideChatWithAiden] = useState(false);
   const [teachModeOn, setTeachModeOn] = useState(false);
   const [showCookieModal, setShowCookieModal] = useState(false);
+  const [startSop, setStartSop] = useState(false);
 
   const searchParams = useSearchParams();
   const sopId = searchParams?.get('sopId');
@@ -41,6 +42,7 @@ export default function PortalPage() {
           setRemoteBrowserSessionId={setRemoteBrowserSessionId}
           teachModeOn={teachModeOn}
           turnOffTeachMode={() => setTeachModeOn(false)}
+          setStartSop={selectedSop ? setStartSop : undefined}
         />
         {!hideChatWithAiden &&
           (teachModeOn ? (
@@ -53,6 +55,7 @@ export default function PortalPage() {
               className="flex w-96 flex-shrink-0 flex-grow-0 p-4 pt-20"
               remoteBrowserSessionId={remoteBrowserSessionId}
               sop={selectedSop}
+              startSop={startSop}
             />
           ))}
 
