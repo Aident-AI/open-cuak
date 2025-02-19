@@ -14,7 +14,7 @@ interface Props {
   className?: string;
   remoteBrowserSessionId?: string;
   sop?: AiAgentSOP;
-  startSop?: boolean;
+  shouldStartSop?: boolean;
 }
 
 export default function ChatWithAidenWindow(props: Props) {
@@ -62,9 +62,9 @@ export default function ChatWithAidenWindow(props: Props) {
   }, [messages]);
 
   useEffect(() => {
-    if (!props.startSop || !props.sop || messages.length > 0) return;
+    if (!props.shouldStartSop || !props.sop || messages.length > 0) return;
     append({ role: 'user', content: 'Start SOP execution' });
-  }, [props.startSop, props.sop]);
+  }, [props.shouldStartSop, props.sop]);
 
   // scroll
   const getScrollableProps = () => {
