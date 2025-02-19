@@ -77,6 +77,7 @@ export async function simpleRequestWrapperInner<T>(
     let loggingBody = body;
     if (req.url.includes('/utils/sharp')) {
       loggingBody = { ...body, backgroundBase64: '[skipped]' };
+      if ('overlayBase64' in (loggingBody as object)) loggingBody = { ...loggingBody, overlayBase64: '[skipped]' };
     }
     if (req.url.includes('/api/ai')) {
       loggingBody = sanitizeBase64(body);
