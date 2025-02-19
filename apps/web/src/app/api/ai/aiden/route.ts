@@ -4,8 +4,10 @@ import { DEFAULT_MAX_STEPS } from '~shared/agent/AiAgentNode';
 import { AiAidenSystemPromptVersion } from '~shared/agent/AiAidenSystemPrompts';
 import { StepRunHistoryType } from '~shared/agent/IBaseAgentNodeOptions';
 import { AiAgentNodeBuilder } from '~shared/agent/builders/AiAgentNodeBuilder';
+import { AiAgentSOPNodeBuilder } from '~shared/agent/builders/AiAgentSOPNodeBuilder';
 import { GPTVariant, ModelRouter, RouterModelConfig } from '~shared/llm/ModelRouter';
 import { ALogger } from '~shared/logging/ALogger';
+import { AiAgentSOP, AiAgentSOPSchema } from '~shared/sop/AiAgentSOP';
 import { AiAidenApi, AiAidenStreamDataSchema, AiAidenStreamStateInfoSchema } from '~src/app/api/ai/aiden/AiAidenApi';
 import { AiAidenCore, AiAidenCoreConfig, AiAidenCoreInstance } from '~src/app/api/ai/aiden/AiAidenCore';
 import { simpleRequestWrapper } from '~src/app/api/simpleRequestWrapper';
@@ -49,6 +51,17 @@ export const POST = simpleRequestWrapper<z.infer<typeof api.RequestSchema.schema
       userId: user.id,
     } as AiAidenCoreConfig;
 
+    let sop: AiAgentSOP | undefined;
+    if (request.sopId) {
+      const { data: sopData } = await context
+        .getSupabase()
+        .from('prebuilt_sops')
+        .select('*')
+        .eq('id', request.sopId)
+        .maybeSingle();
+      if (sopData) sop = AiAgentSOPSchema.parse(sopData);
+    }
+
     return createDataStreamResponse({
       execute: async (dataStream) => {
         const maxStepMultiplier = coreConfig.isBenchmark && coreConfig.useReAct ? 2 : 1; // For ReAct, there is always a think step before an execution step
@@ -67,18 +80,37 @@ export const POST = simpleRequestWrapper<z.infer<typeof api.RequestSchema.schema
             return [];
           }
         };
-        const agent = AiAgentNodeBuilder.new()
-          .withModel(model)
-          .withSystemMessage(AiAidenCore.getSystemPrompts(coreConfig))
-          .withChatHistory([...convertToCoreMessages(request.messages)])
-          .withToolDict(AiAidenCore.getToolDict(coreConfig))
-          .withEnvironmentStepStateMessages(fetchStepState)
-          .withDataStream(dataStream)
-          .withAbortSignal(signal)
-          .withStepRunHistoryType(StepRunHistoryType.LAST_THREE_WITHOUT_ENV_STATE)
-          .withMaxSteps(maxSteps)
-          .build();
-        const result = await agent.genRun();
+
+        let result;
+        if (sop) {
+          const sopAgent = AiAgentSOPNodeBuilder.new()
+            .withModel(model)
+            .withSystemMessage(AiAidenCore.getSystemPrompts(coreConfig))
+            .withChatHistory([...convertToCoreMessages(request.messages)])
+            .withToolDict(AiAidenCore.getToolDict(coreConfig))
+            .withEnvironmentStepStateMessages(fetchStepState)
+            .withDataStream(dataStream)
+            .withAbortSignal(signal)
+            .withStepRunHistoryType(StepRunHistoryType.LAST_THREE_WITHOUT_ENV_STATE)
+            .withMaxSteps(maxSteps)
+            .withSOP(sop)
+            .build();
+          result = await sopAgent.genRunSOP();
+        } else {
+          const agent = AiAgentNodeBuilder.new()
+            .withModel(model)
+            .withSystemMessage(AiAidenCore.getSystemPrompts(coreConfig))
+            .withChatHistory([...convertToCoreMessages(request.messages)])
+            .withToolDict(AiAidenCore.getToolDict(coreConfig))
+            .withEnvironmentStepStateMessages(fetchStepState)
+            .withDataStream(dataStream)
+            .withAbortSignal(signal)
+            .withStepRunHistoryType(StepRunHistoryType.LAST_THREE_WITHOUT_ENV_STATE)
+            .withMaxSteps(maxSteps)
+            .build();
+          result = await agent.genRun();
+        }
+
         ALogger.info({ context: '/api/llm/agent', result });
         if (!result.success) {
           const newData = AiAidenStreamDataSchema.parse({ type: 'error', error: result.error ?? 'Unknown error' });

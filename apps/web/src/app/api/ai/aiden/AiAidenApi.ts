@@ -45,6 +45,7 @@ export class AiAidenApi extends BaseEndpointApi {
       messages: z.array(z.any()).describe('The chat history so far.'), // TODO: be more specific for ai-sdk message schema
       maxSteps: z.number().optional().describe('The maximum number of steps to take.'),
       isBenchmark: z.boolean().optional().describe('Whether the request is for benchmark.'),
+      sopId: z.string().optional().describe('The id of the SOP to execute.'),
     }),
   };
 
