@@ -9,7 +9,7 @@ else
 fi
 if [ ! -f .env.production ]; then
   echo "No .env.production found at root..."
-  cp .example.env .env.production
+  cp .example.env.production .env.production
   echo "✅ Copied .env.production from .env.example..."
   sed -i '' 's/NEXT_PUBLIC_BUILD_ENV="development"/NEXT_PUBLIC_BUILD_ENV="production"/' .env.production
 else
@@ -36,10 +36,10 @@ if [ -f .env.override ]; then
       if grep -q "^$key=" "$file"; then
         sed -i '' "s|^$key=.*|$key=$escaped_value|" "$file"
       else
-        echo "$key=$value" >> "$file"
+        echo "$key=$value" >>"$file"
       fi
     done
-  done < .env.override
+  done <.env.override
 fi
 
 echo "Copying env files to all packages..."
@@ -65,6 +65,5 @@ cp .env.production ./apps/browserless/.env.production
 echo 'EXECUTION_ENVIRONMENT="browserless"' >>./apps/browserless/.env
 echo 'EXECUTION_ENVIRONMENT="browserless"' >>./apps/browserless/.env.production
 echo "✅ /apps/browserless"
-
 
 echo "Success! Done copying env files to all packages."
