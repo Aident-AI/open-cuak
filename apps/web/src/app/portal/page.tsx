@@ -1,17 +1,19 @@
 'use client';
 
-import { AcademicCapIcon, KeyIcon } from '@heroicons/react/24/solid';
+import { AcademicCapIcon, Cog8ToothIcon, KeyIcon } from '@heroicons/react/24/solid';
 import cx from 'classnames';
 import { useSearchParams } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
 import DebugInteractionsPage from '~src/app/extension/debug/interactions/DebugInteractionsPage';
 import ChatWithAidenWindow from '~src/app/portal/ChatWithAidenWindow';
 import CookieModal from '~src/app/portal/CookieModal';
 import RemoteBrowserControlIndicator from '~src/app/portal/RemoteBrowserControlIndicator';
 import TeachAidenWindow from '~src/app/portal/TeachAidenWindow';
+import UserConfigModal from '~src/app/portal/UserConfigModal';
 import { WebsocketRemoteBrowserWindow } from '~src/app/portal/WebsocketRemoteBrowserWindow';
 import { MeshBackgroundWithUserSession } from '~src/components/MeshBackgroundWithUserSession';
 import { InteractionEventProvider } from '~src/contexts/InteractionEventContext';
+import { UserSessionContext } from '~src/contexts/UserSessionContext';
 import { useSopStore } from '~src/store/sopStore';
 
 export default function PortalPage() {
@@ -20,9 +22,12 @@ export default function PortalPage() {
   const [hideChatWithAiden, setHideChatWithAiden] = useState(false);
   const [teachModeOn, setTeachModeOn] = useState(false);
   const [showCookieModal, setShowCookieModal] = useState(false);
+  const [showUserConfigModal, setShowUserConfigModal] = useState(false);
   const [shouldStartSop, setShouldStartSop] = useState(false);
 
   const { sops, isLoading, fetchSops } = useSopStore();
+
+  const { session } = useContext(UserSessionContext);
 
   const searchParams = useSearchParams();
   const sopId = searchParams?.get('sopId');
@@ -80,6 +85,12 @@ export default function PortalPage() {
           >
             <KeyIcon className="h-6 w-6" />
           </button>
+          <button
+            className="mx-1 h-fit w-fit rounded-full bg-blue-300/50 p-2 text-white shadow-2xl shadow-black"
+            onClick={() => setShowUserConfigModal(true)}
+          >
+            <Cog8ToothIcon className="h-6 w-6" />
+          </button>
         </div>
 
         {showDebugInteractions && (
@@ -91,6 +102,13 @@ export default function PortalPage() {
           </div>
         )}
         {showCookieModal && <CookieModal isOpen={showCookieModal} onClose={() => setShowCookieModal(false)} />}
+        {showUserConfigModal && (
+          <UserConfigModal
+            userId={session?.user?.id ?? ''}
+            isOpen={showUserConfigModal}
+            onClose={() => setShowUserConfigModal(false)}
+          />
+        )}
       </MeshBackgroundWithUserSession>
     </InteractionEventProvider>
   );
