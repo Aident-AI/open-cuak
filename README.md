@@ -74,7 +74,7 @@ _Read more in our [launch blog](https://aident.ai/blog/openai-operator-open-sour
 
 1. ### Agent Demo #1: Canva Use Agent
 
-   An automation agent uses Canva to create a poster for President Day. When it encounters issues, such as whether to use Pro templates (require a Canva paid plan), it proactively asks the user for additional instructions.
+   An automation agent uses Canva to create a poster for President's Day. When it encounters issues, such as whether to use Pro templates (require a Canva paid plan), it proactively asks the user for additional instructions.
 
    https://github.com/user-attachments/assets/f283189b-bc90-4875-8bd5-75b2a6a4bf9f
 
@@ -108,7 +108,7 @@ _Read more in our [launch blog](https://aident.ai/blog/openai-operator-open-sour
     🔜 Centralize all account access in one place, managing everything agents have access to
     ⏳ Monitor and manage a large number of tasks, with built-in observability tools
     ⏳ Deploy and scale hundreds of agents to execute real-world tasks, in parallel
-    ⏳ Open source a RL-trained CUA model to run automations, for free
+    ⏳ Open source an RL-trained CUA model to run automations, for free
 
 <p align="center">&nbsp;</p>
 
