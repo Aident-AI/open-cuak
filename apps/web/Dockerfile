@@ -4,6 +4,7 @@ FROM node:20-alpine
 
 ENV DOCKER_ENV=true
 
+RUN apk add --no-cache postgresql-client
 RUN npm install -g pnpm
 RUN pnpm i next
 

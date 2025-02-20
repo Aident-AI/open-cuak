@@ -36,7 +36,17 @@ $DOCKER_COMPOSE_CMD pull
 # run initialization scripts
 SCRIPT_CONTAINER_NAME="open-cuak-script"
 remove_container_if_exists "$SCRIPT_CONTAINER_NAME"
-docker run -d --name $SCRIPT_CONTAINER_NAME -v $(pwd)/.env.production:/app/apps/web/.env.production -v $(pwd)/.env.local:/app/apps/web/.env -v $(pwd)/package.json:/app/package.json ghcr.io/aident-ai/open-cuak-web
+docker run -d --name $SCRIPT_CONTAINER_NAME \
+  -v $(pwd)/.env.production:/app/apps/web/.env.production \
+  -v $(pwd)/.env.local:/app/apps/web/.env \
+  -v $(pwd)/package.json:/app/package.json \
+  ghcr.io/aident-ai/open-cuak-web
+
+# TODO: remove afterwards
+docker exec -it $SCRIPT_CONTAINER_NAME sh -c "apk add --no-cache postgresql-client"
+# TODO: change to run in docker
+bash installer/run-supabase-migrations.sh
+
 docker exec -it $SCRIPT_CONTAINER_NAME sh -c "cd /app && npm run supabase:mock-user:init"
 docker exec -it $SCRIPT_CONTAINER_NAME sh -c "cd /app && npm run supabase:storage:init"
 docker container rm -f $SCRIPT_CONTAINER_NAME
