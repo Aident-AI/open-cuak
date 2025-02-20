@@ -1,5 +1,7 @@
 #!/bin/bash
 set -e # Exit on error
+source ./scripts/detect_docker_compose.sh
+DOCKER_COMPOSE_CMD=$(detect_docker_compose) || exit 1
 
 # Dependencies check
 check_command() {
@@ -9,22 +11,10 @@ check_command() {
     exit 1
   fi
 }
-check_command supabase
 check_command docker
 
-# Check for either docker-compose or docker compose
-if command -v docker-compose &>/dev/null; then
-  DOCKER_COMPOSE_CMD="docker-compose"
-elif docker compose version &>/dev/null; then
-  DOCKER_COMPOSE_CMD="docker compose"
-else
-  echo "Error: Neither 'docker-compose' nor 'docker compose' is installed."
-  echo "Please install one of them first @ https://github.com/Aident-AI/open-cuak#%EF%B8%8F-environment-setup"
-  exit 1
-fi
-
 # Start the services
-supabase start
+bash installer/start-supabase.sh
 bash scripts/pull-envs-for-all-packages.sh
 
 # Function to check if a container exists and remove it if it does

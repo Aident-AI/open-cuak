@@ -25,6 +25,10 @@
       "path": ".github/",
     },
     {
+      "name": "💾 Installer",
+      "path": "./installer",
+    },
+    {
       "name": "🌱 Repo Root",
       "path": ".",
     },
