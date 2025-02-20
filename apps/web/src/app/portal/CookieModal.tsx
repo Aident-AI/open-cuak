@@ -5,6 +5,7 @@ import { useContext, useEffect, useState } from 'react';
 import { isStringConfigOn } from '~shared/env/environment';
 import { SupabaseClientForClient } from '~shared/supabase/client/SupabaseClientForClient';
 import { UserSessionContext } from '~src/contexts/UserSessionContext';
+import { parseDomain, fromUrl } from 'tldts';
 
 interface CookieModalProps {
   isOpen: boolean;
@@ -21,19 +22,20 @@ export default function CookieModal({ isOpen, onClose }: CookieModalProps) {
     const fetchCookies = async () => {
       const { data, error } = await supabase.from('remote_browser_cookies').select('domain').eq('user_id', user!.id);
       if (error) throw error;
-      setCookies(data.map((d) => ({ domain: d.domain })));
+      setCookies(data.map((d) => ({ domain: parseDomain(fromUrl(d.domain)).domain })));
     };
     fetchCookies();
   }, []);
 
   const deleteCookie = async (domain: string) => {
+    const effectiveDomain = parseDomain(fromUrl(domain)).domain;
     const { error } = await supabase
       .from('remote_browser_cookies')
       .delete()
-      .eq('domain', domain)
+      .eq('domain', effectiveDomain)
       .eq('user_id', user!.id);
     if (error) throw error;
-    setCookies((prev) => prev.filter((c) => c.domain !== domain));
+    setCookies((prev) => prev.filter((c) => c.domain !== effectiveDomain));
   };
 
   return (
