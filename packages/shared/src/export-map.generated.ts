@@ -154,6 +154,7 @@ export * from './supabase/SupabaseAuthTokens';
 export * from './supabase/SupabaseChannelEvent';
 export * from './supabase/client/SupabaseClientForClient';
 export * from './supabase/client/SupabaseClientForServer';
+export * from './user-config/UserConfig';
 export * from './utils/EnforceStatic';
 export * from './utils/EnumUtils';
 export * from './utils/ErrorTransformation';
