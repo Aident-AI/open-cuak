@@ -1,11 +1,10 @@
 import { z } from 'zod';
-import { isStringConfigOn } from '~shared/env/environment';
 import { ALogger } from '~shared/logging/ALogger';
 import { Base_ActionConfig, enforceBaseActionConfigStatic } from '~shared/messaging/action-configs/Base.ActionConfig';
 import { ServiceWorkerMessageAction } from '~shared/messaging/service-worker/ServiceWorkerMessageAction';
+import { genFetchUserConfig } from '~shared/user-config/UserConfig';
 
 import type { IActionConfigExecContext } from '~shared/messaging/action-configs/Base.ActionConfig';
-
 export class CacheCookies_ActionConfig extends Base_ActionConfig {
   public static action = ServiceWorkerMessageAction.CACHE_COOKIES;
 
@@ -19,12 +18,16 @@ export class CacheCookies_ActionConfig extends Base_ActionConfig {
     payload: z.infer<typeof this.requestPayloadSchema>,
     context: IActionConfigExecContext,
   ): Promise<z.infer<typeof this.responsePayloadSchema>> {
-    if (!isStringConfigOn(process.env.NEXT_PUBLIC_AUTO_SAVE_COOKIES)) {
-      ALogger.warn('NEXT_PUBLIC_AUTO_SAVE_COOKIES is set to false, skipping cookie caching');
+    const userId = payload;
+    if (!userId) {
+      throw new Error('No userId found in the payload');
+    }
+    const userConfig = await genFetchUserConfig(userId, context.getSupabaseClient());
+    if (!userConfig.autoSaveAndApplyCookies) {
+      ALogger.warn('autoSaveAndApplyCookies is set to false, skipping cookie caching');
       return;
     }
 
-    const userId = payload;
     const allCookies = await chrome.cookies.getAll({});
 
     // Group cookies by domain
