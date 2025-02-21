@@ -9,6 +9,7 @@ export enum BoundingBoxGenerator {
 export const UserConfigSchema = z.object({
   autoSaveAndApplyCookies: z.boolean().optional().default(false),
   boundingBoxGenerator: z.nativeEnum(BoundingBoxGenerator).optional().default(BoundingBoxGenerator.JS),
+  omniparserHost: z.string().optional(),
 });
 
 export type UserConfig = z.infer<typeof UserConfigSchema>;

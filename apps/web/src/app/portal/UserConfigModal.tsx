@@ -19,6 +19,7 @@ interface Props {
 export default function UserConfigModal(props: Props) {
   const [configData, setConfigData] = useState<UserConfig | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(true);
+  const [textInputError, setTextInputError] = useState(false);
 
   const supabase = SupabaseClientForClient.createForClientComponent();
 
@@ -43,6 +44,11 @@ export default function UserConfigModal(props: Props) {
 
   const handleSave = async () => {
     if (!configData) throw new Error('configData should be initialized');
+    if (configData.boundingBoxGenerator === BoundingBoxGenerator.OMNI_PARSER && !configData.omniparserHost?.trim()) {
+      setTextInputError(true);
+      return;
+    }
+    setTextInputError(false);
     try {
       await genSaveUserConfig(props.userId, configData, supabase);
       props.onClose();
@@ -76,6 +82,21 @@ export default function UserConfigModal(props: Props) {
                   </option>
                 ))}
               </select>
+              {configData.boundingBoxGenerator === BoundingBoxGenerator.OMNI_PARSER && (
+                <input
+                  type="text"
+                  placeholder="Enter OmniParser Host"
+                  value={configData.omniparserHost || ''}
+                  onChange={(e) => {
+                    setTextInputError(false);
+                    handleDataUpdate({ omniparserHost: e.target.value.trim() });
+                  }}
+                  className={`mt-2 w-full rounded border px-3 py-2 text-black ${
+                    textInputError ? 'border-red-500 bg-red-50' : ''
+                  }`}
+                  required
+                />
+              )}
             </div>
 
             <div className="mb-4">
