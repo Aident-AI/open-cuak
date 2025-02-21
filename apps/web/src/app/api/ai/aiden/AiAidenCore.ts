@@ -22,6 +22,8 @@ import { Screenshot_ActionConfig } from '~shared/messaging/action-configs/page-a
 import { PageScreenshotAction } from '~shared/messaging/action-configs/page-actions/types';
 import { ServiceWorkerMessageAction } from '~shared/messaging/service-worker/ServiceWorkerMessageAction';
 import { RuntimeMessage, RuntimeMessageResponse } from '~shared/messaging/types';
+import { SupabaseClientForServer } from '~shared/supabase/client/SupabaseClientForServer';
+import { BoundingBoxGenerator, genFetchUserConfig } from '~shared/user-config/UserConfig';
 import { AiAidenApiMessageAnnotation } from '~src/app/api/ai/aiden/AiAidenApi';
 import { AiRegisteredToolSet } from '~src/app/api/llm/agent/AiRegisteredToolSet';
 
@@ -69,6 +71,9 @@ export class AiAidenCore {
   public static async genMessageAnnotation(config: AiAidenCoreConfig): Promise<AiAidenApiMessageAnnotation> {
     const anno = {} as Partial<AiAidenApiMessageAnnotation>;
 
+    const supabase = await SupabaseClientForServer.createForServerComponent();
+    const userConfig = await genFetchUserConfig(config.userId, supabase);
+
     // fetch screenshot
     const screenshotConfig = {
       withCursor: true,
@@ -76,7 +81,14 @@ export class AiAidenCore {
     const response = await config.sendRuntimeMessage({
       receiver: RuntimeMessageReceiver.SERVICE_WORKER,
       action: ServiceWorkerMessageAction.SCREENSHOT,
-      payload: { action: PageScreenshotAction.SCREENSHOT, config: screenshotConfig },
+      payload: {
+        action: PageScreenshotAction.SCREENSHOT,
+        config: screenshotConfig,
+        omniparserHost:
+          userConfig.boundingBoxGenerator === BoundingBoxGenerator.OMNI_PARSER
+            ? (userConfig.omniparserHost ?? '')
+            : undefined,
+      },
     });
     if (!response || !response.success) throw new Error('Failed to send runtime message to extension.');
     const { base64, boundingBoxCoordinates } = Screenshot_ActionConfig.responsePayloadSchema.parse(response.data);

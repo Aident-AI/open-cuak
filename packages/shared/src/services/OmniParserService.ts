@@ -17,19 +17,10 @@ export const OmniParserResponseSchema = z.object({
 export type OmniParserResponse = z.infer<typeof OmniParserResponseSchema>;
 
 export class OmniParserService {
-  public static isConfigured(): boolean {
-    return !!this.getHost();
-  }
+  constructor(private readonly omniparserHost: string) {}
 
-  public static getHost(): string | undefined {
-    return process.env.OMNI_PARSER_HOST;
-  }
-
-  public static async genPing(): Promise<boolean> {
-    if (!this.isConfigured()) return false;
-
-    const omniparserHost = this.getHost();
-    const ping = await fetch(`${omniparserHost}/probe/`);
+  public async genPing(): Promise<boolean> {
+    const ping = await fetch(`${this.omniparserHost}/probe/`);
     if (!ping.ok) return false;
 
     const pingBody = await ping.json();
@@ -37,12 +28,8 @@ export class OmniParserService {
     return true;
   }
 
-  public static async genParseImage(base64Image: string): Promise<OmniParserResponse> {
-    if (!this.isConfigured()) throw new Error('Omniparser is not configured');
-    const omniparserHost = this.getHost();
-    if (!omniparserHost) throw new Error('OMNI_PARSER_HOST is not set');
-
-    const response = await fetch(`${omniparserHost}/parse/`, {
+  public async genParseImage(base64Image: string): Promise<OmniParserResponse> {
+    const response = await fetch(`${this.omniparserHost}/parse/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ base64_image: base64Image }),
