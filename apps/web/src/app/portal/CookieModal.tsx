@@ -2,8 +2,8 @@ import { Dialog, DialogPanel, DialogTitle } from '@headlessui/react';
 import { CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/solid';
 import { Tooltip } from '@mui/material';
 import { useContext, useEffect, useState } from 'react';
-import { isStringConfigOn } from '~shared/env/environment';
 import { SupabaseClientForClient } from '~shared/supabase/client/SupabaseClientForClient';
+import { UserConfig, genFetchUserConfig } from '~shared/user-config/UserConfig';
 import { UserSessionContext } from '~src/contexts/UserSessionContext';
 
 interface CookieModalProps {
@@ -13,25 +13,29 @@ interface CookieModalProps {
 
 export default function CookieModal({ isOpen, onClose }: CookieModalProps) {
   const [cookies, setCookies] = useState<{ domain: string }[]>([]);
+  const [configData, setConfigData] = useState<UserConfig | undefined>(undefined);
+
   const { user } = useContext(UserSessionContext);
+  const userId = user!.id;
 
   const supabase = SupabaseClientForClient.createForClientComponent();
 
   useEffect(() => {
-    const fetchCookies = async () => {
-      const { data, error } = await supabase.from('remote_browser_cookies').select('domain').eq('user_id', user!.id);
-      if (error) throw error;
-      setCookies(data.map((d) => ({ domain: d.domain })));
+    const exec = async () => {
+      const [cookiesResult, userConfig] = await Promise.all([
+        supabase.from('remote_browser_cookies').select('domain').eq('user_id', userId),
+        genFetchUserConfig(userId, supabase),
+      ]);
+
+      if (cookiesResult.error) throw cookiesResult.error;
+      setCookies(cookiesResult.data.map((d) => ({ domain: d.domain })));
+      setConfigData(userConfig);
     };
-    fetchCookies();
+    exec();
   }, []);
 
   const deleteCookie = async (domain: string) => {
-    const { error } = await supabase
-      .from('remote_browser_cookies')
-      .delete()
-      .eq('domain', domain)
-      .eq('user_id', user!.id);
+    const { error } = await supabase.from('remote_browser_cookies').delete().eq('domain', domain).eq('user_id', userId);
     if (error) throw error;
     setCookies((prev) => prev.filter((c) => c.domain !== domain));
   };
@@ -48,10 +52,10 @@ export default function CookieModal({ isOpen, onClose }: CookieModalProps) {
               <Tooltip
                 placement="bottom"
                 arrow
-                title={<p className="text-xs">This setting is controlled by NEXT_PUBLIC_AUTO_SAVE_COOKIES in env</p>}
+                title={<p className="text-xs">This setting can be changed in 'User Configurations'</p>}
                 enterDelay={300}
               >
-                {isStringConfigOn(process.env.NEXT_PUBLIC_AUTO_SAVE_COOKIES) ? (
+                {configData?.autoSaveAndApplyCookies ? (
                   <CheckCircleIcon className="h-6 w-6 text-green-500" />
                 ) : (
                   <XCircleIcon className="h-6 w-6 text-red-500" />
