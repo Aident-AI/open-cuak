@@ -47,6 +47,9 @@ export class Screenshot_ActionConfig extends Base_ActionConfig {
         `),
       })
       .optional(),
+    omniparserHost: z.string().optional().describe(oneLine`
+      The host of the OmniParser service.
+    `),
   });
 
   public static responsePayloadSchema = z.object({
@@ -69,7 +72,7 @@ export class Screenshot_ActionConfig extends Base_ActionConfig {
     const page = its.getPageOrThrow();
     const sendBroadcastEvent = context.getBroadcastService().send;
 
-    const { action, config } = payload;
+    const { action, config, omniparserHost } = payload;
     let screenshot: Buffer | null = null;
     const boundingBoxCoordinates: BoundingBoxInfo[] = [];
     switch (action) {
@@ -83,7 +86,7 @@ export class Screenshot_ActionConfig extends Base_ActionConfig {
           const tabId = context.getActiveTab().id;
           let mousePosition = undefined;
 
-          const useOmniparser = process.env.BOUNDING_BOX_GENERATOR === 'omniparser' && OmniParserService.isConfigured();
+          const useOmniparser = !!omniparserHost;
           const useJsBoundingBoxes = !useOmniparser;
           ALogger.info({
             context: `useOmniparser: ${useOmniparser}, useJsBoundingBoxes: ${useJsBoundingBoxes}`,
@@ -96,7 +99,8 @@ export class Screenshot_ActionConfig extends Base_ActionConfig {
 
           let { data: screenshot } = await cdp.send('Page.captureScreenshot', { format: 'jpeg', quality: 100 });
           if (useOmniparser) {
-            const opResponse = await OmniParserService.genParseImage(screenshot);
+            const parser = new OmniParserService(omniparserHost);
+            const opResponse = await parser.genParseImage(screenshot);
             screenshot = opResponse.base64;
 
             const metadataRsp = await fetch(getHost() + '/api/utils/sharp-metadata', {
