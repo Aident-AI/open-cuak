@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "npm run vite-build-ts && docker build -f Dockerfile -t aident-browserless .",
-    "build-prod": "npm run vite-build-ts && bash ./scripts/build-and-run-prod.sh",
+    "build-prod": "npm run vite-build-ts && bash ./scripts/build-prod.sh",
     "dev": "npm run build && bash ./scripts/start.sh && vite build --mode=development",
     "docker:start": "cd ../extension && npm run build:all:prod && cd ../browserless && npm run build-prod",
     "package": "cp -r ../extension/out ./out && docker build -f Dockerfile.production -t aident-browserless-prod . && rm -rf ./out && npm run vite-build-ts",
