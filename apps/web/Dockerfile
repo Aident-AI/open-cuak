@@ -17,6 +17,8 @@ COPY pnpm-workspace.yaml ./
 COPY node_modules/ node_modules/
 COPY packages/ packages/
 COPY apps/web apps/web
+COPY .env.local .env.local
+COPY .env.production .env.production
 RUN pnpm install --frozen-lockfile
 
 WORKDIR /app/apps/web

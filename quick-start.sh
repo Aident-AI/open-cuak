@@ -69,8 +69,8 @@ docker exec -it $SCRIPT_CONTAINER_NAME sh -c "apk add --no-cache postgresql-clie
 # TODO: change to run in docker
 bash installer/run-supabase-migrations.sh
 
-docker exec -it $SCRIPT_CONTAINER_NAME sh -c "cd /app && npm run supabase:mock-user:init"
-docker exec -it $SCRIPT_CONTAINER_NAME sh -c "cd /app && npm run supabase:storage:init"
+docker exec -it $SCRIPT_CONTAINER_NAME sh -c "cd /app && npm run supabase:mock-user:init --prod"
+docker exec -it $SCRIPT_CONTAINER_NAME sh -c "cd /app && npm run supabase:storage:init --prod"
 docker container rm -f $SCRIPT_CONTAINER_NAME
 
 # Check if the first argument is --build
