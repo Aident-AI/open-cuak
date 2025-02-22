@@ -39,4 +39,5 @@ const LIVE_PROMPT = stripIndents`
 
   1. If the task requires typing in a text input field, ALWAYS click on the text input field after moving the mouse to it and before typing.
   2. Sometimes, text input field can actually be typeahead, you need to use mouse to select the right element from the suggestion list before moving to next step.
+  3. If you are asked to go to a specific url, instead of using Google, USE the page-navigate tool with the action as 'goto' and the url as 'url'.
 `;
