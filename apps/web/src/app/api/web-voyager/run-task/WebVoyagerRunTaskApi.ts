@@ -83,7 +83,7 @@ export class WebVoyagerRunTaskApi extends BaseEndpointApi {
       const coreConfig = {
         ...DefaultAiAidenCoreConfigPart,
         remoteBrowserSessionId,
-        systemPromptVersion: AiAidenSystemPromptVersion.V4,
+        systemPromptVersion: AiAidenSystemPromptVersion.LIVE,
         useReAct: true,
         sendRuntimeMessage,
         userId: SERVICE_ROLE_USER_ID,

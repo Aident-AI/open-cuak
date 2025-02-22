@@ -44,7 +44,7 @@ export const DefaultAiAidenCoreConfigPart = {
   remoteBrowserConnected: true,
   // remoteBrowserSessionId,
   // sendRuntimeMessage,
-  systemPromptVersion: AiAidenSystemPromptVersion.V4,
+  systemPromptVersion: AiAidenSystemPromptVersion.LIVE,
   useReAct: false,
   // user,
 } as Partial<AiAidenCoreConfig>;
