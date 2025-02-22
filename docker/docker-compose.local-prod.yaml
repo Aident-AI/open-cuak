@@ -6,11 +6,12 @@ services:
     restart: always
     ports:
       - '3000:3000'
-    volumes:
-      - .env.local:/app/apps/web/.env
-      - .env.production:/app/apps/web/.env.production
     networks:
-      - app-network
+      - default
+      - supabase_supabase-network
+    volumes:
+      - ../.env.local:/app/apps/web/.env
+      - ../.env.production:/app/apps/web/.env.production
     platform: linux/amd64
 
   open-cuak-browserless:
@@ -23,13 +24,14 @@ services:
       - '11975:11975'
       - '11976:3000'
       - '50000:50000'
-    volumes:
-      - .env.local:/app/.env
-      - .env.production:/app/.env.production
     networks:
-      - app-network
+      - default
+      - supabase_supabase-network
+    volumes:
+      - ../.env.local:/app/.env
+      - ../.env.production:/app/.env.production
     platform: linux/amd64
 
 networks:
-  app-network:
-    driver: bridge
+  supabase_supabase-network:
+    external: true

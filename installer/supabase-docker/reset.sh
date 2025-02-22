@@ -10,7 +10,7 @@ then
 fi
 
 echo "Stopping and removing all containers..."
-docker compose -f docker-compose.yml -f ./dev/docker-compose.dev.yml down -v --remove-orphans
+docker compose -f docker-compose.yml -f ./dev/docker-compose.build.yml down -v --remove-orphans
 
 echo "Cleaning up bind-mounted directories..."
 BIND_MOUNTS=(

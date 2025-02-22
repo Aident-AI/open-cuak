@@ -76,6 +76,9 @@ services:
       DASHBOARD_PASSWORD: ${DASHBOARD_PASSWORD}
     # https://unix.stackexchange.com/a/294837
     entrypoint: bash -c 'eval "echo \"$$(cat ~/temp.yml)\"" > ~/kong.yml && /docker-entrypoint.sh kong docker-start'
+    networks:
+      - default            # Keep the default network
+      - supabase-network
 
   auth:
     container_name: supabase-auth
@@ -389,7 +392,7 @@ services:
     image: supabase/postgres:15.8.1.020
     restart: unless-stopped
     ports:
-      - 54321:5432/tcp
+      - 54320:5432/tcp
     volumes:
       - ./volumes/db/realtime.sql:/docker-entrypoint-initdb.d/migrations/99-realtime.sql:Z
       # Must be superuser to create event trigger
@@ -526,3 +529,7 @@ services:
 
 volumes:
   db-config:
+
+networks:
+  supabase-network:
+    driver: bridge

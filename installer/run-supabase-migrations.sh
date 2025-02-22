@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # TODO: change to be docker-friendly url
-PG_URL="postgresql://postgres:your-super-secret-and-long-postgres-password@localhost:54321/postgres"
+PG_URL="postgresql://postgres:your-super-secret-and-long-postgres-password@localhost:54320/postgres"
 
 # Ensure migrations directory exists
 MIGRATIONS_DIR="./apps/web/supabase/migrations"

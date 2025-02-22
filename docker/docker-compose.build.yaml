@@ -1,0 +1,43 @@
+name: open-cuak-apps
+services:
+  open-cuak-web:
+    build:
+      context: ../
+      dockerfile: apps/web/Dockerfile
+    image: open-cuak-web
+    container_name: open-cuak-web
+    restart: always
+    ports:
+      - '3000:3000'
+    networks:
+      - default
+      - supabase_supabase-network
+    volumes:
+      - ../.env.local:/app/apps/web/.env
+      - ../.env.production:/app/apps/web/.env.production
+    platform: linux/amd64
+
+  open-cuak-browserless:
+    build:
+      context: ../apps/browserless
+      dockerfile: Dockerfile.production
+    image: open-cuak-browserless
+    container_name: open-cuak-browserless
+    restart: always
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    ports:
+      - '11975:11975'
+      - '11976:3000'
+      - '50000:50000'
+    networks:
+      - default
+      - supabase_supabase-network
+    volumes:
+      - ../.env.local:/app/.env
+      - ../.env.production:/app/.env.production
+    platform: linux/amd64
+
+networks:
+  supabase_supabase-network:
+    external: true
