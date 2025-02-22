@@ -1,5 +1,4 @@
-import { CoreMessage, CoreTool, CoreUserMessage, ImagePart, TextPart, tool } from 'ai';
-import { z } from 'zod';
+import { CoreMessage, CoreTool, CoreUserMessage, ImagePart, TextPart } from 'ai';
 import {
   DEFAULT_MAX_STEPS,
   DefaultAiFinishRunTool,
@@ -52,20 +51,6 @@ export const DefaultAiAidenCoreConfigPart = {
 
 export const DEFAULT_AGENT_STEP_HISTORY_DEPTH = 3;
 export const SERVICE_ROLE_USER_ID = 'service-role';
-
-/** @deprecated */
-export const DefaultReadScreenToolName = 'read-screen';
-/** @deprecated */
-export const DefaultReadScreenToolConfigs = {
-  description:
-    'Read the current screen and return the screenshot of the active tab and some helpful info. This tool is used to fetch the current screen state.',
-  parameters: z.object({}).describe('No parameters required for this tool. Use an empty object `{}` as the input.'),
-  execute: async () => {
-    throw new Error('Not implemented');
-  },
-};
-/** @deprecated */
-export const DefaultReadScreenTool = tool(DefaultReadScreenToolConfigs) as CoreTool;
 
 export class AiAidenCore {
   public static async genMessageAnnotation(config: AiAidenCoreConfig): Promise<AiAidenApiMessageAnnotation> {
