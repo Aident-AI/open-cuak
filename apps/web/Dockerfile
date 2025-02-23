@@ -15,10 +15,10 @@ RUN apt-get update && \
         python3-venv \
         make \
         g++ \
-        postgresql-client && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* && \
-    ln -s /usr/bin/python3 /usr/bin/python
+        postgresql-client \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+RUN which python3 && ln -sf /usr/bin/python3 /usr/bin/python
 RUN npm install -g pnpm
 
 WORKDIR /app
