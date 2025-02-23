@@ -6,11 +6,12 @@ services:
     restart: always
     ports:
       - '3000:3000'
-    volumes:
-      - .env.production:/app/apps/web/.env.production
     networks:
-      - app-network
-    platform: linux/amd64
+      - default
+      - supabase_supabase-network
+    volumes:
+      - ../.env.local:/app/apps/web/.env
+      - ../.env.production:/app/apps/web/.env.production
 
   open-cuak-browserless:
     image: ghcr.io/aident-ai/open-cuak-browserless:${OPEN_CUAK_VERSION:-stable}
@@ -22,12 +23,13 @@ services:
       - '11975:11975'
       - '11976:3000'
       - '50000:50000'
-    volumes:
-      - .env.production:/app/.env.production
     networks:
-      - app-network
-    platform: linux/amd64
+      - default
+      - supabase_supabase-network
+    volumes:
+      - ../.env.local:/app/.env
+      - ../.env.production:/app/.env.production
 
 networks:
-  app-network:
-    driver: bridge
+  supabase_supabase-network:
+    external: true

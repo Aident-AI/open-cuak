@@ -37,14 +37,10 @@ runs:
         mv .env .env.local
         cp .env.production .env
       working-directory: ./apps/browserless
-
-    # Build browserless image
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-    - name: Build docker image
-      id: build-image
+    - name: Copy extension output for browserless
       working-directory: ./apps/browserless
       shell: bash
       run: |
         cp -r ../extension/out ./out
-        docker build -f Dockerfile.production -t ${{ env.DOCK_IMAGE_NAME }}:${{ steps.commit.outputs.short }} .
+
+

@@ -47,5 +47,8 @@
   "deno.enable": true,
   "deno.lint": true,
   "deno.unstable": true,
-  "deno.importMap": "./supabase/functions/import_map.json"
+  "deno.importMap": "./supabase/functions/import_map.json",
+  "[dockerfile]": {
+    "editor.defaultFormatter": "ms-azuretools.vscode-docker"
+  }
 }

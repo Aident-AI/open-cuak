@@ -4,6 +4,7 @@ ENV CONCURRENT=20
 ENV DOCKER_ENV=true
 ENV QUEUE=30
 ENV TIMEOUT=900000
+ENV NEXT_PUBLIC_BUILD_ENV=development
 
 # Patch Browserless's dependency:
 # 1. Update the puppeteer-core version in package.json

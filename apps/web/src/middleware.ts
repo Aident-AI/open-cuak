@@ -1,6 +1,7 @@
 import { CookieOptions, createServerClient } from '@supabase/ssr';
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuid } from 'uuid';
+import { getDockerFriendlyUrl } from '~shared/env/environment';
 import { X_REQUEST_ID_HEADER } from '~shared/http/headers';
 
 export async function middleware(request: NextRequest) {
@@ -9,7 +10,7 @@ export async function middleware(request: NextRequest) {
 
   let response = NextResponse.next({ request: { headers: request.headers } });
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    getDockerFriendlyUrl(process.env.NEXT_PUBLIC_SUPABASE_URL!),
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
