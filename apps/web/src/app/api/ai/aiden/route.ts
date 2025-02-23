@@ -25,7 +25,7 @@ export const POST = simpleRequestWrapper<z.infer<typeof api.RequestSchema.schema
     const user = await context.fetchUserOrThrow();
 
     const modelConfig = { variant: GPTVariant.GPT_4O } as RouterModelConfig;
-    const systemPromptVersion = AiAidenSystemPromptVersion.V4;
+    const systemPromptVersion = AiAidenSystemPromptVersion.LIVE;
     const useReAct = true;
     let model;
     try {
