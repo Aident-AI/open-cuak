@@ -1,5 +1,5 @@
 # Use a Debian-based Node image for compatibility
-FROM node:20-bullseye
+FROM node:20-bullseye-slim
 
 ENV DOCKER_ENV=true
 
@@ -11,7 +11,6 @@ RUN apt-get update --allow-releaseinfo-change && \
       ca-certificates \
       curl \
       python3 \
-      python3-pip \
       make \
       g++ \
       postgresql-client && \
