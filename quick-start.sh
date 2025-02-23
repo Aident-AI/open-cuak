@@ -19,6 +19,12 @@ check_command() {
   fi
 }
 check_command docker
+check_command uname
+
+export TARGETARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
+export DOCKER_BUILDKIT=1
+export DOCKER_DEFAULT_PLATFORM=linux/${TARGETARCH}
+echo "Detected platform: $DOCKER_DEFAULT_PLATFORM)"
 
 # Start the services
 # bash installer/start-supabase.sh # TODO: put this back
@@ -76,12 +82,11 @@ docker container rm -f $SCRIPT_CONTAINER_NAME
 # Check if the first argument is --build
 if [ "$1" == "--build" ]; then
   echo "Running build process..."
-  $DOCKER_COMPOSE_CMD -f $COMPOSE_FILE up
+  $DOCKER_COMPOSE_CMD --env-file .env.production -f $COMPOSE_FILE up -d
   rm -rf apps/browserless/out
 else
   echo "Running local.production services..."
   $DOCKER_COMPOSE_CMD --env-file .env.production -f $COMPOSE_FILE up --force-recreate --pull always -d
-  exit 0
 fi
 
 echo "Open-CUAK service is now running @ http://localhost:3000"

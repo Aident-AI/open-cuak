@@ -4,6 +4,9 @@ services:
     build:
       context: ../
       dockerfile: apps/web/Dockerfile
+      args:
+        TARGETARCH: ${TARGETARCH}
+    platform: 'linux/${TARGETARCH}'
     image: open-cuak-web
     container_name: open-cuak-web
     restart: always
@@ -15,12 +18,14 @@ services:
     volumes:
       - ../.env.local:/app/apps/web/.env
       - ../.env.production:/app/apps/web/.env.production
-    platform: linux/amd64
 
   open-cuak-browserless:
     build:
       context: ../apps/browserless
       dockerfile: Dockerfile.production
+      args:
+        TARGETARCH: ${TARGETARCH}
+    platform: 'linux/${TARGETARCH}'
     image: open-cuak-browserless
     container_name: open-cuak-browserless
     restart: always
@@ -36,7 +41,6 @@ services:
     volumes:
       - ../.env.local:/app/.env
       - ../.env.production:/app/.env.production
-    platform: linux/amd64
 
 networks:
   supabase_supabase-network:

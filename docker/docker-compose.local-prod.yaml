@@ -12,7 +12,6 @@ services:
     volumes:
       - ../.env.local:/app/apps/web/.env
       - ../.env.production:/app/apps/web/.env.production
-    platform: linux/amd64
 
   open-cuak-browserless:
     image: ghcr.io/aident-ai/open-cuak-browserless:${OPEN_CUAK_VERSION:-stable}
@@ -30,7 +29,6 @@ services:
     volumes:
       - ../.env.local:/app/.env
       - ../.env.production:/app/.env.production
-    platform: linux/amd64
 
 networks:
   supabase_supabase-network:
