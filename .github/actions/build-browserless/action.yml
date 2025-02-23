@@ -44,15 +44,3 @@ runs:
         cp -r ../extension/out ./out
 
 
-    # Build browserless image
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
-    - name: Build docker image
-      id: build-image
-      uses: docker/build-push-action@v5
-      with:
-        context: ./apps/browserless
-        file: ./apps/browserless/Dockerfile.production
-        platforms: linux/amd64,linux/arm64
-        tags: ${{ env.DOCK_IMAGE_NAME }}:${{ steps.commit.outputs.short }}
-        load: true
