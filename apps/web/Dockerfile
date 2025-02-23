@@ -1,24 +1,31 @@
-# should run from the root of the project, e.g. ../../
-
-FROM node:20-alpine
+# Use a Debian-based Node image for compatibility
+FROM node:20-bullseye-slim
 
 ENV DOCKER_ENV=true
 
-RUN apk add --no-cache postgresql-client
+# Install dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    ca-certificates \
+    curl \
+    python3 \
+    python3-pip \
+    python3-venv \
+    make \
+    g++ \
+    postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+RUN ln -s /usr/bin/python3 /usr/bin/python
 RUN npm install -g pnpm
-RUN pnpm i next
 
 WORKDIR /app
-RUN mkdir -p apps/web
-
-COPY package.json ./
-COPY pnpm-lock.yaml ./
-COPY pnpm-workspace.yaml ./
-COPY node_modules/ node_modules/
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY packages/ packages/
 COPY apps/web apps/web
+COPY patches/ patches/
 COPY .env.local .env.local
 COPY .env.production .env.production
+
 RUN pnpm install --frozen-lockfile
 
 WORKDIR /app/apps/web

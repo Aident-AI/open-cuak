@@ -70,8 +70,6 @@ docker run -d --name $SCRIPT_CONTAINER_NAME \
   $SCRIPT_IMAGE_NAME
 docker network connect supabase_supabase-network $SCRIPT_CONTAINER_NAME
 
-# TODO: remove afterwards
-docker exec -it $SCRIPT_CONTAINER_NAME sh -c "apk add --no-cache postgresql-client"
 # TODO: change to run in docker
 bash installer/run-supabase-migrations.sh
 
