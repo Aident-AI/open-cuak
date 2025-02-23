@@ -6,8 +6,7 @@ on:
     branches:
       - main
     paths:
-      - '.github/workflows/browserless.yml'
-      - '.github/workflows/extension-ci.yml'
+      - '.github/**'
       - 'apps/browserless/**'
       - 'apps/extension/**'
       - 'packages/shared/**'
