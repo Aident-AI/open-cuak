@@ -4,18 +4,21 @@ FROM node:20-bullseye-slim
 ENV DOCKER_ENV=true
 
 # Install dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    ca-certificates \
-    curl \
-    python3 \
-    python3-pip \
-    python3-venv \
-    make \
-    g++ \
-    postgresql-client \
-    && rm -rf /var/lib/apt/lists/*
-RUN ln -s /usr/bin/python3 /usr/bin/python
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        build-essential \
+        ca-certificates \
+        curl \
+        python3 \
+        python3-pip \
+        python3-venv \
+        make \
+        g++ \
+        postgresql-client && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* && \
+    ln -s /usr/bin/python3 /usr/bin/python
 RUN npm install -g pnpm
 
 WORKDIR /app
