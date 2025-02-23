@@ -1,13 +1,22 @@
 # Use a Debian-based Node image for compatibility
-FROM node:20-bullseye-slim
+FROM node:20-bullseye
 
 ENV DOCKER_ENV=true
 
 # Install dependencies
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update --allow-releaseinfo-change
-RUN apt-get install -y --no-install-recommends build-essential ca-certificates curl python3 python3-pip python3-venv make g++ postgresql-client
-RUN apt-get clean && rm -rf /var/lib/apt/lists/*
+RUN apt-get update --allow-releaseinfo-change && \
+    apt-get install -y --fix-missing --no-install-recommends \
+      build-essential \
+      ca-certificates \
+      curl \
+      python3 \
+      python3-pip \
+      make \
+      g++ \
+      postgresql-client && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 RUN which python3 && ln -sf /usr/bin/python3 /usr/bin/python
 RUN npm install -g pnpm
 
