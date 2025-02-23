@@ -10,7 +10,6 @@ export const isDocker = () => {
   return (global as any)?.isDocker ?? false;
 };
 
-// TODO: merge with that in /shared
 export const getHost = (): string => {
   const host = getDockerFriendlyUrl(process.env.NEXT_PUBLIC_ORIGIN);
   if (!host) throw new Error('Host not found');
