@@ -5,7 +5,7 @@
   "tasks": {
     "build": { "dependsOn": ["^build"], "outputs": [".next/**", "!.next/cache/**"] },
     "dev": { "cache": false, "persistent": true },
-    "docker:start": { "dependsOn": ["^docker:start"] },
+    "docker:start": { "cache": true, "dependsOn": ["^docker:start"] },
     "format": { "cache": false, "persistent": true },
     "lint": { "dependsOn": ["^lint"] },
     "start-prod": { "dependsOn": ["^start-prod"] },
