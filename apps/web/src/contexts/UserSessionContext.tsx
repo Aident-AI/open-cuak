@@ -107,8 +107,9 @@ export const UserSessionContextProvider = ({
     await supabase.auth.signOut();
     // TODO: hack to handle clearing cookie. find a better solution
     document.cookie = 'sb-local-auth-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'; // for dev build
+    document.cookie = 'sb-host-auth-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'; // for local.production build
     document.cookie = 'sb-kong-auth-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'; // for local.production build
-    document.cookie = 'sb-local-auth-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'; // for cloud.production build
+    document.cookie = 'sb-api-auth-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'; // for cloud.production build
 
     if (redirectTo) router.replace(redirectTo);
     if (!pathname) return;
