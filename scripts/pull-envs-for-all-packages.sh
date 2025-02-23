@@ -1,5 +1,11 @@
 #!/bin/bash
 
+if [[ "$1" == "--reset" ]]; then
+  echo "Resetting environment files..."
+  sh ./scripts/rm-envs-for-all-packages.sh
+  echo "✅ Removed all the env files"
+fi
+
 if [ ! -f .env.local ]; then
   echo "No .env.local found at root..."
   cp .example.env .env.local
