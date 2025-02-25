@@ -39,15 +39,6 @@ _Read more in our [launch blog](https://aident.ai/blog/openai-operator-open-sour
     cd open-cuak
     ```
 
-4.  Install `Supabase CLI`.
-
-    ```bash
-    brew install supabase/tap/supabase
-
-    # or (if you prefer `npm`)
-    npm install -g supabase-cli
-    ```
-
 ### 👉 Run Production Build
 
 1. Set OpenAI API Key in `.example.env` file. (You can also set that in `.env.production` after Step 2)
