@@ -27,7 +27,7 @@ export DOCKER_DEFAULT_PLATFORM=linux/${TARGETARCH}
 echo "Detected platform: $DOCKER_DEFAULT_PLATFORM)"
 
 # Start the services
-# bash installer/start-supabase.sh # TODO: put this back
+bash installer/start-supabase.sh
 bash scripts/pull-envs-for-all-packages.sh --reset
 if [ -f .env.production ]; then
   OPEN_CUAK_VERSION=$(grep -E "^OPEN_CUAK_VERSION=" .env.production | cut -d= -f2- | tr -d '"')
