@@ -97,7 +97,6 @@
     "js-yaml": "^4.1.0",
     "jsdom": "^24.0.0",
     "jsx-slack": "^6.1.1",
-    "langchain": "^0.2.10",
     "langsmith": "^0.2.14",
     "llama-tokenizer-js": "^1.2.1",
     "lodash": "^4.17.21",
