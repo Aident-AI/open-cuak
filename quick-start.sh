@@ -73,8 +73,8 @@ docker network connect supabase_supabase-network $SCRIPT_CONTAINER_NAME
 # TODO: change to run in docker
 bash installer/run-supabase-migrations.sh
 
-docker exec -it $SCRIPT_CONTAINER_NAME sh -c "cd /app && npm run supabase:mock-user:init --prod"
-docker exec -it $SCRIPT_CONTAINER_NAME sh -c "cd /app && npm run supabase:storage:init --prod"
+docker exec -it $SCRIPT_CONTAINER_NAME sh -c "cd /app && npm run supabase:mock-user:init -- --prod"
+docker exec -it $SCRIPT_CONTAINER_NAME sh -c "cd /app && npm run supabase:storage:init -- --prod"
 docker container rm -f $SCRIPT_CONTAINER_NAME
 
 # Check if the first argument is --build
