@@ -11,7 +11,3 @@ echo "Resetting Supabase services..."
 cd installer/supabase-docker && bash reset.sh
 cd ../..
 echo "✅ Supabase services are all reset!"
-
-echo "========================================"
-bash quick-start.sh
-echo "✅ Open-CUAK services are all started!"
