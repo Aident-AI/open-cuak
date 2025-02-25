@@ -54,7 +54,7 @@ _Read more in our [launch blog](https://aident.ai/blog/openai-operator-open-sour
    bash quick-start.sh
 
    # or (if you have `npm` installed)
-   npm run docker:up
+   npm run quick:start
    ```
 
 3. Ta-da! It is now ready locally at [http://localhost:3000](http://localhost:3000).
