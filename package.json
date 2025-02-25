@@ -45,7 +45,7 @@
     "supabase:gen:types": "cd apps/web && npm run gen-types",
     "supabase:migrate": "sh ./scripts/create-supabase-migration.sh",
     "supabase:mock-user:init": "npm run web:run-script -- ./scripts/init/create-mock-supabase-user.ts",
-    "supabase:prod:reset": "bash installer/supabase-docker/reset.sh",
+    "supabase:prod:reset": "npm run prod:stop && bash installer/supabase-docker/reset.sh",
     "supabase:prod:start": "bash installer/start-supabase.sh",
     "supabase:prod:stop": "bash installer/stop-supabase.sh",
     "supabase:restart": "npm run supabase -- stop && npm run supabase -- start && npm run supabase:gen:types",
