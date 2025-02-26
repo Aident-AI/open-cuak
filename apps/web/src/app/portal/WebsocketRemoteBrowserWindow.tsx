@@ -8,6 +8,7 @@ import { useContext, useEffect, useRef, useState } from 'react';
 import { v4 as UUID } from 'uuid';
 import { BroadcastEventType } from '~shared/broadcast/types';
 import { WHSize, XYPosition } from '~shared/cursor/types';
+import { ALogger } from '~shared/logging/ALogger';
 import { RemoteCursorPosition } from '~shared/portal/RemoteBrowserTypes';
 import { RemoteBrowserConfigs } from '~shared/remote-browser/RemoteBrowserConfigs';
 import {
@@ -45,6 +46,7 @@ export enum RemoteBrowserWindowStatus {
 type RemoteCursorStyle = { base64: string; centerOffset: XYPosition };
 
 export function WebsocketRemoteBrowserWindow(props: Props) {
+  const { isAdminUser, logout } = useContext(UserSessionContext);
   const {
     attachToSessionId: attachToRemoteBrowserSession,
     browserStatus,
@@ -60,9 +62,18 @@ export function WebsocketRemoteBrowserWindow(props: Props) {
   } = useRemoteBrowserSession({
     keepAlive: true,
     onSessionIdChange: (sessionId: string) => props.setRemoteBrowserSessionId(sessionId),
+    onConnectError: async (error) => {
+      const isAuthError = error.includes('Authentication error');
+      if (!isAuthError) {
+        ALogger.error({ context: 'Failed to connect to remote-browser', error });
+        return;
+      }
+
+      await logout();
+      window.location.reload();
+    },
     teachModeOn: props.teachModeOn,
   });
-  const { isAdminUser } = useContext(UserSessionContext);
 
   const activeTabIdRef = useRef<number | null>(null);
   const canvasImageWorkerRef = useRef<Worker | null>(null);

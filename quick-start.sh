@@ -27,7 +27,7 @@ export DOCKER_DEFAULT_PLATFORM=linux/${TARGETARCH}
 echo "Detected platform: $DOCKER_DEFAULT_PLATFORM)"
 
 # Start the services
-# bash installer/start-supabase.sh # TODO: put this back
+bash installer/start-supabase.sh
 bash scripts/pull-envs-for-all-packages.sh --reset
 if [ -f .env.production ]; then
   OPEN_CUAK_VERSION=$(grep -E "^OPEN_CUAK_VERSION=" .env.production | cut -d= -f2- | tr -d '"')
@@ -73,8 +73,8 @@ docker network connect supabase_supabase-network $SCRIPT_CONTAINER_NAME
 # TODO: change to run in docker
 bash installer/run-supabase-migrations.sh
 
-docker exec -it $SCRIPT_CONTAINER_NAME sh -c "cd /app && npm run supabase:mock-user:init --prod"
-docker exec -it $SCRIPT_CONTAINER_NAME sh -c "cd /app && npm run supabase:storage:init --prod"
+docker exec -it $SCRIPT_CONTAINER_NAME sh -c "cd /app && npm run supabase:mock-user:init -- --prod"
+docker exec -it $SCRIPT_CONTAINER_NAME sh -c "cd /app && npm run supabase:storage:init -- --prod"
 docker container rm -f $SCRIPT_CONTAINER_NAME
 
 # Check if the first argument is --build

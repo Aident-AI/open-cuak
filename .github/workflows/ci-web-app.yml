@@ -52,6 +52,17 @@ jobs:
       - name: Build NextJS App
         uses: ./.github/actions/build-web-app
 
+      - name: Free Disk Space
+        uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          # These values are optional, and will default to the listed values.
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          swap-storage: true
+
       # Build and push Docker image
       - name: Set short git commit SHA
         id: commit
@@ -77,3 +88,6 @@ jobs:
             ghcr.io/${{ env.DOCK_IMAGE_NAME }}:${{ steps.commit.outputs.short }}
             ghcr.io/${{ env.DOCK_IMAGE_NAME }}:latest
           push: true
+          # Add cache options to optimize builds
+          cache-from: type=registry,ref=ghcr.io/${{ env.DOCK_IMAGE_NAME }}:buildcache
+          cache-to: type=registry,ref=ghcr.io/${{ env.DOCK_IMAGE_NAME }}:buildcache,mode=max

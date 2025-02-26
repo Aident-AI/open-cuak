@@ -6,6 +6,8 @@ services:
       dockerfile: apps/web/Dockerfile
       args:
         TARGETARCH: ${TARGETARCH}
+      cache_from:
+        - open-cuak-web:latest
     platform: 'linux/${TARGETARCH}'
     image: open-cuak-web
     container_name: open-cuak-web
