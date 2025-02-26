@@ -1,0 +1,41 @@
+name: Docs Deployment
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'docs/**'
+  workflow_dispatch:  # Allows you to run this workflow manually from the Actions tab
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Set up Node.js environment
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+
+      # Install dependencies
+      - name: Install dependencies
+        run: |
+          npm install
+        working-directory: ./docs
+
+      # Build the documentation
+      - name: Build the documentation
+        run: |
+          npm run build
+        working-directory: ./docs
+
+      # Deploy to GitHub Pages (Push to gh-pages branch)
+      - name: Deploy to GitHub Pages
+        run: |
+          npm run deploy
+        env:
+          GIT_USER: ${{ github.actor }}
+          GIT_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        working-directory: ./docs
