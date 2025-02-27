@@ -3,7 +3,7 @@ import { Tooltip } from '@mui/material';
 import { CreateMessage, Message } from 'ai';
 import cx from 'classnames';
 import Image from 'next/image';
-import { ThinkAndPlanToolName, isRenderTextTool } from '~shared/agent/AiAgentNode';
+import { isRenderTextTool, isThinkAndPlanTool } from '~shared/agent/AiAgentNode';
 import { AiAidenApiMessageAnnotation } from '~src/app/api/ai/aiden/AiAidenApi';
 import { LoadingDots } from '~src/components/LoadingDots';
 import { AiToolInvocationComponent } from '~src/components/chat-box/AiToolInvocationComponent';
@@ -67,7 +67,7 @@ export default function AiMessagesForChatBox(props: Props) {
           const finalText = renderTextToolInvocation.args?.message;
           if (finalText) {
             if (messageText.length > 0) messageText += '\n\n';
-            if (renderTextToolInvocation.toolName === ThinkAndPlanToolName) {
+            if (isThinkAndPlanTool(renderTextToolInvocation.toolName)) {
               messageText += '> ' + finalText.replaceAll('\n', '\n> ');
             } else {
               messageText += finalText;

@@ -56,8 +56,10 @@ export const ThinkAndPlanToolConfigs = {
 export const ThinkAndPlanTool = tool(ThinkAndPlanToolConfigs);
 
 export const isFinishRunTool = (name: string) =>
-  name === DefaultAiFinishRunToolName || name === DefaultAiFinishRunToolName.replace('-', '_');
-export const isRenderTextTool = (name: string) => isFinishRunTool(name) || name === ThinkAndPlanToolName;
+  name === DefaultAiFinishRunToolName || name === DefaultAiFinishRunToolName.replaceAll('-', '_');
+export const isThinkAndPlanTool = (name: string) =>
+  name === ThinkAndPlanToolName || name === ThinkAndPlanToolName.replaceAll('-', '_');
+export const isRenderTextTool = (name: string) => isFinishRunTool(name) || isThinkAndPlanTool(name);
 
 export class AiAgentNode implements IBaseAgentNode<CoreMessage, LanguageModel, CoreTool, ToolInvocation> {
   // main loop

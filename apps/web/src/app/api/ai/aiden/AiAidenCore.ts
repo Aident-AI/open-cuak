@@ -112,7 +112,7 @@ export class AiAidenCore {
     const systemMessages = [] as CoreMessage[];
     systemMessages.push({
       role: 'system',
-      content: AiAidenSystemPrompts.getPrompt(config.systemPromptVersion),
+      content: AiAidenSystemPrompts.getPrompt(config.systemPromptVersion, config.isClaude),
     } as CoreMessage);
     systemMessages.push({ role: 'system', content: AiAidenBoundingBoxCoordinatesSystemPrompt } as CoreMessage);
 

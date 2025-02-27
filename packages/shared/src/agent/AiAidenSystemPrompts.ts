@@ -1,4 +1,5 @@
 import { stripIndents } from 'common-tags';
+import { DefaultAiFinishRunToolName, ThinkAndPlanToolName } from '~shared/agent/AiAgentNode';
 
 export enum AiAidenSystemPromptVersion {
   LIVE = 'live',
@@ -6,15 +7,23 @@ export enum AiAidenSystemPromptVersion {
 }
 
 export class AiAidenSystemPrompts {
-  public static getPrompt(version: AiAidenSystemPromptVersion): string {
+  public static getPrompt(version: AiAidenSystemPromptVersion, isClaude: boolean): string {
     switch (version) {
       case AiAidenSystemPromptVersion.LIVE:
-        return LIVE_PROMPT;
+        return this.getClaudeFriendlyPrompt(LIVE_PROMPT, isClaude);
       case AiAidenSystemPromptVersion.TEST:
-        return TEST_PROMPT;
+        return this.getClaudeFriendlyPrompt(TEST_PROMPT, isClaude);
       default:
         throw new Error(`Unknown version: ${version}`);
     }
+  }
+
+  public static getClaudeFriendlyPrompt(prompt: string, isClaude: boolean): string {
+    if (!isClaude) return prompt;
+
+    return prompt
+      .replaceAll(DefaultAiFinishRunToolName, DefaultAiFinishRunToolName.replaceAll('-', '_'))
+      .replaceAll(ThinkAndPlanToolName, ThinkAndPlanToolName.replaceAll('-', '_'));
   }
 }
 
