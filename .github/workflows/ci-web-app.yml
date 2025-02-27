@@ -88,6 +88,3 @@ jobs:
             ghcr.io/${{ env.DOCK_IMAGE_NAME }}:${{ steps.commit.outputs.short }}
             ghcr.io/${{ env.DOCK_IMAGE_NAME }}:latest
           push: true
-          # Add cache options to optimize builds
-          cache-from: type=registry,ref=ghcr.io/${{ env.DOCK_IMAGE_NAME }}:buildcache
-          cache-to: type=registry,ref=ghcr.io/${{ env.DOCK_IMAGE_NAME }}:buildcache,mode=max
