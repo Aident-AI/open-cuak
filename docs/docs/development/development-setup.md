@@ -1,6 +1,9 @@
 ---
 sidebar_position: 5
+sidebar_label: 'Development Setup'
 ---
+
+# Development Setup
 
 ### ⚡ Start Development Servers
 
