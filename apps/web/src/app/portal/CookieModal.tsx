@@ -3,7 +3,7 @@ import { CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/solid';
 import { Tooltip } from '@mui/material';
 import { useContext, useEffect, useState } from 'react';
 import { SupabaseClientForClient } from '~shared/supabase/client/SupabaseClientForClient';
-import { UserConfig, genFetchUserConfig } from '~shared/user-config/UserConfig';
+import { UserConfig, UserConfigData } from '~shared/user-config/UserConfig';
 import { UserSessionContext } from '~src/contexts/UserSessionContext';
 
 interface CookieModalProps {
@@ -13,7 +13,7 @@ interface CookieModalProps {
 
 export default function CookieModal({ isOpen, onClose }: CookieModalProps) {
   const [cookies, setCookies] = useState<{ domain: string }[]>([]);
-  const [configData, setConfigData] = useState<UserConfig | undefined>(undefined);
+  const [configData, setConfigData] = useState<UserConfigData | undefined>(undefined);
 
   const { user } = useContext(UserSessionContext);
   const userId = user!.id;
@@ -24,7 +24,7 @@ export default function CookieModal({ isOpen, onClose }: CookieModalProps) {
     const exec = async () => {
       const [cookiesResult, userConfig] = await Promise.all([
         supabase.from('remote_browser_cookies').select('domain').eq('user_id', userId),
-        genFetchUserConfig(userId, supabase),
+        UserConfig.genFetch(userId, supabase),
       ]);
 
       if (cookiesResult.error) throw cookiesResult.error;

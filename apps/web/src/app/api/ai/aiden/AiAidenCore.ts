@@ -22,7 +22,7 @@ import { PageScreenshotAction } from '~shared/messaging/action-configs/page-acti
 import { ServiceWorkerMessageAction } from '~shared/messaging/service-worker/ServiceWorkerMessageAction';
 import { RuntimeMessage, RuntimeMessageResponse } from '~shared/messaging/types';
 import { SupabaseClientForServer } from '~shared/supabase/client/SupabaseClientForServer';
-import { BoundingBoxGenerator, genFetchUserConfig } from '~shared/user-config/UserConfig';
+import { BoundingBoxGenerator, UserConfig } from '~shared/user-config/UserConfig';
 import { AiAidenApiMessageAnnotation } from '~src/app/api/ai/aiden/AiAidenApi';
 import { AiRegisteredToolSet } from '~src/app/api/llm/agent/AiRegisteredToolSet';
 
@@ -57,7 +57,7 @@ export class AiAidenCore {
     const anno = {} as Partial<AiAidenApiMessageAnnotation>;
 
     const supabase = await SupabaseClientForServer.createForServerComponent();
-    const userConfig = await genFetchUserConfig(config.userId, supabase);
+    const userConfig = await UserConfig.genFetch(config.userId, supabase);
 
     // fetch screenshot
     const screenshotConfig = {

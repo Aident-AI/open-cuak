@@ -3,12 +3,7 @@
 import { useEffect, useState } from 'react';
 import { ALogger } from '~shared/logging/ALogger';
 import { SupabaseClientForClient } from '~shared/supabase/client/SupabaseClientForClient';
-import {
-  BoundingBoxGenerator,
-  UserConfig,
-  genFetchUserConfig,
-  genSaveUserConfig,
-} from '~shared/user-config/UserConfig';
+import { BoundingBoxGenerator, UserConfig, UserConfigData } from '~shared/user-config/UserConfig';
 
 interface Props {
   isOpen: boolean;
@@ -17,7 +12,7 @@ interface Props {
 }
 
 export default function UserConfigModal(props: Props) {
-  const [configData, setConfigData] = useState<UserConfig | undefined>(undefined);
+  const [configData, setConfigData] = useState<UserConfigData | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(true);
   const [textInputError, setTextInputError] = useState(false);
 
@@ -27,7 +22,7 @@ export default function UserConfigModal(props: Props) {
     if (!props.isOpen) return;
 
     (async () => {
-      const userConfig = await genFetchUserConfig(props.userId, supabase);
+      const userConfig = await UserConfig.genFetch(props.userId, supabase);
       setConfigData(userConfig);
       setIsLoading(false);
     })();
@@ -50,7 +45,7 @@ export default function UserConfigModal(props: Props) {
     }
     setTextInputError(false);
     try {
-      await genSaveUserConfig(props.userId, configData, supabase);
+      await UserConfig.genUpsert(props.userId, configData, supabase);
       props.onClose();
     } catch (err) {
       ALogger.error((err as Error).message);

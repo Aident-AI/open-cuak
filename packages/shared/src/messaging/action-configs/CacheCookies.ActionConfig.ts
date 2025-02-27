@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { ALogger } from '~shared/logging/ALogger';
 import { Base_ActionConfig, enforceBaseActionConfigStatic } from '~shared/messaging/action-configs/Base.ActionConfig';
 import { ServiceWorkerMessageAction } from '~shared/messaging/service-worker/ServiceWorkerMessageAction';
-import { genFetchUserConfig } from '~shared/user-config/UserConfig';
+import { UserConfig } from '~shared/user-config/UserConfig';
 
 import type { IActionConfigExecContext } from '~shared/messaging/action-configs/Base.ActionConfig';
 export class CacheCookies_ActionConfig extends Base_ActionConfig {
@@ -22,7 +22,7 @@ export class CacheCookies_ActionConfig extends Base_ActionConfig {
     if (!userId) {
       throw new Error('No userId found in the payload');
     }
-    const userConfig = await genFetchUserConfig(userId, context.getSupabaseClient());
+    const userConfig = await UserConfig.genFetch(userId, context.getSupabaseClient());
     if (!userConfig.autoSaveAndApplyCookies) {
       ALogger.warn('autoSaveAndApplyCookies is set to false, skipping cookie caching');
       return;

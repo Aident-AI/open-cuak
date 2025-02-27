@@ -6,31 +6,30 @@ export enum BoundingBoxGenerator {
   OMNI_PARSER = 'omniparser',
 }
 
-export const UserConfigSchema = z.object({
+export const UserConfigDataSchema = z.object({
   autoSaveAndApplyCookies: z.boolean().optional().default(false),
   boundingBoxGenerator: z.nativeEnum(BoundingBoxGenerator).optional().default(BoundingBoxGenerator.JS),
   omniparserHost: z.string().optional(),
 });
+export type UserConfigData = z.infer<typeof UserConfigDataSchema>;
 
-export type UserConfig = z.infer<typeof UserConfigSchema>;
-
-export const defaultUserConfigData: UserConfig = {
+export const DefaultUserConfigData: UserConfigData = {
   autoSaveAndApplyCookies: false,
   boundingBoxGenerator: BoundingBoxGenerator.JS,
 };
 
-export const genFetchUserConfig = async (userId: string, supabase: SupabaseClient): Promise<UserConfig> => {
-  const { data, error } = await supabase.from('user_configs').select('*').eq('user_id', userId).maybeSingle();
-  if (error) throw error;
-  if (!data?.config) return defaultUserConfigData;
-  return UserConfigSchema.parse(data.config);
-};
+export class UserConfig {
+  public static async genFetch(userId: string, supabase: SupabaseClient): Promise<UserConfigData> {
+    const { data, error } = await supabase.from('user_configs').select('*').eq('user_id', userId).maybeSingle();
+    if (error) throw error;
+    if (!data?.config) return DefaultUserConfigData;
+    return UserConfigDataSchema.parse(data.config);
+  }
 
-export const genSaveUserConfig = async (
-  userId: string,
-  config: UserConfig,
-  supabase: SupabaseClient,
-): Promise<void> => {
-  const { error } = await supabase.from('user_configs').upsert({ user_id: userId, config }, { onConflict: 'user_id' });
-  if (error) throw error;
-};
+  public static async genUpsert(userId: string, config: UserConfigData, supabase: SupabaseClient): Promise<void> {
+    const { error } = await supabase
+      .from('user_configs')
+      .upsert({ user_id: userId, config }, { onConflict: 'user_id' });
+    if (error) throw error;
+  }
+}
