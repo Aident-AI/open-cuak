@@ -41,7 +41,7 @@ _Read more in our [launch blog](https://aident.ai/blog/openai-operator-open-sour
 
 ### 👉 Run Production Build
 
-1. Set OpenAI API Key in `.example.env` file. (You can also set that in `.env.production` after Step 2)
+1. Set OpenAI API Key in `.example.env.production` file.
 
    ```bash
    # [Required] Please add your OpenAI key
