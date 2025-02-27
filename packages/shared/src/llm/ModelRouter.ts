@@ -6,6 +6,7 @@ import { createOpenAI } from '@ai-sdk/openai';
 import { LanguageModel } from 'ai';
 import { isEnvValueSet } from '~shared/env/environment';
 import { VllmServiceHost } from '~shared/llm/vllm/VllmServiceHost';
+import { UserConfigData } from '~shared/user-config/UserConfig';
 import { EnumUtils } from '~shared/utils/EnumUtils';
 
 export enum LlmRouterModel {
@@ -16,6 +17,15 @@ export enum LlmRouterModel {
   OPEN_AI_COMPATIBLE = 'openai-compatible',
   VLLM = 'vllm',
 }
+
+export const LlmRouterModelHumanReadableName: Record<LlmRouterModel, string> = {
+  [LlmRouterModel.AZURE_OAI]: 'Azure OpenAI',
+  [LlmRouterModel.CLAUDE]: 'Claude',
+  [LlmRouterModel.GEMINI]: 'Gemini',
+  [LlmRouterModel.OPEN_AI]: 'OpenAI',
+  [LlmRouterModel.OPEN_AI_COMPATIBLE]: 'OpenAI API Compatible',
+  [LlmRouterModel.VLLM]: 'VLLM',
+};
 
 export enum ClaudeVariant {
   HAIKU_3_5 = 'anthropic.claude-3-5-haiku-20241022-v1:0',
@@ -38,7 +48,7 @@ export type RouterModelConfig = { model?: LlmRouterModel; variant?: string };
 const DEFAULT_OPENAI_BASE_URL_PREFIX = 'https://api.openai.com';
 
 export class ModelRouter {
-  public static async genModel(config: RouterModelConfig): Promise<LanguageModel> {
+  public static async genModel(config: RouterModelConfig, userConfig?: UserConfigData): Promise<LanguageModel> {
     // TODO improve the model selection logic when building model configuration UI
     const usingOpenAI = isEnvValueSet(process.env.OPENAI_API_KEY);
     const usingAzure =
@@ -52,18 +62,19 @@ export class ModelRouter {
       isEnvValueSet(process.env.OPENAI_BASE_URL) &&
       process.env.OPENAI_BASE_URL?.startsWith(DEFAULT_OPENAI_BASE_URL_PREFIX);
 
-    let model = config.model;
-    if (usingOpenAI) model = LlmRouterModel.OPEN_AI;
-    if (usingAzure) model = LlmRouterModel.AZURE_OAI;
-    if (usingOpenAICompatible) model = LlmRouterModel.OPEN_AI_COMPATIBLE;
+    // Only override user selection if no model is specified
+    if (!config.model) {
+      if (usingOpenAI) config.model = LlmRouterModel.OPEN_AI;
+      if (usingAzure) config.model = LlmRouterModel.AZURE_OAI;
+      if (usingOpenAICompatible) config.model = LlmRouterModel.OPEN_AI_COMPATIBLE;
+    }
 
-    switch (model) {
+    switch (config.model) {
       case LlmRouterModel.CLAUDE: {
         const modelName = EnumUtils.getEnumValue(ClaudeVariant, config.variant ?? '') ?? ClaudeVariant.SONNET_3_5_GCP;
         const provider =
           modelName === ClaudeVariant.SONNET_3_5_GCP
             ? createVertexAnthropic({
-                // GCP has no quota for now. so this will not go through
                 project: process.env.GCP_PROJECT,
                 location: 'us-east5',
                 googleCredentials: {
@@ -94,24 +105,31 @@ export class ModelRouter {
         // The default value is 2024-10-01-preview, but all our deployments are 2024-08-01-preview
         const apiVersion = '2024-08-01-preview';
         const azure = createAzure({ resourceName, apiKey, apiVersion });
-        return azure(process.env.AZURE_OPENAI_DEPLOYMENT ?? '');
+
+        // Use user-specified deployment if available, otherwise fall back to env var
+        const deploymentName = config.variant || process.env.AZURE_OPENAI_DEPLOYMENT || '';
+        return azure(deploymentName);
       }
       case LlmRouterModel.VLLM: {
         return VllmServiceHost.getCreateOpenAILanguageModel();
       }
       case LlmRouterModel.OPEN_AI: {
         const openAiProvider = createOpenAI({ apiKey: process.env.OPENAI_API_KEY });
-        return openAiProvider.languageModel(process.env.OPENAI_MODEL_NAME ?? 'gpt-4o-2024-11-20');
+        const modelName = config.variant || process.env.OPENAI_MODEL_NAME || 'gpt-4o-2024-11-20';
+        return openAiProvider.languageModel(modelName);
       }
       case LlmRouterModel.OPEN_AI_COMPATIBLE: {
-        if (!process.env.OPENAI_MODEL_NAME) throw new Error('OPENAI_MODEL_NAME must be set for OpenAI compatible API');
-        const openAiProvider = createOpenAI({
-          baseURL: process.env.OPENAI_BASE_URL,
-          apiKey: process.env.OPENAI_API_KEY,
-          compatibility: 'compatible',
-          name: process.env.OPENAI_COMPATIBLE_API_NAME ?? 'openai-compatible',
-        });
-        return openAiProvider.languageModel(process.env.OPENAI_MODEL_NAME);
+        if (!process.env.OPENAI_BASE_URL) throw new Error('OPENAI_BASE_URL must be set for OpenAI compatible API');
+
+        const baseURL = userConfig?.llmOpenaiCompatibleBaseUrl || process.env.OPENAI_BASE_URL;
+        const apiKey = userConfig?.llmOpenaiCompatibleApiKey || process.env.OPENAI_API_KEY;
+        const name =
+          (userConfig?.llmOpenaiCompatibleApiName || process.env.OPENAI_COMPATIBLE_API_NAME) ?? 'openai-compatible';
+        const openAiProvider = createOpenAI({ baseURL, apiKey, compatibility: 'compatible', name });
+        const modelName = config.variant || process.env.OPENAI_MODEL_NAME;
+        if (!modelName) throw new Error('Model name must be specified for OpenAI compatible API');
+
+        return openAiProvider.languageModel(modelName);
       }
       default:
         throw new Error('Unknown model: ' + config.model);

@@ -1,5 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { z } from 'zod';
+import { LlmRouterModel } from '~shared/llm/ModelRouter';
 
 export enum BoundingBoxGenerator {
   JS = 'js',
@@ -7,15 +8,39 @@ export enum BoundingBoxGenerator {
 }
 
 export const UserConfigDataSchema = z.object({
+  // Basic settings
   autoSaveAndApplyCookies: z.boolean().optional().default(false),
   boundingBoxGenerator: z.nativeEnum(BoundingBoxGenerator).optional().default(BoundingBoxGenerator.JS),
   omniparserHost: z.string().optional(),
+
+  // LLM model selection
+  llmModel: z.nativeEnum(LlmRouterModel).optional().default(LlmRouterModel.OPEN_AI),
+  llmModelVariant: z.string().optional(),
+  // access keys
+  llmAwsAccessKeyId: z.string().optional(),
+  llmAwsBedrockRegion: z.string().optional(),
+  llmAwsSecretAccessKey: z.string().optional(),
+  llmAzureOpenaiDeployment: z.string().optional(),
+  llmAzureOpenaiInstanceName: z.string().optional(),
+  llmAzureOpenaiKey: z.string().optional(),
+  llmGcpClientEmail: z.string().optional(),
+  llmGcpClientId: z.string().optional(),
+  llmGcpPrivateKey: z.string().optional(),
+  llmGcpProject: z.string().optional(),
+  llmGeminiApiKey: z.string().optional(),
+  llmOpenaiApiKey: z.string().optional(),
+  llmOpenaiCompatibleApiKey: z.string().optional(),
+  llmOpenaiCompatibleApiName: z.string().optional(),
+  llmOpenaiCompatibleBaseUrl: z.string().optional(),
+  llmOpenaiModelName: z.string().optional(),
+  llmVllmServiceHost: z.string().optional(),
 });
 export type UserConfigData = z.infer<typeof UserConfigDataSchema>;
 
 export const DefaultUserConfigData: UserConfigData = {
   autoSaveAndApplyCookies: false,
   boundingBoxGenerator: BoundingBoxGenerator.JS,
+  llmModel: LlmRouterModel.OPEN_AI,
 };
 
 export class UserConfig {
