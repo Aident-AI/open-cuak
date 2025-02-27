@@ -1,8 +1,8 @@
 import { DataStreamWriter } from 'ai';
+import { IAiAgentInspectionConfig } from '~shared/agent/AiAgentNode';
 import { IAgentRunState } from '~shared/agent/IAgentRunState';
 import { IBaseAgentNode, IBaseAgentNodeEvents } from '~shared/agent/IBaseAgentNode';
 import { IBaseAgentNodeOptions, StepRunHistoryType } from '~shared/agent/IBaseAgentNodeOptions';
-import { IAiAgentInspectionConfig } from '~shared/export-map.generated';
 
 export abstract class BaseAgentNodeBuilder<
   Msg,

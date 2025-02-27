@@ -1,7 +1,7 @@
 import { CoreMessage, CoreTool, DataStreamWriter, LanguageModel, ToolInvocation } from 'ai';
 import { AgentRunResult } from '~shared/agent/AgentRunResult';
 import { AiAgentNode, IAiAgentInspectionConfig } from '~shared/agent/AiAgentNode';
-import { IBaseAgentNodeOptions } from '~shared/export-map.generated';
+import { IBaseAgentNodeOptions } from '~shared/agent/IBaseAgentNodeOptions';
 import { ALogger } from '~shared/logging/ALogger';
 import { AiAgentSOP, AiAgentSOPRunState } from '~shared/sop/AiAgentSOP';
 
