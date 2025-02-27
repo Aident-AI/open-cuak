@@ -1,6 +1,7 @@
 import { Session, SupabaseClient, User } from '@supabase/supabase-js';
 import { NextRequest } from 'next/server';
 import PgBoss from 'pg-boss';
+import { UserConfig, UserConfigData } from '~shared/export-map.generated';
 import { ApiRequestContext } from '~shared/http/ApiRequestContext';
 import { ALogger } from '~shared/logging/ALogger';
 import { ServiceWorkerMessageAction } from '~shared/messaging/service-worker/ServiceWorkerMessageAction';
@@ -81,6 +82,11 @@ export class ApiRequestContextService {
         const user = await this.getContext().fetchUser();
         if (!user) throw new Error('User not logged in.'); // TODO: better error handling with error code (e.g. 401)
         return user;
+      },
+      fetchUserConfig: async (): Promise<UserConfigData> => {
+        const user = await this.getContext().fetchUserOrThrow();
+        const supabase = this.getContext().getSupabase();
+        return await UserConfig.genFetch(user.id, supabase);
       },
       getBoss: (): PgBoss => {
         if (!process.env.PG_CONNECTION) throw new Error('PG_CONNECTION not set.');

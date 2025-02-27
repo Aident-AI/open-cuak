@@ -5,7 +5,7 @@ import { AiAidenSystemPromptVersion } from '~shared/agent/AiAidenSystemPrompts';
 import { StepRunHistoryType } from '~shared/agent/IBaseAgentNodeOptions';
 import { AiAgentNodeBuilder } from '~shared/agent/builders/AiAgentNodeBuilder';
 import { AiAgentSOPNodeBuilder } from '~shared/agent/builders/AiAgentSOPNodeBuilder';
-import { GPTVariant, ModelRouter, RouterModelConfig } from '~shared/llm/ModelRouter';
+import { ModelRouter } from '~shared/llm/ModelRouter';
 import { ALogger } from '~shared/logging/ALogger';
 import { AiAgentSOP, AiAgentSOPSchema } from '~shared/sop/AiAgentSOP';
 import { AiAidenApi, AiAidenStreamDataSchema, AiAidenStreamStateInfoSchema } from '~src/app/api/ai/aiden/AiAidenApi';
@@ -22,18 +22,11 @@ export const POST = simpleRequestWrapper<z.infer<typeof api.RequestSchema.schema
   api.RequestSchema.schema,
   { assertUserLoggedIn: true, skipResponseParsing: true },
   async (request, context, _path, signal) => {
-    const user = await context.fetchUserOrThrow();
+    const [user, userConfig] = await Promise.all([context.fetchUserOrThrow(), context.fetchUserConfig()]);
 
-    const modelConfig = { variant: GPTVariant.GPT_4O } as RouterModelConfig;
+    const model = ModelRouter.getModelFromUserConfigOrThrow(userConfig);
     const systemPromptVersion = AiAidenSystemPromptVersion.LIVE;
     const useReAct = true;
-    let model;
-    try {
-      model = await ModelRouter.genModel(modelConfig);
-    } catch (error) {
-      ALogger.error({ context: 'genModel', error });
-      return new Response(JSON.stringify({ message: 'Failed to generate model', error }), { status: 500 });
-    }
 
     // prepare core configs
     const remoteBrowserSessionId = context.getRemoteBrowserSessionId();
