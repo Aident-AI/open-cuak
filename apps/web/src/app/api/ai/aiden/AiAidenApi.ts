@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { XYPositionSchema } from '~shared/cursor/types';
-import { LlmRouterModel } from '~shared/llm/ModelRouter';
+import { LlmRouterModel } from '~shared/llm/LlmRouterModel';
 import { BaseEndpointApi, EndpointConfigType } from '~src/app/api/BaseEndpointApi';
 
 export const AiAidenApiMessageAnnotationSchema = z.object({

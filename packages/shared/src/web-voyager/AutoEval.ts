@@ -1,7 +1,8 @@
 import { CoreSystemMessage, CoreUserMessage, ImagePart, generateText } from 'ai';
 import * as fs from 'fs';
 import path from 'path';
-import { GPTVariant, LlmRouterModel, ModelRouter } from '~shared/llm/ModelRouter';
+import { GPTVariant, LlmRouterModel } from '~shared/llm/LlmRouterModel';
+import { ModelRouter } from '~shared/llm/ModelRouter';
 
 const SYSTEM_PROMPT = `As an evaluator, you will be presented with three primary components to assist you in your role:
 

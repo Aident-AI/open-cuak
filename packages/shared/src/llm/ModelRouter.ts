@@ -1,47 +1,15 @@
 import { createAmazonBedrock } from '@ai-sdk/amazon-bedrock';
+import { createAnthropic } from '@ai-sdk/anthropic';
 import { createAzure } from '@ai-sdk/azure';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createVertexAnthropic } from '@ai-sdk/google-vertex/anthropic/edge';
 import { createOpenAI } from '@ai-sdk/openai';
 import { LanguageModel } from 'ai';
 import { isEnvValueSet } from '~shared/env/environment';
+import { ClaudeVariant, GeminiVariant, LlmRouterModel } from '~shared/llm/LlmRouterModel';
 import { VllmServiceHost } from '~shared/llm/vllm/VllmServiceHost';
-import { UserConfigData } from '~shared/user-config/UserConfig';
+import { ClaudeHostingProvider, UserConfigData } from '~shared/user-config/UserConfig';
 import { EnumUtils } from '~shared/utils/EnumUtils';
-
-export enum LlmRouterModel {
-  AZURE_OAI = 'azure-oai',
-  CLAUDE = 'claude',
-  GEMINI = 'gemini',
-  OPEN_AI = 'openai',
-  OPEN_AI_COMPATIBLE = 'openai-compatible',
-  VLLM = 'vllm',
-}
-
-export const LlmRouterModelHumanReadableName: Record<LlmRouterModel, string> = {
-  [LlmRouterModel.AZURE_OAI]: 'Azure OpenAI',
-  [LlmRouterModel.CLAUDE]: 'Claude',
-  [LlmRouterModel.GEMINI]: 'Gemini',
-  [LlmRouterModel.OPEN_AI]: 'OpenAI',
-  [LlmRouterModel.OPEN_AI_COMPATIBLE]: 'OpenAI API Compatible',
-  [LlmRouterModel.VLLM]: 'VLLM',
-};
-
-export enum ClaudeVariant {
-  HAIKU_3_5 = 'anthropic.claude-3-5-haiku-20241022-v1:0',
-  SONNET_3_5_AWS = 'anthropic.claude-3-5-sonnet-20241022-v2:0',
-  SONNET_3_5_GCP = 'claude-3-5-sonnet-v2@20241022',
-}
-
-export enum GeminiVariant {
-  FLASH_1_5 = 'gemini-1.5-flash',
-  PRO_1_5 = 'gemini-1.5-pro',
-  FLASH_2_0 = 'gemini-2.0-flash-exp',
-}
-
-export enum GPTVariant {
-  GPT_4O = 'gpt-4o',
-}
 
 export type RouterModelConfig = { model?: LlmRouterModel; variant?: string };
 
@@ -82,14 +50,54 @@ export class ModelRouter {
         const openAiProvider = createOpenAI({ baseURL, apiKey, compatibility: 'compatible', name });
         return openAiProvider.languageModel(modelName);
       }
-
-      // TODO: add support for the following models
       case LlmRouterModel.GEMINI: {
         const google = createGoogleGenerativeAI({ apiKey: userConfig.llmGeminiApiKey });
         const modelName = userConfig.llmGeminiModelName ?? 'gemini-2.0-flash-exp';
         return google(modelName);
       }
-      case LlmRouterModel.CLAUDE:
+      case LlmRouterModel.CLAUDE: {
+        const provider = userConfig.llmClaudeProvider ?? ClaudeHostingProvider.ANTHROPIC;
+        switch (provider) {
+          case ClaudeHostingProvider.ANTHROPIC: {
+            const anthropic = createAnthropic({
+              apiKey: userConfig.llmClaudeAnthropicApiKey,
+            });
+            const modelName = userConfig.llmClaudeAnthropicModelName ?? 'claude-3-5-sonnet-20241022';
+            return anthropic(modelName) as LanguageModel;
+          }
+          case ClaudeHostingProvider.GCP: {
+            if (!userConfig.llmClaudeGcpRegion) throw new Error('GCP Region is not set.');
+            const vertexAnthropic = createVertexAnthropic({
+              project: userConfig.llmClaudeGcpProject,
+              location: userConfig.llmClaudeGcpRegion,
+              googleCredentials: {
+                clientEmail: userConfig.llmClaudeGcpClientEmail!,
+                privateKey: userConfig.llmClaudeGcpPrivateKey!,
+                privateKeyId: userConfig.llmClaudeGcpClientId!,
+              },
+            });
+
+            const modelName = userConfig.llmClaudeGcpModelName ?? ClaudeVariant.SONNET_3_5_GCP;
+            return vertexAnthropic(modelName);
+          }
+          case ClaudeHostingProvider.AWS: {
+            if (!userConfig.llmClaudeAwsBedrockRegion) throw new Error('AWS Bedrock Region is not set.');
+            if (!userConfig.llmClaudeAwsAccessKeyId) throw new Error('AWS Access Key ID is not set.');
+            if (!userConfig.llmClaudeAwsSecretAccessKey) throw new Error('AWS Secret Access Key is not set.');
+
+            const amazonBedrock = createAmazonBedrock({
+              region: userConfig.llmClaudeAwsBedrockRegion,
+              accessKeyId: userConfig.llmClaudeAwsAccessKeyId,
+              secretAccessKey: userConfig.llmClaudeAwsSecretAccessKey,
+            });
+
+            const modelName = userConfig.llmClaudeAwsModelName ?? ClaudeVariant.SONNET_3_5_AWS;
+            return amazonBedrock(modelName);
+          }
+          default:
+            throw new Error('Unknown Claude provider: ' + provider);
+        }
+      }
       case LlmRouterModel.VLLM: {
         throw new Error('VLLM is not supported yet.');
       }
@@ -113,19 +121,31 @@ export class ModelRouter {
           config.llmOpenaiCompatibleModelName
         );
       }
-
-      // TODO: add support for the following models
       case LlmRouterModel.CLAUDE: {
-        // Check if using GCP or AWS based on variant
-        const isGcpVariant = config.llmModelVariant?.includes('GCP');
-        const isAwsVariant = config.llmModelVariant?.includes('BEDROCK');
-
-        if (isGcpVariant) {
-          return !!(config.llmGcpProject && config.llmGcpClientEmail && config.llmGcpPrivateKey);
-        } else if (isAwsVariant) {
-          return !!(config.llmAwsBedrockRegion && config.llmAwsAccessKeyId && config.llmAwsSecretAccessKey);
+        const provider = config.llmClaudeProvider ?? ClaudeHostingProvider.ANTHROPIC;
+        switch (provider) {
+          case ClaudeHostingProvider.ANTHROPIC:
+            if (config.llmClaudeAnthropicModelName === 'claude-3-haiku-20240307') {
+              return !!process.env.ANTHROPIC_API_KEY;
+            }
+            return !!config.llmClaudeAnthropicApiKey;
+          case ClaudeHostingProvider.GCP:
+            return !!(
+              config.llmClaudeGcpClientEmail &&
+              config.llmClaudeGcpClientId &&
+              config.llmClaudeGcpRegion &&
+              config.llmClaudeGcpPrivateKey &&
+              config.llmClaudeGcpProject
+            );
+          case ClaudeHostingProvider.AWS:
+            return !!(
+              config.llmClaudeAwsBedrockRegion &&
+              config.llmClaudeAwsAccessKeyId &&
+              config.llmClaudeAwsSecretAccessKey
+            );
+          default:
+            return false;
         }
-        return false;
       }
       case LlmRouterModel.GEMINI: {
         return !!config.llmGeminiApiKey;
@@ -230,6 +250,6 @@ export class ModelRouter {
   }
 
   public static isClaude(model: LanguageModel): boolean {
-    return model.modelId.includes('claude-3-5');
+    return model.modelId.toLowerCase().includes('claude') || model.modelId.toLowerCase().includes('anthropic');
   }
 }

@@ -1,10 +1,16 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { z } from 'zod';
-import { LlmRouterModel } from '~shared/llm/ModelRouter';
+import { LlmRouterModel } from '~shared/llm/LlmRouterModel';
 
 export enum BoundingBoxGenerator {
   JS = 'js',
   OMNI_PARSER = 'omniparser',
+}
+
+export enum ClaudeHostingProvider {
+  ANTHROPIC = 'anthropic',
+  AWS = 'aws',
+  GCP = 'gcp',
 }
 
 export const UserConfigDataSchema = z.object({
@@ -24,6 +30,19 @@ export const UserConfigDataSchema = z.object({
   llmAzureOpenaiDeployment: z.string().optional(),
   llmAzureOpenaiInstanceName: z.string().optional(),
   llmAzureOpenaiKey: z.string().optional(),
+  llmClaudeAnthropicApiKey: z.string().optional(),
+  llmClaudeAnthropicModelName: z.string().optional(),
+  llmClaudeAwsAccessKeyId: z.string().optional(),
+  llmClaudeAwsBedrockRegion: z.string().optional(),
+  llmClaudeAwsModelName: z.string().optional(),
+  llmClaudeAwsSecretAccessKey: z.string().optional(),
+  llmClaudeGcpClientEmail: z.string().optional(),
+  llmClaudeGcpClientId: z.string().optional(),
+  llmClaudeGcpModelName: z.string().optional(),
+  llmClaudeGcpPrivateKey: z.string().optional(),
+  llmClaudeGcpProject: z.string().optional(),
+  llmClaudeGcpRegion: z.string().optional(),
+  llmClaudeProvider: z.nativeEnum(ClaudeHostingProvider).optional(),
   llmGcpClientEmail: z.string().optional(),
   llmGcpClientId: z.string().optional(),
   llmGcpPrivateKey: z.string().optional(),
@@ -44,6 +63,7 @@ export const DefaultUserConfigData: UserConfigData = {
   autoSaveAndApplyCookies: false,
   boundingBoxGenerator: BoundingBoxGenerator.JS,
   llmModel: LlmRouterModel.OPEN_AI,
+  llmClaudeProvider: ClaudeHostingProvider.GCP,
 };
 
 export class UserConfig {

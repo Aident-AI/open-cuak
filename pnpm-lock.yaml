@@ -22,6 +22,9 @@ importers:
       '@ai-sdk/amazon-bedrock':
         specifier: ^1.0.8
         version: 1.0.8(zod@3.24.1)
+      '@ai-sdk/anthropic':
+        specifier: ^1.1.11
+        version: 1.1.11(zod@3.24.1)
       '@ai-sdk/azure':
         specifier: ^1.0.7
         version: 1.0.21(zod@3.24.1)
@@ -822,6 +825,12 @@ packages:
     peerDependencies:
       zod: ^3.0.0
 
+  '@ai-sdk/anthropic@1.1.11':
+    resolution: {integrity: sha512-FsjF+Qdy4c56dbXyUcec+UDOOnYayL1gd3Mysu1rSZ4RTAPuvsDewNJeSObqhJ7kMXnuHHLmDA5CcM4WvbSD/g==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.0.0
+
   '@ai-sdk/azure@1.0.21':
     resolution: {integrity: sha512-KkVQb3c4dqNcLMDigdGb8SRU+PM804KBytkh8IjdZMMlE2JXqfgVAdaR5o6QFAJSSPxJN7Rair1vkItLLgp3XQ==}
     engines: {node: '>=18'}
@@ -855,8 +864,21 @@ packages:
       zod:
         optional: true
 
+  '@ai-sdk/provider-utils@2.1.10':
+    resolution: {integrity: sha512-4GZ8GHjOFxePFzkl3q42AU0DQOtTQ5w09vmaWUf/pKFXJPizlnzKSUkF0f+VkapIUfDugyMqPMT1ge8XQzVI7Q==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      zod: ^3.0.0
+    peerDependenciesMeta:
+      zod:
+        optional: true
+
   '@ai-sdk/provider@1.0.4':
     resolution: {integrity: sha512-lJi5zwDosvvZER3e/pB8lj1MN3o3S7zJliQq56BRr4e9V3fcRyFtwP0JRxaRS5vHYX3OJ154VezVoQNrk0eaKw==}
+    engines: {node: '>=18'}
+
+  '@ai-sdk/provider@1.0.9':
+    resolution: {integrity: sha512-jie6ZJT2ZR0uVOVCDc9R2xCX5I/Dum/wEK28lx21PJx6ZnFAN9EzD2WsPhcDWfCgGx3OAZZ0GyM3CEobXpa9LA==}
     engines: {node: '>=18'}
 
   '@ai-sdk/react@1.0.11':
@@ -11146,6 +11168,12 @@ snapshots:
       '@ai-sdk/provider-utils': 2.0.7(zod@3.24.1)
       zod: 3.24.1
 
+  '@ai-sdk/anthropic@1.1.11(zod@3.24.1)':
+    dependencies:
+      '@ai-sdk/provider': 1.0.9
+      '@ai-sdk/provider-utils': 2.1.10(zod@3.24.1)
+      zod: 3.24.1
+
   '@ai-sdk/azure@1.0.21(zod@3.24.1)':
     dependencies:
       '@ai-sdk/openai': 1.0.19(zod@3.24.1)
@@ -11186,7 +11214,20 @@ snapshots:
     optionalDependencies:
       zod: 3.24.1
 
+  '@ai-sdk/provider-utils@2.1.10(zod@3.24.1)':
+    dependencies:
+      '@ai-sdk/provider': 1.0.9
+      eventsource-parser: 3.0.0
+      nanoid: 3.3.8
+      secure-json-parse: 2.7.0
+    optionalDependencies:
+      zod: 3.24.1
+
   '@ai-sdk/provider@1.0.4':
+    dependencies:
+      json-schema: 0.4.0
+
+  '@ai-sdk/provider@1.0.9':
     dependencies:
       json-schema: 0.4.0
 
@@ -14754,23 +14795,6 @@ snapshots:
     optional: true
 
   '@swc/core-win32-x64-msvc@1.10.7':
-    optional: true
-
-  '@swc/core@1.10.7':
-    dependencies:
-      '@swc/counter': 0.1.3
-      '@swc/types': 0.1.17
-    optionalDependencies:
-      '@swc/core-darwin-arm64': 1.10.7
-      '@swc/core-darwin-x64': 1.10.7
-      '@swc/core-linux-arm-gnueabihf': 1.10.7
-      '@swc/core-linux-arm64-gnu': 1.10.7
-      '@swc/core-linux-arm64-musl': 1.10.7
-      '@swc/core-linux-x64-gnu': 1.10.7
-      '@swc/core-linux-x64-musl': 1.10.7
-      '@swc/core-win32-arm64-msvc': 1.10.7
-      '@swc/core-win32-ia32-msvc': 1.10.7
-      '@swc/core-win32-x64-msvc': 1.10.7
     optional: true
 
   '@swc/core@1.10.7(@swc/helpers@0.5.15)':
@@ -22823,7 +22847,7 @@ snapshots:
       terser: 5.37.0
       webpack: 5.97.1(@swc/core@1.10.7)(webpack-cli@5.1.4)
     optionalDependencies:
-      '@swc/core': 1.10.7
+      '@swc/core': 1.10.7(@swc/helpers@0.5.15)
 
   terser@5.37.0:
     dependencies:
@@ -23054,7 +23078,7 @@ snapshots:
       v8-compile-cache-lib: 3.0.1
       yn: 3.1.1
     optionalDependencies:
-      '@swc/core': 1.10.7
+      '@swc/core': 1.10.7(@swc/helpers@0.5.15)
 
   ts-toolbelt@6.15.5: {}
 

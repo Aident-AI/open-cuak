@@ -59,6 +59,7 @@ export * from './interactable/interactions/Tap.Interaction';
 export * from './interactable/interactions/Type.Interaction';
 export * from './interactable/interactions/Wait.Interaction';
 export * from './interactable/types';
+export * from './llm/LlmRouterModel';
 export * from './llm/ModelRouter';
 export * from './llm/constants';
 export * from './llm/genFetchHFModelSha';
