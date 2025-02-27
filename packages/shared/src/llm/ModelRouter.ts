@@ -49,7 +49,10 @@ const DEFAULT_OPENAI_BASE_URL_PREFIX = 'https://api.openai.com';
 
 export class ModelRouter {
   public static getModelFromUserConfigOrThrow(userConfig: UserConfigData): LanguageModel {
-    if (!this.userConfigHasValidModel(userConfig)) throw new Error('User config is missing required fields.');
+    if (!this.userConfigHasValidModel(userConfig)) {
+      const llmModel = userConfig.llmModel ? `\`${userConfig.llmModel}\`` : '';
+      throw new Error(`Model config ${llmModel} is invalid. Please configure your model in Configurations.`);
+    }
 
     switch (userConfig.llmModel) {
       case LlmRouterModel.AZURE_OAI: {

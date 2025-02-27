@@ -1,9 +1,11 @@
 'use client';
 
 import { ChatBubbleLeftRightIcon, ChevronDownIcon, PencilSquareIcon } from '@heroicons/react/24/solid';
+import { Alert, Snackbar } from '@mui/material';
 import { useChat } from 'ai/react';
 import { useEffect, useRef, useState } from 'react';
 import { X_REMOTE_BROWSER_SESSION_ID_HEADER } from '~shared/http/headers';
+import { ALogger } from '~shared/logging/ALogger';
 import { AiAgentSOP } from '~shared/sop/AiAgentSOP';
 import { AiAidenApiMessageAnnotation, AiAidenStreamDataSchema } from '~src/app/api/ai/aiden/AiAidenApi';
 import { AiMessageChatBoxInput } from '~src/components/chat-box/AiMessageChatBoxInput';
@@ -18,6 +20,7 @@ interface Props {
 }
 
 export default function ChatWithAidenWindow(props: Props) {
+  const [errorSnackbar, setErrorSnackbar] = useState({ open: false, message: '' });
   const [isChatWithGraphOpen, setIsChatWithGraphOpen] = useState(true);
   const [isScrolledToBottom, setIsScrolledToBottom] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
@@ -39,6 +42,13 @@ export default function ChatWithAidenWindow(props: Props) {
       : undefined,
     body: {
       sopId: props.sop ? props.sop.id : undefined,
+    },
+    onError: (err) => {
+      const rawError = JSON.parse(err.message);
+      const error = rawError.error ?? rawError;
+      const errorMessage = error.message ?? error;
+      ALogger.warn({ context: 'Chat error received', error: errorMessage, rawError });
+      if (errorMessage) setErrorSnackbar({ open: true, message: errorMessage });
     },
   });
   const data = rawData?.map((d) => AiAidenStreamDataSchema.parse(d)) ?? [];
@@ -91,6 +101,10 @@ export default function ChatWithAidenWindow(props: Props) {
     setData([]);
   };
 
+  const handleCloseErrorSnackbar = () => {
+    setErrorSnackbar({ ...errorSnackbar, open: false });
+  };
+
   if (!isChatWithGraphOpen)
     return (
       <button
@@ -136,6 +150,17 @@ export default function ChatWithAidenWindow(props: Props) {
           />
         </>
       </div>
+
+      <Snackbar
+        open={errorSnackbar.open}
+        autoHideDuration={5_000}
+        onClose={handleCloseErrorSnackbar}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert onClose={handleCloseErrorSnackbar} severity="warning" variant="filled" sx={{ width: '100%' }}>
+          {errorSnackbar.message.length > 200 ? `${errorSnackbar.message.substring(0, 200)}...` : errorSnackbar.message}
+        </Alert>
+      </Snackbar>
     </div>
   );
 }
