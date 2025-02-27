@@ -1,6 +1,6 @@
 'use client';
 
-import { AcademicCapIcon, Cog8ToothIcon, KeyIcon } from '@heroicons/react/24/solid';
+import { AcademicCapIcon, BriefcaseIcon, Cog8ToothIcon, KeyIcon } from '@heroicons/react/24/solid';
 import cx from 'classnames';
 import { useSearchParams } from 'next/navigation';
 import { useContext, useEffect, useMemo, useState } from 'react';
@@ -8,6 +8,7 @@ import DebugInteractionsPage from '~src/app/extension/debug/interactions/DebugIn
 import ChatWithAidenWindow from '~src/app/portal/ChatWithAidenWindow';
 import CookieModal from '~src/app/portal/CookieModal';
 import RemoteBrowserControlIndicator from '~src/app/portal/RemoteBrowserControlIndicator';
+import SOPModal from '~src/app/portal/SOPModal';
 import TeachAidenWindow from '~src/app/portal/TeachAidenWindow';
 import UserConfigModal from '~src/app/portal/UserConfigModal';
 import { WebsocketRemoteBrowserWindow } from '~src/app/portal/WebsocketRemoteBrowserWindow';
@@ -24,6 +25,7 @@ export default function PortalPage() {
   const [showCookieModal, setShowCookieModal] = useState(false);
   const [showUserConfigModal, setShowUserConfigModal] = useState(false);
   const [shouldStartSop, setShouldStartSop] = useState(false);
+  const [showSopModal, setShowSopModal] = useState(false);
 
   const { sops, isLoading, fetchSops } = useSopStore();
 
@@ -91,6 +93,12 @@ export default function PortalPage() {
           >
             <Cog8ToothIcon className="h-6 w-6" />
           </button>
+          <button
+            className="mx-1 h-fit w-fit rounded-full bg-blue-300/50 p-2 text-white shadow-2xl shadow-black"
+            onClick={() => setShowSopModal(true)}
+          >
+            <BriefcaseIcon className="h-6 w-6" />
+          </button>
         </div>
 
         {showDebugInteractions && (
@@ -109,6 +117,7 @@ export default function PortalPage() {
             onClose={() => setShowUserConfigModal(false)}
           />
         )}
+        {showSopModal && <SOPModal isOpen={showSopModal} onClose={() => setShowSopModal(false)} />}
       </MeshBackgroundWithUserSession>
     </InteractionEventProvider>
   );
