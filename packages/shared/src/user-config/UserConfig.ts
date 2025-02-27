@@ -29,6 +29,7 @@ export const UserConfigDataSchema = z.object({
   llmGcpPrivateKey: z.string().optional(),
   llmGcpProject: z.string().optional(),
   llmGeminiApiKey: z.string().optional(),
+  llmGeminiModelName: z.string().optional(),
   llmOpenaiCompatibleApiKey: z.string().optional(),
   llmOpenaiCompatibleApiName: z.string().optional(),
   llmOpenaiCompatibleBaseUrl: z.string().optional(),

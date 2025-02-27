@@ -1,13 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import {
-  ClaudeVariant,
-  GeminiVariant,
-  LlmRouterModel,
-  LlmRouterModelHumanReadableName,
-  ModelRouter,
-} from '~shared/llm/ModelRouter';
+import { ClaudeVariant, LlmRouterModel, LlmRouterModelHumanReadableName, ModelRouter } from '~shared/llm/ModelRouter';
 import { ALogger } from '~shared/logging/ALogger';
 import { SupabaseClientForClient } from '~shared/supabase/client/SupabaseClientForClient';
 import { BoundingBoxGenerator, UserConfig, UserConfigData } from '~shared/user-config/UserConfig';
@@ -202,20 +196,6 @@ export default function UserConfigModal(props: Props) {
           return (
             <div className="space-y-2 rounded border border-gray-200 p-2">
               <div>
-                <label className="block text-xs text-gray-600">Gemini Model Variant</label>
-                <select
-                  value={userConfig.llmModelVariant || GeminiVariant.FLASH_2_0}
-                  onChange={(e) => handleDataUpdate({ llmModelVariant: e.target.value })}
-                  className="w-full rounded border px-2 py-1 text-sm text-black"
-                >
-                  {Object.entries(GeminiVariant).map(([key, value]) => (
-                    <option key={value} value={value}>
-                      {key}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
                 <label className="block text-xs text-gray-600">Gemini API Key</label>
                 <input
                   type="password"
@@ -223,6 +203,17 @@ export default function UserConfigModal(props: Props) {
                   placeholder="Gemini API Key"
                   value={userConfig.llmGeminiApiKey || ''}
                   onChange={(e) => handleDataUpdate({ llmGeminiApiKey: e.target.value.trim() })}
+                  className="w-full rounded border px-2 py-1 text-sm text-black"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600">Gemini Model Name (optional)</label>
+                <input
+                  type="text"
+                  autoComplete="new-password"
+                  placeholder="Default: gemini-2.0-flash-exp"
+                  value={userConfig.llmGeminiModelName || ''}
+                  onChange={(e) => handleDataUpdate({ llmGeminiModelName: e.target.value.trim() })}
                   className="w-full rounded border px-2 py-1 text-sm text-black"
                 />
               </div>

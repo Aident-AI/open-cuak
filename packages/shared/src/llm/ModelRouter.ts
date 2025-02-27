@@ -84,8 +84,12 @@ export class ModelRouter {
       }
 
       // TODO: add support for the following models
+      case LlmRouterModel.GEMINI: {
+        const google = createGoogleGenerativeAI({ apiKey: userConfig.llmGeminiApiKey });
+        const modelName = userConfig.llmGeminiModelName ?? 'gemini-2.0-flash-exp';
+        return google(modelName);
+      }
       case LlmRouterModel.CLAUDE:
-      case LlmRouterModel.GEMINI:
       case LlmRouterModel.VLLM: {
         throw new Error('VLLM is not supported yet.');
       }
