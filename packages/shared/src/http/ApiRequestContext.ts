@@ -1,7 +1,7 @@
 import { Session, SupabaseClient, User } from '@supabase/supabase-js';
 import PgBoss from 'pg-boss';
-import { UserConfigData } from '~shared/export-map.generated';
 import { RuntimeMessage, RuntimeMessageResponse } from '~shared/messaging/types';
+import { UserConfigData } from '~shared/user-config/UserConfig';
 
 export interface ApiRequestContext {
   fetchSession: () => Promise<Session | null>;

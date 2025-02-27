@@ -1,12 +1,12 @@
 import { Session, SupabaseClient, User } from '@supabase/supabase-js';
 import { NextRequest } from 'next/server';
 import PgBoss from 'pg-boss';
-import { UserConfig, UserConfigData } from '~shared/export-map.generated';
 import { ApiRequestContext } from '~shared/http/ApiRequestContext';
 import { ALogger } from '~shared/logging/ALogger';
 import { ServiceWorkerMessageAction } from '~shared/messaging/service-worker/ServiceWorkerMessageAction';
 import { RuntimeMessage, RuntimeMessageResponse } from '~shared/messaging/types';
 import { SupabaseClientForServer } from '~shared/supabase/client/SupabaseClientForServer';
+import { UserConfig, UserConfigData } from '~shared/user-config/UserConfig';
 import { getRequestContext } from '~src/_logging/RequestContext';
 import { RemoteExtensionService } from '~src/app/api/extension/RemoteExtensionService';
 
