@@ -157,7 +157,7 @@ export class AiAgentNode implements IBaseAgentNode<CoreMessage, LanguageModel, C
 
                 if (
                   stepCount === 0 ||
-                  lastStepMessages.some((m) => m.role === 'tool' && m.content[0].toolName !== ThinkAndPlanToolName)
+                  lastStepMessages.some((m) => m.role === 'tool' && !isThinkAndPlanTool(m.content[0].toolName))
                 ) {
                   // Keep only the ThinkAndPlan tool
                   localToolDict = { [ThinkAndPlanToolName]: localToolDict[ThinkAndPlanToolName] };
