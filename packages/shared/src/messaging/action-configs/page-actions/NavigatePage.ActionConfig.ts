@@ -2,7 +2,6 @@ import { z } from 'zod';
 import { ActionConfigAutoAttachesToInteractable } from '~shared/decorators/ActionConfigAutoAttachesToInteractable';
 import { ALogger } from '~shared/logging/ALogger';
 import { Base_ActionConfig, enforceBaseActionConfigStatic } from '~shared/messaging/action-configs/Base.ActionConfig';
-import { IncludeTreeAfterwards, SimplifiedTreeResponse } from '~shared/messaging/action-configs/page-actions/mixins';
 import { PageNavigationAction } from '~shared/messaging/action-configs/page-actions/types';
 import { ServiceWorkerMessageAction } from '~shared/messaging/service-worker/ServiceWorkerMessageAction';
 
@@ -15,10 +14,9 @@ export class NavigatePage_ActionConfig extends Base_ActionConfig {
   public static requestPayloadSchema = z.object({
     action: z.nativeEnum(PageNavigationAction),
     url: z.string().optional().default('').describe('The target URL for the `goto` action.'),
-    ...IncludeTreeAfterwards,
   });
 
-  public static responsePayloadSchema = z.object({ ...SimplifiedTreeResponse });
+  public static responsePayloadSchema = z.void();
 
   @ActionConfigAutoAttachesToInteractable
   public static async exec(
@@ -26,7 +24,7 @@ export class NavigatePage_ActionConfig extends Base_ActionConfig {
     context: IActionConfigExecContext,
   ): Promise<z.infer<typeof this.responsePayloadSchema>> {
     const its = context.getInteractableService();
-    const { action, url, includeTreeAfterwards } = payload;
+    const { action, url } = payload;
     switch (action) {
       case PageNavigationAction.GO_BACK:
         await its.getPageOrThrow().goBack();
@@ -42,7 +40,7 @@ export class NavigatePage_ActionConfig extends Base_ActionConfig {
         }
         const result = its.getPageCreationResult();
         if (!result.success || !result.page) await chrome.tabs.update(its.getActiveTab().id, { url: target });
-        else await result.page.goto(target, { waitUntil: 'networkidle2' });
+        else await result.page.goto(target);
         ALogger.info({ context: 'Went to the page', url: target });
 
         break;
@@ -53,10 +51,6 @@ export class NavigatePage_ActionConfig extends Base_ActionConfig {
       default:
         throw new Error(`Invalid action ${action}`);
     }
-
-    if (!includeTreeAfterwards) return {};
-
-    return { tree: await its.getInteractableOrThrow().fetchNodeTree() };
   }
 }
 
