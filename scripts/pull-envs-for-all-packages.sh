@@ -16,8 +16,7 @@ fi
 if [ ! -f .env.production ]; then
   echo "No .env.production found at root..."
   cp .example.env.production .env.production
-  echo "✅ Copied .env.production from .env.example..."
-  sed -i '' 's/NEXT_PUBLIC_BUILD_ENV="development"/NEXT_PUBLIC_BUILD_ENV="production"/' .env.production
+  echo "✅ Copied .env.production from .env.example.production..."
 else
   echo "✅ .env.production already exists"
 fi
