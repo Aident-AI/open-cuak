@@ -348,7 +348,7 @@ export default function UserConfigModal(props: Props) {
                 <input
                   type="text"
                   autoComplete="new-password"
-                  placeholder="Default: 2024-08-01-preview"
+                  placeholder="Optional"
                   value={userConfig.llmAzureApiVersion || ''}
                   onChange={(e) => handleDataUpdate({ llmAzureApiVersion: e.target.value.trim() })}
                   className="w-full rounded border px-2 py-1 text-sm text-black"

@@ -1,6 +1,6 @@
 import { createAmazonBedrock } from '@ai-sdk/amazon-bedrock';
 import { createAnthropic } from '@ai-sdk/anthropic';
-import { createAzure } from '@ai-sdk/azure';
+import { AzureOpenAIProvider, createAzure } from '@ai-sdk/azure';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createVertexAnthropic } from '@ai-sdk/google-vertex/anthropic/edge';
 import { createOpenAI } from '@ai-sdk/openai';
@@ -24,12 +24,17 @@ export class ModelRouter {
 
     switch (userConfig.llmModel) {
       case LlmRouterModel.AZURE_OAI: {
-        const apiVersion = userConfig.llmAzureApiVersion || '2024-08-01-preview';
+        const apiVersion = userConfig.llmAzureApiVersion;
         const resourceName = userConfig.llmAzureOpenaiInstanceName;
         const apiKey = userConfig.llmAzureOpenaiKey;
         const deploymentName = userConfig.llmAzureOpenaiDeployment!;
 
-        const azure = createAzure({ resourceName, apiKey, apiVersion });
+        let azure: AzureOpenAIProvider;
+        if (apiVersion) {
+          azure = createAzure({ resourceName, apiKey, apiVersion });
+        } else {
+          azure = createAzure({ resourceName, apiKey });
+        }
         return azure(deploymentName);
       }
       case LlmRouterModel.OPEN_AI: {
