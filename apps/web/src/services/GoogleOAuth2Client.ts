@@ -1,4 +1,4 @@
-import { OAuth2Client, type } from 'google-auth-library';
+import { OAuth2Client } from 'google-auth-library';
 import { google } from 'googleapis';
 
 export const getGoogleOAuth2Client = (callback?: string): OAuth2Client =>
