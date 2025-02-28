@@ -54,17 +54,16 @@ export default function TeachAidenWindow(props: Props) {
   const startPointEnvironmentRef = useRef<Partial<ShadowModeWorkflowEnvironment>>({});
   const messageCacheRef = useRef<Message[]>([]);
 
-  const [isScrolledToBottom, setIsScrolledToBottom] = useState(false);
+  const [userHasScrolled, setUserHasScrolled] = useState(false);
   const [aidenState, setAidenState] = useState<AidenState>(AidenState.IDLE);
   const [messages, setMessages] = useState<Message[]>([]);
   const [annotationMap, setAnnotationMap] = useState<Record<string, AiAidenApiMessageAnnotation>>({});
 
   useEffect(() => {
-    onScroll();
-    if (isScrolledToBottom) scrollToBottom();
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [messages]);
+    if (messages.length && !userHasScrolled) {
+      scrollToBottom();
+    }
+  }, [messages, userHasScrolled]);
 
   useEffect(() => {
     if (aidenState !== AidenState.SHADOWING) return;
@@ -176,27 +175,23 @@ export default function TeachAidenWindow(props: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [aidenState, interactionEvents]);
 
-  const getScrollableProps = () => {
-    const scrollable = scrollableRef.current;
-    if (!scrollable) return {};
+  const handleScroll = () => {
+    const { scrollTop, scrollHeight, clientHeight } = scrollableRef.current || {};
+    if (!scrollTop || !scrollHeight || !clientHeight) return;
 
-    const { scrollTop, scrollHeight, clientHeight } = scrollable;
-    const scrollableHeight = scrollHeight - clientHeight;
-    const isScrollable = scrollableHeight > 0;
-    const scrolledToBottom = scrollTop >= scrollableHeight;
-    return { scrollable, scrollTop, scrollHeight, clientHeight, scrollableHeight, isScrollable, scrolledToBottom };
-  };
+    const isAtBottom = scrollHeight - scrollTop - clientHeight < 10;
 
-  const onScroll = () => {
-    const { isScrollable, scrolledToBottom } = getScrollableProps();
-    setIsScrolledToBottom(!isScrollable || scrolledToBottom);
+    if (!isAtBottom) {
+      setUserHasScrolled(true);
+    } else {
+      setUserHasScrolled(false);
+    }
   };
 
   // actions
   const scrollToBottom = () => {
-    const { scrollable, scrollableHeight } = getScrollableProps();
-    if (!scrollable) return;
-    scrollable.scrollTo({ top: scrollableHeight, behavior: 'smooth' });
+    if (!scrollableRef.current) return;
+    scrollableRef.current.scrollTop = scrollableRef.current.scrollHeight;
   };
   const resetMessages = () => {
     setAidenState(AidenState.IDLE);
@@ -426,11 +421,18 @@ export default function TeachAidenWindow(props: Props) {
             deleteMessage={deleteMessage}
             logoSubtitle={title}
             messages={messages}
-            onScroll={onScroll}
+            onScroll={handleScroll}
             scrollableRef={scrollableRef}
             teachMode
           />
-          <ScrollToBottomButton isScrolledToBottom={isScrolledToBottom} scrollToBottom={scrollToBottom} />
+          {userHasScrolled && (
+            <ScrollToBottomButton
+              scrollToBottom={() => {
+                scrollToBottom();
+                setUserHasScrolled(false);
+              }}
+            />
+          )}
           <AiMessageTeachModeInput formRef={formRef} messages={messages} append={appendMessage} />
         </>
       </div>
