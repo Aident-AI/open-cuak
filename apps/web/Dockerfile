@@ -1,7 +1,7 @@
 #####################
 # Build arm64 image #
-##################### 
-FROM --platform=linux/arm64 node:20-alpine
+#####################
+FROM --platform=linux/arm64 node:20-alpine AS runner-arm64
 
 ENV DOCKER_ENV=true
 ENV NODE_ENV=production
@@ -24,7 +24,7 @@ CMD ["npm", "start"]
 #####################
 # Build amd64 image #
 #####################
-FROM --platform=linux/amd64 node:20-alpine
+FROM --platform=linux/amd64 node:20-alpine AS runner-amd64
 
 ENV DOCKER_ENV=true
 ENV NODE_ENV=production
