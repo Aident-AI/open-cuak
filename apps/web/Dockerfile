@@ -1,44 +1,26 @@
-#####################
-# Build arm64 image #
-#####################
-FROM --platform=linux/arm64 node:20-alpine AS runner-arm64
+# should run from the root of the project, e.g. ../../
+
+FROM node:20-alpine
 
 ENV DOCKER_ENV=true
-ENV NODE_ENV=production
+
+RUN npm install -g pnpm
+RUN pnpm i next
 
 WORKDIR /app
+RUN mkdir -p apps/web
 
-RUN apk add --no-cache python3 make g++ 
-RUN ln -sf python3 /usr/bin/python
-RUN npm install -g pnpm
-
-COPY ./ ./
+COPY package.json ./
+COPY pnpm-lock.yaml ./
+COPY pnpm-workspace.yaml ./
+COPY node_modules/ node_modules/
+COPY packages/ packages/
+COPY apps/web apps/web
+RUN pnpm install --frozen-lockfile
 
 WORKDIR /app/apps/web
 
 EXPOSE 3000
 
-CMD ["npm", "start"]
-
-
-#####################
-# Build amd64 image #
-#####################
-FROM --platform=linux/amd64 node:20-alpine AS runner-amd64
-
-ENV DOCKER_ENV=true
-ENV NODE_ENV=production
-
-WORKDIR /app
-
-RUN apk add --no-cache python3 make g++ 
-RUN ln -sf python3 /usr/bin/python
-RUN npm install -g pnpm
-
-COPY ./ ./
-
-WORKDIR /app/apps/web
-
-EXPOSE 3000
-
-CMD ["npm", "start"]
+# Start the Next.js server
+CMD ["pnpm", "start"]

@@ -8,19 +8,6 @@ runs:
       with:
         version: 9.2.0
 
-    - name: Determine architecture
-      id: arch
-      shell: bash
-      run: |
-        ARCH=$(uname -m)
-        if [ "$ARCH" = "x86_64" ]; then
-          echo "arch=amd64" >> $GITHUB_OUTPUT
-        elif [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
-          echo "arch=arm64" >> $GITHUB_OUTPUT
-        else
-          echo "arch=$ARCH" >> $GITHUB_OUTPUT
-        fi
-
     - name: Cache pnpm packages
       uses: actions/cache@v4
       with:
@@ -29,7 +16,7 @@ runs:
           ~/.npm
           ~/.config
           ~/.pnpm-store
-        key: ${{ runner.os }}-${{ steps.arch.outputs.arch }}-pnpm-cache-${{ hashFiles('**/pnpm-lock.yaml') }}
+        key: ${{ runner.os }}-pnpm-cache-${{ hashFiles('**/pnpm-lock.yaml') }}
 
     - name: Install dependencies
       shell: bash
