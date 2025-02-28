@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { SupabaseClientForServer } from '~shared/supabase/client/SupabaseClientForServer';
 
 export async function POST(request: NextRequest) {
@@ -20,7 +20,7 @@ const _handelSignOut = async (request: NextRequest) => {
   if (session) await supabase.auth.signOut();
 
   const requestUrl = new URL(request.url);
-  const targetPath = requestUrl.searchParams.get('target') ?? '/';
+  const targetPath = requestUrl.searchParams.get('target') || '/';
 
   return NextResponse.redirect(requestUrl.origin + targetPath, { status: 302 });
 };

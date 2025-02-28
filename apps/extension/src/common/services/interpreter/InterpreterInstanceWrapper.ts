@@ -35,7 +35,7 @@ export class InterpreterInstanceWrapper {
     this.#instance.stateStack = [programStep];
 
     ALogger.error(error);
-    this.#instance.value = 'Error: ' + (error.message ?? 'Unknown error');
+    this.#instance.value = 'Error: ' + (error.message || 'Unknown error');
     throw error;
   }
 

@@ -150,7 +150,7 @@ export class AiAidenCore {
     type?: 'single' | 'round';
   }): CoreMessage[] {
     const { annotation, type } = config;
-    const stepInfoType = type ?? 'round';
+    const stepInfoType = type || 'round';
     const ts = new Date(annotation.ts).toLocaleString();
 
     const messages = [] as CoreMessage[];
@@ -197,7 +197,7 @@ export class AiAidenCoreInstance {
   }
 
   constructor(stepHistorySize?: number) {
-    this.stepHistorySize = stepHistorySize ?? DEFAULT_AGENT_STEP_HISTORY_DEPTH;
+    this.stepHistorySize = stepHistorySize || DEFAULT_AGENT_STEP_HISTORY_DEPTH;
   }
 
   public readonly stepHistorySize: number;

@@ -33,7 +33,7 @@ export const POST = simpleRequestWrapper<z.infer<typeof api.RequestSchema.schema
     const sendRuntimeMessage = context.sendRuntimeMessage;
     const connectedConfig = { remoteBrowserSessionId, sendRuntimeMessage };
     const coreConfig = {
-      baseMaxSteps: request.maxSteps ?? DEFAULT_MAX_STEPS,
+      baseMaxSteps: request.maxSteps || DEFAULT_MAX_STEPS,
       isBenchmark: request.isBenchmark ?? false,
       isClaude: ModelRouter.isClaude(model),
       remoteBrowserConnected: await AiAidenCore.genTestRemoteBrowserConnection(connectedConfig),
@@ -58,7 +58,7 @@ export const POST = simpleRequestWrapper<z.infer<typeof api.RequestSchema.schema
     return createDataStreamResponse({
       execute: async (dataStream) => {
         const maxStepMultiplier = coreConfig.isBenchmark && coreConfig.useReAct ? 2 : 1; // For ReAct, there is always a think step before an execution step
-        const maxSteps = (request.maxSteps ?? DEFAULT_MAX_STEPS) * maxStepMultiplier;
+        const maxSteps = (request.maxSteps || DEFAULT_MAX_STEPS) * maxStepMultiplier;
 
         const core = new AiAidenCoreInstance();
         const fetchStepState = async () => {
@@ -106,7 +106,7 @@ export const POST = simpleRequestWrapper<z.infer<typeof api.RequestSchema.schema
 
         ALogger.info({ context: '/api/llm/agent', result });
         if (!result.success) {
-          const newData = AiAidenStreamDataSchema.parse({ type: 'error', error: result.error ?? 'Unknown error' });
+          const newData = AiAidenStreamDataSchema.parse({ type: 'error', error: result.error || 'Unknown error' });
           dataStream.writeData(newData);
         }
       },

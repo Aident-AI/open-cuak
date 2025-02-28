@@ -53,7 +53,7 @@ export class TabLifecycleInjectionService {
   }
 
   public static getBroadcastEvent(tabId?: number): BroadcastEvent {
-    return { type: this.broadcastType, identifier: tabId ?? this.instance.#currentTabId };
+    return { type: this.broadcastType, identifier: tabId || this.instance.#currentTabId };
   }
 
   static readonly broadcastType = BroadcastEventType.TAB_INJECTION_STATUS;

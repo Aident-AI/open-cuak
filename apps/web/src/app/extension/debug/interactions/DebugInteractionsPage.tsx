@@ -43,7 +43,7 @@ export default function DebugInteractionsPage(props: Props) {
   }, []);
 
   // buttons
-  const getToolName = (tool?: ApiTool) => tool?.operationId?.replaceAll('_', ':') ?? 'Unknown';
+  const getToolName = (tool?: ApiTool) => tool?.operationId?.replaceAll('_', ':') || 'Unknown';
   const buttons = tools.map((tool: ApiTool) => ({
     text: getToolName(tool),
     onClick: () => setPickedTool(tool),

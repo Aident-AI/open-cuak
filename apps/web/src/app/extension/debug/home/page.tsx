@@ -55,7 +55,7 @@ export default function DebugHome() {
     });
     if (!rsp?.success) {
       showToast('Failed to cache cookies...');
-      throw new Error('Failed to cache cookies: ' + (rsp.error ?? 'Unknown error'));
+      throw new Error('Failed to cache cookies: ' + (rsp.error || 'Unknown error'));
     } else showToast('Success!');
   };
 
@@ -67,7 +67,7 @@ export default function DebugHome() {
       onClick: () => attachOrDetach(isAttached ? 'detach' : 'attach'),
     },
     {
-      text: `Switch Server: ${_.upperCase(inferenceServer?.toString() ?? 'unknown')}`,
+      text: `Switch Server: ${_.upperCase(inferenceServer?.toString() || 'unknown')}`,
       onClick: switchInferenceServer,
     },
     {

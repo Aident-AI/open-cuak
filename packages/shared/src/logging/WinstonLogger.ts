@@ -60,7 +60,7 @@ export class WinstonLogger extends BaseLogger {
       format: format.combine(
         format((line) => ({
           ...line,
-          environment: line.environment ?? getExecEnv(),
+          environment: line.environment || getExecEnv(),
           createdAt:
             typeof line.createdAt === 'string' || typeof line.createdAt === 'number'
               ? new Date(line.createdAt)

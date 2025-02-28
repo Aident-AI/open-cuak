@@ -35,9 +35,9 @@ export class MessageListener<T extends RuntimeMessage> {
         throw new Error('Invalid message received: ' + JSON.stringify(msg));
       }
       const message = result.data as T;
-      if ((message.receiver ?? RuntimeMessageReceiver.SERVICE_WORKER) !== this.receiver) return;
+      if ((message.receiver || RuntimeMessageReceiver.SERVICE_WORKER) !== this.receiver) return;
 
-      const sendResponse = (this.responseHandler ?? this.#defaultMessageResponder)(respond, message, sender);
+      const sendResponse = (this.responseHandler || this.#defaultMessageResponder)(respond, message, sender);
       try {
         this.requestHandler(message as T, sender, sendResponse);
       } catch (e) {
@@ -61,6 +61,6 @@ export class MessageListener<T extends RuntimeMessage> {
       console.debug('[DefaultMessageResponder] Sending response=', rsp);
       sendResponse(rsp);
     },
-    failure: (error?: Error) => sendResponse({ success: false, error: error?.message ?? 'unknown error' }),
+    failure: (error?: Error) => sendResponse({ success: false, error: error?.message || 'unknown error' }),
   });
 }

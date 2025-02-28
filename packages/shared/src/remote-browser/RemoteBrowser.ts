@@ -53,9 +53,9 @@ export class RemoteBrowser {
   // Public Static
   // =============
   public static async connect(options?: RemoteBrowserOptions): Promise<RemoteBrowser> {
-    const execSessionId = options?.execSessionId ?? UUID();
-    const defaultViewport = options?.defaultViewport ?? RemoteBrowserConfigs.defaultViewport;
-    const endpoint = options?.endpoint ?? 'ws://localhost:11976';
+    const execSessionId = options?.execSessionId || UUID();
+    const defaultViewport = options?.defaultViewport || RemoteBrowserConfigs.defaultViewport;
+    const endpoint = options?.endpoint || 'ws://localhost:11976';
     const args = this.#buildBrowserArgs({ endpoint, ...options, execSessionId, defaultViewport });
     const launchParams = JSON.stringify({ headless: false, args });
     const wsEndpoint = `${endpoint}/?token=${this.#getBrowserlessToken()}&launch=${launchParams}`;
@@ -68,9 +68,9 @@ export class RemoteBrowser {
     };
 
     // Step 1: Connect to the remote browser
-    const protocolTimeout = options?.timeout ?? 180_000;
+    const protocolTimeout = options?.timeout || 180_000;
     const connectionTimeout = 2_000;
-    const maxRetries = options?.maxRetries ?? 10;
+    const maxRetries = options?.maxRetries || 10;
     const connectWithTimeout = async (attempt: number = 1): Promise<Browser> => {
       try {
         process.env.REBROWSER_PATCHES_RUNTIME_FIX_MODE = 'alwaysIsolated';
@@ -248,7 +248,7 @@ export class RemoteBrowser {
     const args: string[] = [];
 
     // Window size
-    const defaultViewport = options?.defaultViewport ?? RemoteBrowserConfigs.defaultViewport;
+    const defaultViewport = options?.defaultViewport || RemoteBrowserConfigs.defaultViewport;
     const initWindowSize = this.#getInitWindowSize(defaultViewport);
     args.push(`--window-size=${initWindowSize.width},${initWindowSize.height}`);
 
@@ -440,7 +440,7 @@ export class RemoteBrowser {
   }) {
     this.#browser = config.browser;
     this.#browserId = config.browserId;
-    this.#defaultViewport = config.defaultViewport ?? RemoteBrowserConfigs.defaultViewport;
+    this.#defaultViewport = config.defaultViewport || RemoteBrowserConfigs.defaultViewport;
     this.#endpoint = config.endpoint;
     this.#execSessionId = config.execSessionId;
     this.#extensionApiPage = config.extensionApiPage;

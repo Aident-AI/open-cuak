@@ -25,7 +25,7 @@ export class ContentInjectionStatusLabelInjection {
     const div = this.getStatusDiv();
     if (!div) return TabLifecycleStatus.UNLOADED;
 
-    return EnumUtils.getEnumValue(TabLifecycleStatus, div.innerText) ?? TabLifecycleStatus.UNLOADED;
+    return EnumUtils.getEnumValue(TabLifecycleStatus, div.innerText) || TabLifecycleStatus.UNLOADED;
   }
 
   public static getStatusDiv() {

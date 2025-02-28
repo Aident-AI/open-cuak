@@ -60,7 +60,7 @@ export class MouseHandler {
         return window.getComputedStyle(el as Element).cursor;
       }, element);
 
-      const updatedPosition = { ...position, cursor: cursorStyle ?? 'default', ts: Date.now() };
+      const updatedPosition = { ...position, cursor: cursorStyle || 'default', ts: Date.now() };
       if (updatedPosition.tabId < 0) updatedPosition.tabId = activeTabId;
       const broadcastEvent = { type: BroadcastEventType.MOUSE_POSITION_UPDATED };
 

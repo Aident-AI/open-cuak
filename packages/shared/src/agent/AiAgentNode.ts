@@ -413,7 +413,7 @@ export class AiAgentNode implements IBaseAgentNode<CoreMessage, LanguageModel, C
     this.state = options.state ?? {
       chatHistory: options.chatHistory,
       inputMessages: options.inputMessages,
-      maxSteps: options.maxSteps ?? DEFAULT_MAX_STEPS,
+      maxSteps: options.maxSteps || DEFAULT_MAX_STEPS,
       runResult: undefined,
       stepCount: 0,
       stepEnvStateHistory: [],
@@ -435,7 +435,7 @@ export class AiAgentNode implements IBaseAgentNode<CoreMessage, LanguageModel, C
     );
     if (!this.toolDict[DefaultAiFinishRunToolName]) this.toolDict[DefaultAiFinishRunToolName] = DefaultAiFinishRunTool;
 
-    this.stepRunHistoryType = options.stepRunHistoryType ?? StepRunHistoryType.COMPLETE;
+    this.stepRunHistoryType = options.stepRunHistoryType || StepRunHistoryType.COMPLETE;
     this.dataStream = options.dataStream;
     this.abortSignal = options.abortSignal;
     this.inspectionConfig = options.inspectionConfig;

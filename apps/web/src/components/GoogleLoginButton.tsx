@@ -28,7 +28,7 @@ export default function GoogleLoginButton(props: Props) {
       return;
     }
 
-    const targetPath = props.targetPath ?? searchParams?.get('target');
+    const targetPath = props.targetPath || searchParams?.get('target');
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -41,7 +41,7 @@ export default function GoogleLoginButton(props: Props) {
     if (error) ALogger.error(error);
   }
 
-  const title = props.title ?? 'Continue with Google';
+  const title = props.title || 'Continue with Google';
   const logo = props.logo === 'gmail' ? GmailLogo : GoogleG;
   const altText = props.logo === 'gmail' ? 'Gmail Logo' : 'Google Logo';
 

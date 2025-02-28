@@ -8,14 +8,14 @@ import { RequestId } from '~shared/logging/RequestId';
 
 export class ClientLogger extends BaseLogger {
   public static createForWebEdge(req: NextRequest) {
-    const requestId = req.headers.get('x-request-id') ?? UUID();
+    const requestId = req.headers.get('x-request-id') || UUID();
     RequestId.set(requestId);
     return new ClientLogger();
   }
 
   constructor(config?: { interval?: number }) {
     super();
-    this.#intervalId = setInterval(this.#sendLog, config?.interval ?? 1_000);
+    this.#intervalId = setInterval(this.#sendLog, config?.interval || 1_000);
   }
 
   public log(level: ALoggerLevel, message: unknown, consoleLog: boolean = false) {

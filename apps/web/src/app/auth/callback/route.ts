@@ -9,8 +9,8 @@ export async function GET(request: Request) {
   // https://supabase.com/docs/guides/auth/auth-helpers/nextjs#managing-sign-in-with-code-exchange
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
-  const targetPath = requestUrl.searchParams.get('target') ?? '/';
-  const finalRedirect = requestUrl.searchParams.get('final_redirect') ?? '/';
+  const targetPath = requestUrl.searchParams.get('target') || '/';
+  const finalRedirect = requestUrl.searchParams.get('final_redirect') || '/';
 
   if (code) {
     const supabase = SupabaseClientForServer.createForRouteHandler();

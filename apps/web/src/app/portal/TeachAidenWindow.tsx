@@ -300,7 +300,7 @@ export default function TeachAidenWindow(props: Props) {
     setAidenState(AidenState.IDLE);
   };
   const appendMessage = (m: Message) => {
-    setMessages((prev) => [...prev, { ...m, id: m.id ?? UUID() }]);
+    setMessages((prev) => [...prev, { ...m, id: m.id || UUID() }]);
     setAidenState(AidenState.IDLE);
   };
 

@@ -31,7 +31,7 @@ export function ChatBoxHeader(props: Props) {
   const { tabId: chatgptTabId } = useChatgptPage();
   const router = useRouter();
 
-  const onClose = async () => router.replace(props.closeRedirectUrl ?? '/extension/home');
+  const onClose = async () => router.replace(props.closeRedirectUrl || '/extension/home');
   const onPopup = async () => {
     if (!chatgptTabId) throw new Error('ChatGPT tab is not open');
     await sendRuntimeMessage({
@@ -141,7 +141,7 @@ export function ChatBoxHeader(props: Props) {
   return (
     <div className="fixed left-0 top-0 z-50 flex h-12 w-full items-center justify-center bg-sky-800/95 shadow-xl shadow-fuchsia-600/50 backdrop-blur-sm">
       {renderLeftHeaderAction()}
-      <h1 className="text-white">{props.title ?? 'Aident AI'}</h1>
+      <h1 className="text-white">{props.title || 'Aident AI'}</h1>
       {renderRightHeaderAction()}
     </div>
   );

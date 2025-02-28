@@ -19,7 +19,7 @@ export class RemoteCursorOverlayProcessor {
     try {
       let cursorBuffer = overlayBuffer;
       if (!cursorBuffer) {
-        const base64 = RemoteCursorTypeToBase64[cursorType] ?? RemoteCursorTypeToBase64.default;
+        const base64 = RemoteCursorTypeToBase64[cursorType] || RemoteCursorTypeToBase64.default;
         cursorBuffer = Buffer.from(getCleanBase64(base64), 'base64');
       }
 
@@ -51,7 +51,7 @@ export class RemoteCursorOverlayProcessor {
         .png()
         .toBuffer();
 
-      const cursorCenterOffset = RemoteCursorPositionCenterOffset[cursorType ?? 'default'];
+      const cursorCenterOffset = RemoteCursorPositionCenterOffset[cursorType || 'default'];
       const finalBuffer = await sharp(backgroundBuffer)
         .ensureAlpha()
         .composite([

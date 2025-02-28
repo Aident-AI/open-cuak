@@ -105,7 +105,7 @@ export class ChatgptTabService {
   #tab: ChromeTab | null = null;
 
   async #isChatGPTTab(tabId?: number) {
-    const target = tabId ?? this.#tab?.id;
+    const target = tabId || this.#tab?.id;
     if (!target) return false;
 
     const isValidChatGPTTab = () => {

@@ -12,7 +12,7 @@ export interface ExecScriptConfig {
 
 export const execScript = async (script: () => Promise<void>, config: ExecScriptConfig = {}) => {
   try {
-    dotenv.config({ path: config.envPath ?? `.env` });
+    dotenv.config({ path: config.envPath || `.env` });
     await ALogger.genInit(undefined, ExecutionEnvironment.SCRIPTS);
 
     const supabase = SupabaseClientForServer.createServiceRole();

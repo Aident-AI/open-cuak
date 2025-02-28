@@ -255,7 +255,7 @@ export function WebsocketRemoteBrowserWindow(props: Props) {
   // actions
   const attachToBrowser = async (): Promise<string> => {
     const remoteBrowserSessionIdFromUrl = new URLSearchParams(window.location.search).get('remoteBrowserSessionId');
-    const activeSessionId = remoteBrowserSessionIdFromUrl ?? props.remoteBrowserSessionId ?? UUID();
+    const activeSessionId = remoteBrowserSessionIdFromUrl || props.remoteBrowserSessionId || UUID();
     attachToRemoteBrowserSession(activeSessionId);
     return activeSessionId;
   };
@@ -317,7 +317,7 @@ export function WebsocketRemoteBrowserWindow(props: Props) {
     };
     const remoteCursorWindowPosition = convertCanvasPositionToWindowPosition(remoteCursorPosition);
     const remoteCursorAbsolutePosition = applyCenterOffset(remoteCursorWindowPosition, remoteCursorStyle?.centerOffset);
-    const cursorAbsolutePosition = convertCanvasPositionToWindowPosition(cursorPosition ?? remoteCursorPosition);
+    const cursorAbsolutePosition = convertCanvasPositionToWindowPosition(cursorPosition || remoteCursorPosition);
 
     return (
       <>

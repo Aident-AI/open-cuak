@@ -22,7 +22,7 @@ export function GuestLoginButton(props: Props) {
     const { session } = await signInAsGuest();
     if (!session) return;
     await overrideSession(session);
-    router.push(target ?? '/');
+    router.push(target || '/');
   };
 
   return (

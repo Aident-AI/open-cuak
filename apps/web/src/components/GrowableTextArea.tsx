@@ -92,15 +92,15 @@ export function GrowableTextArea(props: Props) {
       className={cx(
         'resize-none overflow-y-auto overflow-x-hidden border-none bg-transparent p-0 text-sm outline-none ring-0 focus:ring-0',
         props.className,
-        props.textColor ?? 'text-black',
-        props.placeholderTextColor ?? 'placeholder:text-white/30',
+        props.textColor || 'text-black',
+        props.placeholderTextColor || 'placeholder:text-white/30',
       )}
       name={props.name}
       onChange={(e) => handleOnChange(e.target.value)}
       onKeyDown={handleKeyDown}
       onKeyUp={handleKeyUp}
       placeholder={props.placeholder}
-      rows={props.initRows ?? 1}
+      rows={props.initRows || 1}
       value={props.value}
     />
   );

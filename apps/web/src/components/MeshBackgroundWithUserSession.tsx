@@ -30,7 +30,7 @@ export function MeshBackgroundWithUserSession(props: Props) {
     await logout('/');
     window.location.reload();
   };
-  const text = !session ? 'Login' : (session.user?.email ?? 'logout');
+  const text = !session ? 'Login' : session.user?.email || 'logout';
   const tooltip = !session ? 'Click to login' : 'Click to logout';
 
   const renderUserSessionBar = () => {

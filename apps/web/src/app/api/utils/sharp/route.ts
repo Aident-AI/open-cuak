@@ -23,7 +23,7 @@ export const POST = simpleRequestWrapper<z.infer<typeof requestSchema>>(
       const base64 = await RemoteCursorOverlayProcessor.genCursorOverlayFromBase64(
         request.backgroundBase64,
         request.overlayOffset,
-        request.cursorType ?? 'default',
+        request.cursorType || 'default',
         request.overlayBase64,
       );
       return new NextResponse(JSON.stringify({ base64 }), { status: 200 });

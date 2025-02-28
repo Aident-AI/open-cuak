@@ -9,7 +9,7 @@ export class SupabaseClientForClient {
   public static createForClientComponent(token?: string): SupabaseClient {
     return createBrowserClient(
       getDockerFriendlyUrl(process.env.NEXT_PUBLIC_SUPABASE_URL),
-      token ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      token || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     );
   }
 }

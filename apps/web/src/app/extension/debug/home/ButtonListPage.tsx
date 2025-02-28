@@ -43,7 +43,7 @@ export default function ButtonListPage(props: ButtonListPageProps) {
     );
   };
   const renderButtons = () => {
-    if (props.buttons.length < 1) return <p>{props?.placeholder ?? 'Loading...'}</p>;
+    if (props.buttons.length < 1) return <p>{props?.placeholder || 'Loading...'}</p>;
 
     const addButton = (index: number, text: string, onClick: () => void) => (
       <div

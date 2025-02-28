@@ -16,7 +16,7 @@ export async function redirectOauthLogin(searchParams: ReadonlyURLSearchParams) 
   cookies().set(OPENAI_OAUTH_COOKIE, JSON.stringify(cookieBlob as OpenaiOAuthCookie));
   const authorizationUrl = getGoogleOAuth2Client().generateAuthUrl({
     access_type: 'offline',
-    response_type: response_type ?? 'code',
+    response_type: response_type || 'code',
     scope: scope?.length > 1 ? scope?.split('+') : ['email', 'profile'],
     include_granted_scopes: !include_granted_scopes ? true : include_granted_scopes === 'true',
     state: state,

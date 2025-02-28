@@ -26,7 +26,7 @@ export class VllmServiceHost {
 
   public static async getCreateOpenAILanguageModel(modelName?: string): Promise<LanguageModel> {
     const vllm = this.#genCreateProvider();
-    return vllm(modelName ?? this.getVisionModelName());
+    return vllm(modelName || this.getVisionModelName());
   }
 
   public static getCreateChatOpenAIModel(): ChatOpenAI {

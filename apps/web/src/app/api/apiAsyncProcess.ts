@@ -30,7 +30,7 @@ export const apiAsyncProcess = (
 
   waitUntil(
     (async () => {
-      await ALogger.genInit(config?.requestId ?? RequestId.get(), ExecutionEnvironment.WEB_API_ASYNC);
+      await ALogger.genInit(config?.requestId || RequestId.get(), ExecutionEnvironment.WEB_API_ASYNC);
 
       const start = Date.now();
       if (!config?.silence) ALogger.info({ context: 'Async processing started', start, processId });

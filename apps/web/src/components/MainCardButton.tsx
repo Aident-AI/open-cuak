@@ -10,7 +10,7 @@ interface Props {
 }
 
 export function MainCardButton(props: Props) {
-  const buttonText = !props.disabled ? props.text : (props.loadingText ?? 'Loading...');
+  const buttonText = !props.disabled ? props.text : props.loadingText || 'Loading...';
   return (
     <button
       className={cx('flex w-full items-center justify-between rounded-xl bg-blue-300 p-2', props.className)}

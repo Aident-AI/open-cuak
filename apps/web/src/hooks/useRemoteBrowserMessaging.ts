@@ -12,7 +12,7 @@ interface Props {
 export function useRemoteBrowserMessaging(props: Props) {
   const sendRuntimeMessage = useMemo(() => {
     return async <T>(message: RuntimeMessage, targetSessionId?: string) => {
-      const targetChannel = targetSessionId ?? props.remoteBrowserSessionId;
+      const targetChannel = targetSessionId || props.remoteBrowserSessionId;
       if (!targetChannel) throw new Error('execSessionId is required to send runtime message');
 
       const url = getHost() + '/api/extension/send-runtime-message';

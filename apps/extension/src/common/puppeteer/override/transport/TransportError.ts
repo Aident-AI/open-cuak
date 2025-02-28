@@ -3,9 +3,9 @@ export class TransportError extends Error {
     super(error.message);
     this.name = 'TransportError';
     try {
-      this.#body = JSON.parse(error?.message ?? error.toString());
+      this.#body = JSON.parse(error?.message || error.toString());
     } catch (e) {
-      this.#body = { message: error?.message ?? error.toString() };
+      this.#body = { message: error?.message || error.toString() };
     }
   }
 
@@ -20,7 +20,7 @@ export class TransportError extends Error {
 
   public get message() {
     if (!this.#body || !('message' in this.#body)) return super.message;
-    return (this.#body.message as string) ?? super.message;
+    return (this.#body.message as string) || super.message;
   }
 
   #body: object | undefined;

@@ -1,5 +1,5 @@
 export const loadConfigJson = async (url?: string) => {
-  const src = url ?? chrome?.runtime.getURL('/config.json');
+  const src = url || chrome?.runtime.getURL('/config.json');
   const response = await fetch(src);
   const config = await response.json();
 

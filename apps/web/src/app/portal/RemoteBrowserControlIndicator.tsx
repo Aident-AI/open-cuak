@@ -83,7 +83,7 @@ export default function RemoteBrowserControlIndicator(props: Props) {
       </div>
     );
 
-    const keyPressText = upperCase((keyPressed === ' ' ? 'space' : keyPressed) ?? 'no key');
+    const keyPressText = upperCase((keyPressed === ' ' ? 'space' : keyPressed) || 'no key');
     return (
       <>
         {/* Show the Mouse-Move Component when showMouseMove is true */}

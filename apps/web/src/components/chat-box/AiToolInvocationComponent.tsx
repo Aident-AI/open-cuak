@@ -11,7 +11,7 @@ export function AiToolInvocationComponent({ toolInvocation }: Props) {
   const { toolName, args, state } = toolInvocation;
   const displayText = upperFirst(camelCase(toolName));
   const toolTipTexts = [{ tag: 'INPUT', content: typeof args === 'string' ? args : JSON.stringify(args) }];
-  if (state === 'result') toolTipTexts.push({ tag: 'OUTPUT', content: toolInvocation.result ?? 'undefined' });
+  if (state === 'result') toolTipTexts.push({ tag: 'OUTPUT', content: toolInvocation.result || 'undefined' });
 
   const toolTipComponent = toolTipTexts.map((text, i) => (
     <div key={i} className="flex w-full flex-row pb-1 pt-1">

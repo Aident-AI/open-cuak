@@ -104,7 +104,7 @@ export default function UserConfigModal(props: Props) {
 
         case LlmRouterModel.CLAUDE: {
           const renderServiceProvider = () => {
-            switch (userConfig.llmClaudeProvider ?? ClaudeHostingProvider.ANTHROPIC) {
+            switch (userConfig.llmClaudeProvider || ClaudeHostingProvider.ANTHROPIC) {
               case ClaudeHostingProvider.ANTHROPIC:
                 return (
                   <>
@@ -114,7 +114,7 @@ export default function UserConfigModal(props: Props) {
                         type="password"
                         autoComplete="new-password"
                         placeholder="Anthropic API Key"
-                        value={userConfig.llmClaudeAnthropicApiKey ?? ''}
+                        value={userConfig.llmClaudeAnthropicApiKey || ''}
                         onChange={(e) => handleDataUpdate({ llmClaudeAnthropicApiKey: e.target.value.trim() })}
                         className="w-full rounded border px-2 py-1 text-sm text-black"
                       />
@@ -125,7 +125,7 @@ export default function UserConfigModal(props: Props) {
                         type="text"
                         autoComplete="new-password"
                         placeholder="Default: claude-3-5-sonnet-20241022"
-                        value={userConfig.llmClaudeAnthropicModelName ?? ''}
+                        value={userConfig.llmClaudeAnthropicModelName || ''}
                         onChange={(e) => handleDataUpdate({ llmClaudeAnthropicModelName: e.target.value.trim() })}
                         className="w-full rounded border px-2 py-1 text-sm text-black"
                       />
@@ -143,7 +143,7 @@ export default function UserConfigModal(props: Props) {
                         type="text"
                         autoComplete="new-password"
                         placeholder="e.g., us-east5"
-                        value={userConfig.llmClaudeGcpRegion ?? ''}
+                        value={userConfig.llmClaudeGcpRegion || ''}
                         onChange={(e) => handleDataUpdate({ llmClaudeGcpRegion: e.target.value.trim() })}
                         className="w-full rounded border px-2 py-1 text-sm text-black"
                         required
@@ -155,7 +155,7 @@ export default function UserConfigModal(props: Props) {
                         type="text"
                         autoComplete="new-password"
                         placeholder="project-id"
-                        value={userConfig.llmClaudeGcpProject ?? ''}
+                        value={userConfig.llmClaudeGcpProject || ''}
                         onChange={(e) => handleDataUpdate({ llmClaudeGcpProject: e.target.value.trim() })}
                         className="w-full rounded border px-2 py-1 text-sm text-black"
                       />
@@ -166,7 +166,7 @@ export default function UserConfigModal(props: Props) {
                         type="text"
                         autoComplete="new-password"
                         placeholder="client-id"
-                        value={userConfig.llmClaudeGcpClientId ?? ''}
+                        value={userConfig.llmClaudeGcpClientId || ''}
                         onChange={(e) => handleDataUpdate({ llmClaudeGcpClientId: e.target.value.trim() })}
                         className="w-full rounded border px-2 py-1 text-sm text-black"
                       />
@@ -177,7 +177,7 @@ export default function UserConfigModal(props: Props) {
                         type="text"
                         autoComplete="new-password"
                         placeholder="client-email"
-                        value={userConfig.llmClaudeGcpClientEmail ?? ''}
+                        value={userConfig.llmClaudeGcpClientEmail || ''}
                         onChange={(e) => handleDataUpdate({ llmClaudeGcpClientEmail: e.target.value.trim() })}
                         className="w-full rounded border px-2 py-1 text-sm text-black"
                       />
@@ -187,7 +187,7 @@ export default function UserConfigModal(props: Props) {
                       <textarea
                         autoComplete="new-password"
                         placeholder="private-key"
-                        value={userConfig.llmClaudeGcpPrivateKey ?? ''}
+                        value={userConfig.llmClaudeGcpPrivateKey || ''}
                         onChange={(e) => handleDataUpdate({ llmClaudeGcpPrivateKey: e.target.value.trim() })}
                         className="h-20 w-full rounded border px-2 py-1 text-sm text-black"
                       />
@@ -198,7 +198,7 @@ export default function UserConfigModal(props: Props) {
                         type="text"
                         autoComplete="new-password"
                         placeholder="Default: claude-3-5-sonnet-v2@20241022"
-                        value={userConfig.llmClaudeGcpModelName ?? ''}
+                        value={userConfig.llmClaudeGcpModelName || ''}
                         onChange={(e) => handleDataUpdate({ llmClaudeGcpModelName: e.target.value.trim() })}
                         className="w-full rounded border px-2 py-1 text-sm text-black"
                       />
@@ -214,7 +214,7 @@ export default function UserConfigModal(props: Props) {
                         type="text"
                         autoComplete="new-password"
                         placeholder="bedrock-region"
-                        value={userConfig.llmClaudeAwsBedrockRegion ?? ''}
+                        value={userConfig.llmClaudeAwsBedrockRegion || ''}
                         onChange={(e) => handleDataUpdate({ llmClaudeAwsBedrockRegion: e.target.value.trim() })}
                         className="w-full rounded border px-2 py-1 text-sm text-black"
                       />
@@ -225,7 +225,7 @@ export default function UserConfigModal(props: Props) {
                         type="text"
                         autoComplete="new-password"
                         placeholder="access-key-id"
-                        value={userConfig.llmClaudeAwsAccessKeyId ?? ''}
+                        value={userConfig.llmClaudeAwsAccessKeyId || ''}
                         onChange={(e) => handleDataUpdate({ llmClaudeAwsAccessKeyId: e.target.value.trim() })}
                         className="w-full rounded border px-2 py-1 text-sm text-black"
                       />
@@ -236,7 +236,7 @@ export default function UserConfigModal(props: Props) {
                         type="password"
                         autoComplete="new-password"
                         placeholder="secret-access-key"
-                        value={userConfig.llmClaudeAwsSecretAccessKey ?? ''}
+                        value={userConfig.llmClaudeAwsSecretAccessKey || ''}
                         onChange={(e) => handleDataUpdate({ llmClaudeAwsSecretAccessKey: e.target.value.trim() })}
                         className="w-full rounded border px-2 py-1 text-sm text-black"
                       />
@@ -247,7 +247,7 @@ export default function UserConfigModal(props: Props) {
                         type="text"
                         autoComplete="new-password"
                         placeholder="Default: anthropic.claude-3-5-sonnet-20241022-v2:0"
-                        value={userConfig.llmClaudeAwsModelName ?? ''}
+                        value={userConfig.llmClaudeAwsModelName || ''}
                         onChange={(e) => handleDataUpdate({ llmClaudeAwsModelName: e.target.value.trim() })}
                         className="w-full rounded border px-2 py-1 text-sm text-black"
                       />
@@ -264,7 +264,7 @@ export default function UserConfigModal(props: Props) {
               <div>
                 <label className="block text-xs text-gray-600">Hosting Provider</label>
                 <select
-                  value={userConfig.llmClaudeProvider ?? ClaudeHostingProvider.ANTHROPIC}
+                  value={userConfig.llmClaudeProvider || ClaudeHostingProvider.ANTHROPIC}
                   onChange={(e) => handleDataUpdate({ llmClaudeProvider: e.target.value as ClaudeHostingProvider })}
                   className="w-full rounded border px-2 py-1 text-sm text-black"
                 >
@@ -288,7 +288,7 @@ export default function UserConfigModal(props: Props) {
                   type="password"
                   autoComplete="new-password"
                   placeholder="Gemini API Key"
-                  value={userConfig.llmGeminiApiKey ?? ''}
+                  value={userConfig.llmGeminiApiKey || ''}
                   onChange={(e) => handleDataUpdate({ llmGeminiApiKey: e.target.value.trim() })}
                   className="w-full rounded border px-2 py-1 text-sm text-black"
                 />
@@ -299,7 +299,7 @@ export default function UserConfigModal(props: Props) {
                   type="text"
                   autoComplete="new-password"
                   placeholder="Default: gemini-2.0-flash-exp"
-                  value={userConfig.llmGeminiModelName ?? ''}
+                  value={userConfig.llmGeminiModelName || ''}
                   onChange={(e) => handleDataUpdate({ llmGeminiModelName: e.target.value.trim() })}
                   className="w-full rounded border px-2 py-1 text-sm text-black"
                 />
@@ -316,7 +316,7 @@ export default function UserConfigModal(props: Props) {
                   type="text"
                   autoComplete="new-password"
                   placeholder="Azure OpenAI Instance Name"
-                  value={userConfig.llmAzureOpenaiInstanceName ?? ''}
+                  value={userConfig.llmAzureOpenaiInstanceName || ''}
                   onChange={(e) => handleDataUpdate({ llmAzureOpenaiInstanceName: e.target.value.trim() })}
                   className="w-full rounded border px-2 py-1 text-sm text-black"
                 />
@@ -327,7 +327,7 @@ export default function UserConfigModal(props: Props) {
                   type="password"
                   autoComplete="new-password"
                   placeholder="Azure OpenAI Key"
-                  value={userConfig.llmAzureOpenaiKey ?? ''}
+                  value={userConfig.llmAzureOpenaiKey || ''}
                   onChange={(e) => handleDataUpdate({ llmAzureOpenaiKey: e.target.value.trim() })}
                   className="w-full rounded border px-2 py-1 text-sm text-black"
                 />
@@ -338,7 +338,7 @@ export default function UserConfigModal(props: Props) {
                   type="text"
                   autoComplete="new-password"
                   placeholder="Azure OpenAI Deployment"
-                  value={userConfig.llmAzureOpenaiDeployment ?? ''}
+                  value={userConfig.llmAzureOpenaiDeployment || ''}
                   onChange={(e) => handleDataUpdate({ llmAzureOpenaiDeployment: e.target.value.trim() })}
                   className="w-full rounded border px-2 py-1 text-sm text-black"
                 />
@@ -349,7 +349,7 @@ export default function UserConfigModal(props: Props) {
                   type="text"
                   autoComplete="new-password"
                   placeholder="Default: 2024-08-01-preview"
-                  value={userConfig.llmAzureApiVersion ?? ''}
+                  value={userConfig.llmAzureApiVersion || ''}
                   onChange={(e) => handleDataUpdate({ llmAzureApiVersion: e.target.value.trim() })}
                   className="w-full rounded border px-2 py-1 text-sm text-black"
                 />
@@ -366,7 +366,7 @@ export default function UserConfigModal(props: Props) {
                   type="text"
                   autoComplete="new-password"
                   placeholder="baseUrl"
-                  value={userConfig.llmOpenaiCompatibleBaseUrl ?? ''}
+                  value={userConfig.llmOpenaiCompatibleBaseUrl || ''}
                   onChange={(e) => handleDataUpdate({ llmOpenaiCompatibleBaseUrl: e.target.value.trim() })}
                   className="w-full rounded border px-2 py-1 text-sm text-black"
                 />
@@ -377,7 +377,7 @@ export default function UserConfigModal(props: Props) {
                   type="password"
                   autoComplete="new-password"
                   placeholder="apiKey"
-                  value={userConfig.llmOpenaiCompatibleApiKey ?? ''}
+                  value={userConfig.llmOpenaiCompatibleApiKey || ''}
                   onChange={(e) => handleDataUpdate({ llmOpenaiCompatibleApiKey: e.target.value.trim() })}
                   className="w-full rounded border px-2 py-1 text-sm text-black"
                 />
@@ -388,7 +388,7 @@ export default function UserConfigModal(props: Props) {
                   type="text"
                   autoComplete="new-password"
                   placeholder="Custom model name"
-                  value={userConfig.llmOpenaiCompatibleModelName ?? ''}
+                  value={userConfig.llmOpenaiCompatibleModelName || ''}
                   onChange={(e) => handleDataUpdate({ llmOpenaiCompatibleModelName: e.target.value.trim() })}
                   className="w-full rounded border px-2 py-1 text-sm text-black"
                 />
@@ -399,7 +399,7 @@ export default function UserConfigModal(props: Props) {
                   type="text"
                   autoComplete="new-password"
                   placeholder="Default: openai-compatible"
-                  value={userConfig.llmOpenaiCompatibleApiName ?? ''}
+                  value={userConfig.llmOpenaiCompatibleApiName || ''}
                   onChange={(e) => handleDataUpdate({ llmOpenaiCompatibleApiName: e.target.value.trim() })}
                   className="w-full rounded border px-2 py-1 text-sm text-black"
                 />
@@ -455,7 +455,7 @@ export default function UserConfigModal(props: Props) {
                   type="text"
                   autoComplete="new-password"
                   placeholder="Enter OmniParser Host"
-                  value={userConfig.omniparserHost ?? ''}
+                  value={userConfig.omniparserHost || ''}
                   onChange={(e) => {
                     setTextInputError(false);
                     handleDataUpdate({ omniparserHost: e.target.value.trim() });
@@ -489,7 +489,7 @@ export default function UserConfigModal(props: Props) {
                 </span>
               </label>
               <select
-                value={userConfig.llmModel ?? LlmRouterModel.OPEN_AI}
+                value={userConfig.llmModel || LlmRouterModel.OPEN_AI}
                 onChange={(e) => {
                   handleDataUpdate({ llmModel: e.target.value as LlmRouterModel });
                   setShowAccessKeySettings(false); // Hide access key settings when model changes

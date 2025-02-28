@@ -7,7 +7,7 @@ import { RequestId } from '~shared/logging/RequestId';
 
 export class ALogger {
   public static async genInit(requestId: string | undefined, env?: ExecutionEnvironment): Promise<void> {
-    RequestId.set(requestId ?? uuid());
+    RequestId.set(requestId || uuid());
     if (env) void setExecEnv(env);
     if (!this.isClosed()) return;
 

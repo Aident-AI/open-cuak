@@ -28,7 +28,7 @@ export function LogoInChatBox(props: Props) {
             <Image className="h-5 w-5" src={AidentLogo} alt="Aident Logo" />
           </div>
           <h1 className={cx('ml-3 text-xl font-extralight text-black', props.titleClassName)}>
-            {props.title ?? 'Aident AI'}
+            {props.title || 'Aident AI'}
           </h1>
         </div>
         <div className="mt-2 h-[0.5px] w-full bg-black"></div>
@@ -38,7 +38,7 @@ export function LogoInChatBox(props: Props) {
             props.subtitleClassName,
           )}
         >
-          {props.subtitle ?? 'Companion'}
+          {props.subtitle || 'Companion'}
         </h1>
       </div>
     </div>

@@ -45,8 +45,8 @@ export default function ChatWithAidenWindow(props: Props) {
     },
     onError: (err) => {
       const rawError = JSON.parse(err.message);
-      const error = rawError.error ?? rawError;
-      let errorMessage = error.message ?? error;
+      const error = rawError.error || rawError;
+      let errorMessage = error.message || error;
       if (typeof errorMessage === 'object') {
         errorMessage = JSON.stringify(errorMessage);
       }

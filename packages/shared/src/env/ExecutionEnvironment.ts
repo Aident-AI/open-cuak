@@ -29,7 +29,7 @@ export const setExecEnv = (env: ExecutionEnvironment): void => {
 
 export const getExecEnv = (): ExecutionEnvironment => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const env = (global as any).ExecutionEnvironment ?? process.env.EXECUTION_ENVIRONMENT;
+  const env = (global as any).ExecutionEnvironment || process.env.EXECUTION_ENVIRONMENT;
   if (!env) throw new Error('ExecutionEnvironment is not set');
   return env;
 };

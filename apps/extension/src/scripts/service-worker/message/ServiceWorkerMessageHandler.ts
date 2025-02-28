@@ -71,14 +71,14 @@ export class ServiceWorkerMessageHandler {
     }
     const payload = result.data;
     const targetTabId: number | undefined =
-      payload?.tabId ?? sender.tab?.id ?? ActiveTabService.getInServiceWorker()?.id;
+      payload?.tabId || sender.tab?.id || ActiveTabService.getInServiceWorker()?.id;
     ALogger.debug({ context: 'Received message', stack: 'ServiceWorkerMessageHandler', message, sender, targetTabId });
 
     type RequestPayloadType = RuntimeMessage.RequestPayload.Type;
     try {
       switch (message.action as ServiceWorkerMessageAction) {
         case ServiceWorkerMessageAction.GO_LOGIN: {
-          await chrome.tabs?.create({ url: getHost() + '/login?target=' + (payload?.target ?? '/companion') });
+          await chrome.tabs?.create({ url: getHost() + '/login?target=' + (payload?.target || '/companion') });
           break;
         }
         case ServiceWorkerMessageAction.GET_USER_SESSION: {

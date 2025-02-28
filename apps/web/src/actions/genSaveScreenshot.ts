@@ -20,7 +20,7 @@ export const genSaveScreenshot = async (base64DataString: string): Promise<Attac
     const { data, error } = await supabase.storage
       .from(bucketName)
       .upload(fileName, blob, { contentType: 'image/png', upsert: true });
-    if (error || !data) throw new Error(`Failed to save data to supabase storage: ${error.message ?? 'unknown error'}`);
+    if (error || !data) throw new Error(`Failed to save data to supabase storage: ${error.message || 'unknown error'}`);
     const {
       data: { publicUrl },
     } = supabase.storage.from(bucketName).getPublicUrl(fileName);

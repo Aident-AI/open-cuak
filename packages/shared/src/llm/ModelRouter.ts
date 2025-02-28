@@ -24,7 +24,7 @@ export class ModelRouter {
 
     switch (userConfig.llmModel) {
       case LlmRouterModel.AZURE_OAI: {
-        const apiVersion = userConfig.llmAzureApiVersion ?? '2024-08-01-preview';
+        const apiVersion = userConfig.llmAzureApiVersion || '2024-08-01-preview';
         const resourceName = userConfig.llmAzureOpenaiInstanceName;
         const apiKey = userConfig.llmAzureOpenaiKey;
         const deploymentName = userConfig.llmAzureOpenaiDeployment!;
@@ -34,7 +34,7 @@ export class ModelRouter {
       }
       case LlmRouterModel.OPEN_AI: {
         const openAiProvider = createOpenAI({ apiKey: userConfig.llmOpenaiModelApiKey });
-        const modelName = userConfig.llmOpenaiModelName ?? 'gpt-4o-2024-11-20';
+        const modelName = userConfig.llmOpenaiModelName || 'gpt-4o-2024-11-20';
         return openAiProvider.languageModel(modelName);
       }
       case LlmRouterModel.OPEN_AI_COMPATIBLE: {
@@ -44,7 +44,7 @@ export class ModelRouter {
 
         const apiKey = userConfig.llmOpenaiCompatibleApiKey;
         const baseURL = userConfig.llmOpenaiCompatibleBaseUrl;
-        const name = userConfig.llmOpenaiCompatibleApiName ?? 'openai-compatible';
+        const name = userConfig.llmOpenaiCompatibleApiName || 'openai-compatible';
         const modelName = userConfig.llmOpenaiCompatibleModelName;
 
         const openAiProvider = createOpenAI({ baseURL, apiKey, compatibility: 'compatible', name });
@@ -52,17 +52,17 @@ export class ModelRouter {
       }
       case LlmRouterModel.GEMINI: {
         const google = createGoogleGenerativeAI({ apiKey: userConfig.llmGeminiApiKey });
-        const modelName = userConfig.llmGeminiModelName ?? 'gemini-2.0-flash-exp';
+        const modelName = userConfig.llmGeminiModelName || 'gemini-2.0-flash-exp';
         return google(modelName);
       }
       case LlmRouterModel.CLAUDE: {
-        const provider = userConfig.llmClaudeProvider ?? ClaudeHostingProvider.ANTHROPIC;
+        const provider = userConfig.llmClaudeProvider || ClaudeHostingProvider.ANTHROPIC;
         switch (provider) {
           case ClaudeHostingProvider.ANTHROPIC: {
             const anthropic = createAnthropic({
               apiKey: userConfig.llmClaudeAnthropicApiKey,
             });
-            const modelName = userConfig.llmClaudeAnthropicModelName ?? 'claude-3-5-sonnet-20241022';
+            const modelName = userConfig.llmClaudeAnthropicModelName || 'claude-3-5-sonnet-20241022';
             return anthropic(modelName) as LanguageModel;
           }
           case ClaudeHostingProvider.GCP: {
@@ -77,7 +77,7 @@ export class ModelRouter {
               },
             });
 
-            const modelName = userConfig.llmClaudeGcpModelName ?? ClaudeVariant.SONNET_3_5_GCP;
+            const modelName = userConfig.llmClaudeGcpModelName || ClaudeVariant.SONNET_3_5_GCP;
             return vertexAnthropic(modelName);
           }
           case ClaudeHostingProvider.AWS: {
@@ -91,7 +91,7 @@ export class ModelRouter {
               secretAccessKey: userConfig.llmClaudeAwsSecretAccessKey,
             });
 
-            const modelName = userConfig.llmClaudeAwsModelName ?? ClaudeVariant.SONNET_3_5_AWS;
+            const modelName = userConfig.llmClaudeAwsModelName || ClaudeVariant.SONNET_3_5_AWS;
             return amazonBedrock(modelName);
           }
           default:
@@ -122,7 +122,7 @@ export class ModelRouter {
         );
       }
       case LlmRouterModel.CLAUDE: {
-        const provider = config.llmClaudeProvider ?? ClaudeHostingProvider.ANTHROPIC;
+        const provider = config.llmClaudeProvider || ClaudeHostingProvider.ANTHROPIC;
         switch (provider) {
           case ClaudeHostingProvider.ANTHROPIC:
             if (config.llmClaudeAnthropicModelName === 'claude-3-haiku-20240307') {
@@ -182,7 +182,7 @@ export class ModelRouter {
 
     switch (config.model) {
       case LlmRouterModel.CLAUDE: {
-        const modelName = EnumUtils.getEnumValue(ClaudeVariant, config.variant ?? '') ?? ClaudeVariant.SONNET_3_5_GCP;
+        const modelName = EnumUtils.getEnumValue(ClaudeVariant, config.variant ?? '') || ClaudeVariant.SONNET_3_5_GCP;
         const provider =
           modelName === ClaudeVariant.SONNET_3_5_GCP
             ? createVertexAnthropic({
@@ -205,7 +205,7 @@ export class ModelRouter {
         const google = createGoogleGenerativeAI({
           apiKey: process.env.GCP_GEMINI_API_KEY,
         });
-        const modelName = EnumUtils.getEnumValue(GeminiVariant, config.variant ?? '') ?? GeminiVariant.FLASH_2_0;
+        const modelName = EnumUtils.getEnumValue(GeminiVariant, config.variant ?? '') || GeminiVariant.FLASH_2_0;
         return google(modelName);
       }
       case LlmRouterModel.AZURE_OAI: {
@@ -236,7 +236,7 @@ export class ModelRouter {
         const baseURL = userConfig?.llmOpenaiCompatibleBaseUrl || process.env.OPENAI_BASE_URL;
         const apiKey = userConfig?.llmOpenaiCompatibleApiKey || process.env.OPENAI_API_KEY;
         const name =
-          (userConfig?.llmOpenaiCompatibleApiName || process.env.OPENAI_COMPATIBLE_API_NAME) ?? 'openai-compatible';
+          userConfig?.llmOpenaiCompatibleApiName || process.env.OPENAI_COMPATIBLE_API_NAME || 'openai-compatible';
         const openAiProvider = createOpenAI({ baseURL, apiKey, compatibility: 'compatible', name });
         const modelName =
           userConfig?.llmModelVariant || userConfig?.llmOpenaiCompatibleModelName || process.env.OPENAI_MODEL_NAME;

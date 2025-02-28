@@ -5,7 +5,7 @@ import { getDockerFriendlyUrl } from '~shared/env/environment';
 import { X_REQUEST_ID_HEADER } from '~shared/http/headers';
 
 export async function middleware(request: NextRequest) {
-  const requestId = request.headers.get(X_REQUEST_ID_HEADER) ?? uuid();
+  const requestId = request.headers.get(X_REQUEST_ID_HEADER) || uuid();
   request.headers.set(X_REQUEST_ID_HEADER, requestId);
 
   let response = NextResponse.next({ request: { headers: request.headers } });
@@ -34,7 +34,7 @@ export async function middleware(request: NextRequest) {
   if (data.session) {
     if (reqUrl.pathname.startsWith('/login')) {
       const target = reqUrl.searchParams.get('target');
-      const url = target ?? '/';
+      const url = target || '/';
       return NextResponse.redirect(new URL(url, reqUrl));
     }
     return response;

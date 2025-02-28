@@ -29,7 +29,7 @@ export default function NavigationButton(props: Props) {
       >
         <polyline points="15 18 9 12 15 6" />
       </svg>{' '}
-      {props.title ?? 'Back'}
+      {props.title || 'Back'}
     </button>
   );
 }

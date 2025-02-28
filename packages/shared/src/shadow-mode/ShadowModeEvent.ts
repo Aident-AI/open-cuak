@@ -230,7 +230,7 @@ export class ShadowModeEvent {
           pt = pt[parseInt(field, 10)];
         } else break;
       }
-      const targetId = pt?.id ?? parent?.id;
+      const targetId = pt?.id || parent?.id;
       const remainingPathIndex = pt?.id ? i : i - 1;
       if (!targetId || remainingPathIndex < 0) throw new Error('Invalid path');
 

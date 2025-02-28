@@ -34,7 +34,7 @@ export class ApiRequestContextService {
   public static initWithSupabaseClient(options: ApiRequestContextInitOptions): ApiRequestContext {
     this.reset();
 
-    const requestId = options.req?.headers.get('x-request-id') ?? options.requestId;
+    const requestId = options.req?.headers.get('x-request-id') || options.requestId;
     if (!requestId) throw new Error('Request ID not found in init.');
 
     this.#supabase = options.supabase;
@@ -92,7 +92,7 @@ export class ApiRequestContextService {
         if (!process.env.PG_CONNECTION) throw new Error('PG_CONNECTION not set.');
         return new PgBoss({ connectionString: process.env.PG_CONNECTION, application_name: 'web-api', max: 1 });
       },
-      getExecSessionId: (): string | undefined => options.execSessionIdOverride ?? getRequestContext().execSessionId,
+      getExecSessionId: (): string | undefined => options.execSessionIdOverride || getRequestContext().execSessionId,
       getRemoteBrowserSessionId: () => getRequestContext().remoteBrowserSessionId,
       getRequestId: () => requestId,
       getSupabase: () => {

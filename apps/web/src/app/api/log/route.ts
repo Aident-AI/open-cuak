@@ -17,7 +17,7 @@ const requestSchema = LogLineSchema.or(z.array(LogLineSchema));
 
 export const POST = async (req: NextRequest): Promise<NextResponse> => {
   try {
-    const requestId = req.headers.get(X_REQUEST_ID_HEADER) ?? getRequestContext()?.requestId;
+    const requestId = req.headers.get(X_REQUEST_ID_HEADER) || getRequestContext()?.requestId;
     await ALogger.genInit(requestId, ExecutionEnvironment.WEB_API);
 
     void apiAsyncProcess(

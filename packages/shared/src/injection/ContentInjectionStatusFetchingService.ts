@@ -21,7 +21,7 @@ export class ContentInjectionStatusFetchingService {
         })
         .then((results) => {
           const statusValue = EnumUtils.getEnumValue(TabLifecycleStatus, results[0].result);
-          resolve(statusValue ?? TabLifecycleStatus.UNLOADED);
+          resolve(statusValue || TabLifecycleStatus.UNLOADED);
         }),
     );
   }

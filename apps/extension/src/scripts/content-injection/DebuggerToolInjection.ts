@@ -116,7 +116,7 @@ export class DebuggerToolInjection {
       action: ServiceWorkerMessageAction.FETCH_INTERACTABLE_NODE_BY_SNAPSHOT_NANOID,
       payload: { snapshotNanoid: snapshotNanoid },
     });
-    if (!rsp?.success) throw new Error('Failed to fetch interactable node: ' + (rsp?.error ?? 'unknown error'));
+    if (!rsp?.success) throw new Error('Failed to fetch interactable node: ' + (rsp?.error || 'unknown error'));
     const targetNodeId = rsp.data.iNodeId;
 
     const target = document.querySelector(`[${SNAPSHOT_NANOID_ATTRIBUTE_KEY}="${targetNodeId}"]`);

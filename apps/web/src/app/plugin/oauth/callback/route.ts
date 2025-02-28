@@ -18,7 +18,7 @@ export async function GET(request: Request) {
   const code = requestUrl.searchParams.get('code');
   if (!code) return NextResponse.json({ error: 'Missing code' }, { status: 400 });
 
-  const redirectUri = cookie.redirect_uri ?? '/';
+  const redirectUri = cookie.redirect_uri || '/';
   if (!redirectUri) return NextResponse.json({ error: 'Missing redirect_uri' }, { status: 400 });
   const params = { state, code } as Record<string, string>;
   const paramsString = Object.keys(params)

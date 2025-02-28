@@ -85,7 +85,7 @@ export class ChromeExtensionTransport implements IConnectionTransport {
 
     const sendCommand = async (command: DebuggerCommand) => {
       const { debuggee: commandDebuggee, method, params = {} } = command;
-      const target = commandDebuggee?.tabId ?? this.targetTabId;
+      const target = commandDebuggee?.tabId || this.targetTabId;
       if (!target) throw new Error('No definite target tab');
       const debuggee = { tabId: target };
       try {

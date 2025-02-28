@@ -19,7 +19,7 @@ export const getRequestContext = (): RequestContext => {
     if (!requestId) throw new Error('Request ID is not set.');
     const remoteBrowserHeaderValue = headersList.get(X_REMOTE_BROWSER_SESSION_ID_HEADER) ?? '';
     const remoteBrowserSessionId = remoteBrowserHeaderValue.length > 0 ? remoteBrowserHeaderValue : undefined;
-    const execSessionId = headersList.get(X_EXEC_SESSION_ID_HEADER) ?? remoteBrowserSessionId ?? requestId;
+    const execSessionId = headersList.get(X_EXEC_SESSION_ID_HEADER) || remoteBrowserSessionId || requestId;
 
     return { execSessionId, remoteBrowserSessionId, requestId };
   } catch (error) {
