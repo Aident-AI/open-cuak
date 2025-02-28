@@ -1,5 +1,4 @@
-# AMD64 version
-FROM --platform=linux/amd64 node:20-alpine AS runner-amd64
+FROM --platform=linux/amd64,linux/arm64 node:20-alpine
 
 ENV DOCKER_ENV=true
 ENV NODE_ENV=production
@@ -16,24 +15,4 @@ WORKDIR /app/apps/web
 
 EXPOSE 3000
 
-CMD ["pnpm", "start"]
-
-# ARM64 version
-FROM --platform=linux/arm64 node:20-alpine AS runner-arm64
-
-ENV DOCKER_ENV=true
-ENV NODE_ENV=production
-
-WORKDIR /app
-
-RUN apk add --no-cache python3 make g++ 
-RUN ln -sf python3 /usr/bin/python
-RUN npm install -g pnpm
-
-COPY ./ ./
-
-WORKDIR /app/apps/web
-
-EXPOSE 3000
-
-CMD ["pnpm", "start"]
+CMD ["npm", "start"]
