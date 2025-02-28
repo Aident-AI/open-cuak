@@ -92,7 +92,7 @@ export default function UserConfigModal(props: Props) {
                 <label className="block text-xs text-gray-600">Custom Model Name (optional)</label>
                 <input
                   type="text"
-                  autoComplete="new-password"
+                  autoComplete="off"
                   placeholder="Default: gpt-4o-2024-11-20"
                   value={userConfig.llmOpenaiModelName ?? ''}
                   onChange={(e) => handleDataUpdate({ llmOpenaiModelName: e.target.value.trim() })}
@@ -123,7 +123,7 @@ export default function UserConfigModal(props: Props) {
                       <label className="block text-xs text-gray-600">Custom Model Name (optional)</label>
                       <input
                         type="text"
-                        autoComplete="new-password"
+                        autoComplete="off"
                         placeholder="Default: claude-3-5-sonnet-20241022"
                         value={userConfig.llmClaudeAnthropicModelName || ''}
                         onChange={(e) => handleDataUpdate({ llmClaudeAnthropicModelName: e.target.value.trim() })}
@@ -141,7 +141,7 @@ export default function UserConfigModal(props: Props) {
                       </label>
                       <input
                         type="text"
-                        autoComplete="new-password"
+                        autoComplete="off"
                         placeholder="e.g., us-east5"
                         value={userConfig.llmClaudeGcpRegion || ''}
                         onChange={(e) => handleDataUpdate({ llmClaudeGcpRegion: e.target.value.trim() })}
@@ -153,7 +153,7 @@ export default function UserConfigModal(props: Props) {
                       <label className="block text-xs text-gray-600">Project ID</label>
                       <input
                         type="text"
-                        autoComplete="new-password"
+                        autoComplete="off"
                         placeholder="project-id"
                         value={userConfig.llmClaudeGcpProject || ''}
                         onChange={(e) => handleDataUpdate({ llmClaudeGcpProject: e.target.value.trim() })}
@@ -164,7 +164,7 @@ export default function UserConfigModal(props: Props) {
                       <label className="block text-xs text-gray-600">Client ID</label>
                       <input
                         type="text"
-                        autoComplete="new-password"
+                        autoComplete="off"
                         placeholder="client-id"
                         value={userConfig.llmClaudeGcpClientId || ''}
                         onChange={(e) => handleDataUpdate({ llmClaudeGcpClientId: e.target.value.trim() })}
@@ -175,7 +175,7 @@ export default function UserConfigModal(props: Props) {
                       <label className="block text-xs text-gray-600">Client Email</label>
                       <input
                         type="text"
-                        autoComplete="new-password"
+                        autoComplete="off"
                         placeholder="client-email"
                         value={userConfig.llmClaudeGcpClientEmail || ''}
                         onChange={(e) => handleDataUpdate({ llmClaudeGcpClientEmail: e.target.value.trim() })}
@@ -185,7 +185,7 @@ export default function UserConfigModal(props: Props) {
                     <div>
                       <label className="block text-xs text-gray-600">Private Key</label>
                       <textarea
-                        autoComplete="new-password"
+                        autoComplete="off"
                         placeholder="private-key"
                         value={userConfig.llmClaudeGcpPrivateKey || ''}
                         onChange={(e) => handleDataUpdate({ llmClaudeGcpPrivateKey: e.target.value.trim() })}
@@ -196,7 +196,7 @@ export default function UserConfigModal(props: Props) {
                       <label className="block text-xs text-gray-600">Model Name (optional)</label>
                       <input
                         type="text"
-                        autoComplete="new-password"
+                        autoComplete="off"
                         placeholder="Default: claude-3-5-sonnet-v2@20241022"
                         value={userConfig.llmClaudeGcpModelName || ''}
                         onChange={(e) => handleDataUpdate({ llmClaudeGcpModelName: e.target.value.trim() })}
@@ -212,7 +212,7 @@ export default function UserConfigModal(props: Props) {
                       <label className="block text-xs text-gray-600">Bedrock Region</label>
                       <input
                         type="text"
-                        autoComplete="new-password"
+                        autoComplete="off"
                         placeholder="bedrock-region"
                         value={userConfig.llmClaudeAwsBedrockRegion || ''}
                         onChange={(e) => handleDataUpdate({ llmClaudeAwsBedrockRegion: e.target.value.trim() })}
@@ -223,7 +223,7 @@ export default function UserConfigModal(props: Props) {
                       <label className="block text-xs text-gray-600">Access Key ID</label>
                       <input
                         type="text"
-                        autoComplete="new-password"
+                        autoComplete="off"
                         placeholder="access-key-id"
                         value={userConfig.llmClaudeAwsAccessKeyId || ''}
                         onChange={(e) => handleDataUpdate({ llmClaudeAwsAccessKeyId: e.target.value.trim() })}
@@ -245,7 +245,7 @@ export default function UserConfigModal(props: Props) {
                       <label className="block text-xs text-gray-600">Model Name (optional)</label>
                       <input
                         type="text"
-                        autoComplete="new-password"
+                        autoComplete="off"
                         placeholder="Default: anthropic.claude-3-5-sonnet-20241022-v2:0"
                         value={userConfig.llmClaudeAwsModelName || ''}
                         onChange={(e) => handleDataUpdate({ llmClaudeAwsModelName: e.target.value.trim() })}
@@ -297,7 +297,7 @@ export default function UserConfigModal(props: Props) {
                 <label className="block text-xs text-gray-600">Gemini Model Name (optional)</label>
                 <input
                   type="text"
-                  autoComplete="new-password"
+                  autoComplete="off"
                   placeholder="Default: gemini-2.0-flash-exp"
                   value={userConfig.llmGeminiModelName || ''}
                   onChange={(e) => handleDataUpdate({ llmGeminiModelName: e.target.value.trim() })}
@@ -314,7 +314,7 @@ export default function UserConfigModal(props: Props) {
                 <label className="block text-xs text-gray-600">Azure OpenAI Instance Name</label>
                 <input
                   type="text"
-                  autoComplete="new-password"
+                  autoComplete="off"
                   placeholder="Azure OpenAI Instance Name"
                   value={userConfig.llmAzureOpenaiInstanceName || ''}
                   onChange={(e) => handleDataUpdate({ llmAzureOpenaiInstanceName: e.target.value.trim() })}
@@ -336,7 +336,7 @@ export default function UserConfigModal(props: Props) {
                 <label className="block text-xs text-gray-600">Azure OpenAI Deployment</label>
                 <input
                   type="text"
-                  autoComplete="new-password"
+                  autoComplete="off"
                   placeholder="Azure OpenAI Deployment"
                   value={userConfig.llmAzureOpenaiDeployment || ''}
                   onChange={(e) => handleDataUpdate({ llmAzureOpenaiDeployment: e.target.value.trim() })}
@@ -347,7 +347,7 @@ export default function UserConfigModal(props: Props) {
                 <label className="block text-xs text-gray-600">Azure API Version</label>
                 <input
                   type="text"
-                  autoComplete="new-password"
+                  autoComplete="off"
                   placeholder="Optional"
                   value={userConfig.llmAzureApiVersion || ''}
                   onChange={(e) => handleDataUpdate({ llmAzureApiVersion: e.target.value.trim() })}
@@ -364,7 +364,7 @@ export default function UserConfigModal(props: Props) {
                 <label className="block text-xs text-gray-600">Base URL</label>
                 <input
                   type="text"
-                  autoComplete="new-password"
+                  autoComplete="off"
                   placeholder="baseUrl"
                   value={userConfig.llmOpenaiCompatibleBaseUrl || ''}
                   onChange={(e) => handleDataUpdate({ llmOpenaiCompatibleBaseUrl: e.target.value.trim() })}
@@ -386,7 +386,7 @@ export default function UserConfigModal(props: Props) {
                 <label className="block text-xs text-gray-600">Model Name</label>
                 <input
                   type="text"
-                  autoComplete="new-password"
+                  autoComplete="off"
                   placeholder="Custom model name"
                   value={userConfig.llmOpenaiCompatibleModelName || ''}
                   onChange={(e) => handleDataUpdate({ llmOpenaiCompatibleModelName: e.target.value.trim() })}
@@ -397,7 +397,7 @@ export default function UserConfigModal(props: Props) {
                 <label className="block text-xs text-gray-600">Endpoint Name (optional)</label>
                 <input
                   type="text"
-                  autoComplete="new-password"
+                  autoComplete="off"
                   placeholder="Default: openai-compatible"
                   value={userConfig.llmOpenaiCompatibleApiName || ''}
                   onChange={(e) => handleDataUpdate({ llmOpenaiCompatibleApiName: e.target.value.trim() })}
@@ -453,7 +453,7 @@ export default function UserConfigModal(props: Props) {
               {userConfig.boundingBoxGenerator === BoundingBoxGenerator.OMNI_PARSER && (
                 <input
                   type="text"
-                  autoComplete="new-password"
+                  autoComplete="off"
                   placeholder="Enter OmniParser Host"
                   value={userConfig.omniparserHost || ''}
                   onChange={(e) => {
