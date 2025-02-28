@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunktemp_docs=self.webpackChunktemp_docs||[]).push([[583],{6107:(e,t,s)=>{s.r(t),s.d(t,{default:()=>n});var c=s(6347),u=s(6540);function n(){const e=(0,c.W6)();return(0,u.useEffect)((()=>{e.replace("/docs/get-started")}),[e]),null}}}]);
