@@ -28,33 +28,34 @@ _Read more in our [launch blog](https://aident.ai/blog/openai-operator-open-sour
 
 ## Quick Start
 
-### 🛠️ Environment Setup
+### 👉 Start Local Production Build
 
-1.  Make sure you have `docker` installed on your machine. You can download it from [here](https://www.docker.com/products/docker-desktop).
-2.  Make sure you have `docker-compose` installed as well. Install from [here](https://docs.docker.com/compose/install/).
-3.  Clone the repository and navigate to the root directory.
-
-    ```bash
-    git clone https://github.com/Aident-AI/open-cuak.git
-    cd open-cuak
-    ```
-
-### 👉 Run Production Build
-
-1. Set OpenAI API Key in `.example.env.production` file.
+0. (optional) Make sure you have [`brew`](https://brew.sh/) for package management
+   > works on Mac and Linux. For Windows, use WSL2 for now.
 
    ```bash
-   # [Required] Please add your OpenAI key
-   OPENAI_API_KEY="your-openai-api-key-here"
+   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+   # (optional) on Linux, if `brew` command is not available in terminal, use this to register `brew`
+   test -d ~/.linuxbrew && eval "$(~/.linuxbrew/bin/brew shellenv)"
+   test -d /home/linuxbrew/.linuxbrew && eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+   echo "eval \"\$($(brew --prefix)/bin/brew shellenv)\"" >> ~/.bashrc
+
+   # (optional) verify the successful installation of `brew`
+   brew doctor
    ```
 
-2. Start the services (at repo root).
+1. Install Open-CUAK package
 
    ```bash
-   bash quick-start.sh
+   brew install Aident-AI/homebrew-tap/open-cuak
+   ```
 
-   # or (if you have `npm` installed)
-   npm run quick:start
+2. Start Open-CUAK services
+   > downloading images can take a while (Sorry! We will optimize this soon.)
+
+   ```
+   open-cuak start
    ```
 
 3. Ta-da! It is now ready locally at [http://localhost:3000](http://localhost:3000).
