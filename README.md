@@ -59,6 +59,7 @@ _Read more in our [launch blog](https://aident.ai/blog/openai-operator-open-sour
    ```
 
 3. Ta-da! It is now ready locally at [http://localhost:3000](http://localhost:3000).
+   > Don't forget to go to the ⚙️ Configurations page to set your OpenAI or other major model API key to chat with Aiden!
 
 <p align="center">&nbsp;</p>
 
