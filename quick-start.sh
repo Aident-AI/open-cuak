@@ -70,9 +70,7 @@ docker run -d --name $SCRIPT_CONTAINER_NAME \
   $SCRIPT_IMAGE_NAME
 docker network connect supabase_supabase-network $SCRIPT_CONTAINER_NAME
 
-# TODO: change to run in docker
-bash installer/run-supabase-migrations.sh
-
+docker exec -it $SCRIPT_CONTAINER_NAME sh -c "cd /app && npm run supabase -- db push --db-url \"postgresql://postgres:your-super-secret-and-long-postgres-password@host.docker.internal:54320/postgres\""
 docker exec -it $SCRIPT_CONTAINER_NAME sh -c "cd /app && npm run supabase:mock-user:init -- --prod"
 docker exec -it $SCRIPT_CONTAINER_NAME sh -c "cd /app && npm run supabase:storage:init -- --prod"
 docker container rm -f $SCRIPT_CONTAINER_NAME
