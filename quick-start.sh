@@ -24,7 +24,7 @@ check_command uname
 export TARGETARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
 export DOCKER_BUILDKIT=1
 export DOCKER_DEFAULT_PLATFORM=linux/${TARGETARCH}
-echo "Detected platform: $DOCKER_DEFAULT_PLATFORM)"
+echo "Detected platform: $DOCKER_DEFAULT_PLATFORM"
 
 # Start the services
 bash installer/start-supabase.sh
