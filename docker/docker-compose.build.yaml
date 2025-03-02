@@ -13,7 +13,7 @@ services:
     container_name: open-cuak-web
     restart: always
     ports:
-      - '3000:3000'
+      - '11970:11970'
     networks:
       - default
       - supabase_supabase-network
@@ -34,9 +34,9 @@ services:
     extra_hosts:
       - 'host.docker.internal:host-gateway'
     ports:
-      - '11975:11975'
-      - '11976:3000'
-      - '50000:50000'
+      - '11977:11975'
+      - '11978:3000'
+      - '11979:50000'
     networks:
       - default
       - supabase_supabase-network

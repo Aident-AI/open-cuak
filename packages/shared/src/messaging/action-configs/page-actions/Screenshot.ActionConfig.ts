@@ -88,9 +88,7 @@ export class Screenshot_ActionConfig extends Base_ActionConfig {
 
           const useOmniparser = !!omniparserHost;
           const useJsBoundingBoxes = !useOmniparser;
-          ALogger.info({
-            context: `useOmniparser: ${useOmniparser}, useJsBoundingBoxes: ${useJsBoundingBoxes}`,
-          });
+          ALogger.info({ context: 'screenshot bounding box generator', useOmniparser, useJsBoundingBoxes });
 
           if (useJsBoundingBoxes) {
             const bboxes = await page.evaluate(drawInteractableBoundingBoxes);

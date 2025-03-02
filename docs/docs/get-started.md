@@ -35,4 +35,4 @@ Let's get started with Open Cuak in less than 5 minutes.
    npm run quick:start
    ```
 
-3. Ta-da! It is now ready locally at [http://localhost:3000](http://localhost:3000).
+3. Ta-da! It is now ready locally at [http://localhost:11970](http://localhost:11970).

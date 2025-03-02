@@ -1,7 +1,7 @@
 import * as dotenv from 'dotenv';
 import http from 'http';
 import { KeyInput } from 'puppeteer-core';
-import { Socket, Server as SocketIOServer } from 'socket.io';
+import { Server as SocketIOServer, Socket } from 'socket.io';
 import { BrowserConnectionData, ConnectionManager } from '~browserless/server/src/ConnectionManager';
 import { MouseHandler } from '~browserless/server/src/MouseHandler';
 import { ScreencastHandler } from '~browserless/server/src/ScreencastHandler';
@@ -26,7 +26,10 @@ ALogger.genInit(undefined, ExecutionEnvironment.BROWSERLESS_WS_SERVER);
 
 const server = http.createServer();
 const io = new SocketIOServer(server, {
-  cors: { origin: ['http://localhost:3000', 'https://app.aident.ai'], methods: ['GET', 'POST'] },
+  cors: {
+    origin: ['http://localhost:3000', 'http://localhost:11970', 'https://app.aident.ai'],
+    methods: ['GET', 'POST'],
+  },
 });
 
 io.use(async (socket: AuthenticatedSocket, next) => {

@@ -31,6 +31,7 @@ _Read more in our [launch blog](https://aident.ai/blog/openai-operator-open-sour
 ### 👉 Start Local Production Build
 
 0. (optional) Make sure you have [`brew`](https://brew.sh/) for package management
+
    > works on Mac and Linux. For Windows, use WSL2 for now.
 
    ```bash
@@ -52,13 +53,15 @@ _Read more in our [launch blog](https://aident.ai/blog/openai-operator-open-sour
    ```
 
 2. Start Open-CUAK services
+
    > downloading images can take a while (Sorry! We will optimize this soon.)
 
    ```
    open-cuak start
    ```
 
-3. Ta-da! It is now ready locally at [http://localhost:3000](http://localhost:3000).
+3. Ta-da! It is now ready locally at [http://localhost:11970](http://localhost:11970).
+
    > Don't forget to go to the ⚙️ Configurations page to set your OpenAI or other major model API key to chat with Aiden!
 
 <p align="center">&nbsp;</p>

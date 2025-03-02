@@ -76,7 +76,7 @@ const config = {
       "sandbox allow-scripts allow-forms allow-popups allow-modals; script-src 'self' 'unsafe-inline' 'unsafe-eval'; child-src 'self';",
   },
   externally_connectable: {
-    matches: ['https://*.aident.ai/*', 'http://localhost:3000/*'],
+    matches: ['https://*.aident.ai/*', 'http://localhost:3000/*', 'http://localhost:11970/*'],
   },
 };
 

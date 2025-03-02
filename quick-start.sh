@@ -28,7 +28,7 @@ echo "Detected platform: $DOCKER_DEFAULT_PLATFORM"
 
 # Start the services
 bash installer/start-supabase.sh
-bash scripts/pull-envs-for-all-packages.sh
+bash scripts/pull-envs-for-all-packages.sh --reset
 if [ -f .env.production ]; then
   OPEN_CUAK_VERSION=$(grep -E "^OPEN_CUAK_VERSION=" .env.production | cut -d= -f2- | tr -d '"')
   echo "OPEN_CUAK_VERSION: $OPEN_CUAK_VERSION"
@@ -58,7 +58,7 @@ fi
 SCRIPT_CONTAINER_NAME="open-cuak-script"
 remove_container_if_exists "$SCRIPT_CONTAINER_NAME"
 if [ "$1" == "--build" ]; then
-  $DOCKER_COMPOSE_CMD -f $COMPOSE_FILE build open-cuak-web
+  $DOCKER_COMPOSE_CMD -f $COMPOSE_FILE build
   SCRIPT_IMAGE_NAME="open-cuak-web:latest"
 else
   SCRIPT_IMAGE_NAME="ghcr.io/aident-ai/open-cuak-web:$OPEN_CUAK_VERSION"
@@ -87,4 +87,4 @@ else
   $DOCKER_COMPOSE_CMD --env-file .env.production -f $COMPOSE_FILE up --force-recreate --pull always -d
 fi
 
-echo "Open-CUAK service is now running @ http://localhost:3000"
+echo "Open-CUAK service is now running @ http://localhost:11970"
