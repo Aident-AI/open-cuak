@@ -34,8 +34,26 @@ type MouseClickEvent = ProcessedEventBase & { type: 'click'; position: Position 
 type MouseScrollEvent = ProcessedEventBase & { type: 'scroll'; distance: { deltaX: number; deltaY: number } };
 type KeyboardEvent = ProcessedEventBase & { type: 'key'; key: string };
 
-const REFRESH_INTERVAL_IN_MS = 350;
+const REFRESH_INTERVAL_IN_MS = 1000;
 const REVERSE_SHADOW_STEP_DELAY = 350;
+
+const handleThrottledEvent = <T extends ProcessedEventBase>(
+  events: T[],
+  newEvent: Omit<T, 'type'> & { type: T['type'] },
+  updateLastEvent?: (lastEvent: T, newEvent: T) => void,
+) => {
+  if (events.length < 1) {
+    events.push(newEvent as T);
+  } else {
+    const lastEvent = events[events.length - 1];
+    if (updateLastEvent) {
+      updateLastEvent(lastEvent, newEvent as T);
+    }
+    if (newEvent.ts - lastEvent.ts >= REFRESH_INTERVAL_IN_MS) {
+      events.push(newEvent as T);
+    }
+  }
+};
 
 export enum AidenState {
   IDLE = 'idle',
@@ -84,17 +102,14 @@ export default function TeachAidenWindow(props: Props) {
             const position = { x: e.data.position.x, y: e.data.position.y };
 
             // handle mousemove events
-            if (mouseMoveEvents.length < 1) mouseMoveEvents.push({ type: 'move', ts, from: position, to: position });
-            else {
-              const lastMouseMoveEvent = mouseMoveEvents[mouseMoveEvents.length - 1];
-              lastMouseMoveEvent.to = position;
-              if (ts - lastMouseMoveEvent.ts >= REFRESH_INTERVAL_IN_MS)
-                // new mousemove event
-                mouseMoveEvents.push({ type: 'move', ts, from: position, to: position });
-            }
-
             if (mouseAction === 'mousemove') {
-              // do nothing - already handled
+              handleThrottledEvent(
+                mouseMoveEvents,
+                { type: 'move', ts, from: position, to: position },
+                (lastEvent, newEvent) => {
+                  lastEvent.to = newEvent.to;
+                },
+              );
             } else if (mouseAction === 'mousedown') {
               mouseClickEvents.push({ type: 'click', ts, position });
             } else if (mouseAction === 'mouseup') {
@@ -105,7 +120,7 @@ export default function TeachAidenWindow(props: Props) {
           }
           case 'wheel': {
             const distance = { deltaX: e.data.deltaX, deltaY: e.data.deltaY };
-            mouseScrollEvents.push({ type: 'scroll', ts: e.ts, distance });
+            handleThrottledEvent(mouseScrollEvents, { type: 'scroll', ts: e.ts, distance });
             break;
           }
           case 'keyboard':
