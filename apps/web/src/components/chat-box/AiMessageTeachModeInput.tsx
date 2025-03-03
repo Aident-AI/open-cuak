@@ -12,7 +12,6 @@ interface Props {
 }
 
 type Role = 'user' | 'assistant' | 'system';
-const TaskSuggestions = ['move the mouse cursor to hover on "Google Search" button'];
 
 export function AiMessageTeachModeInput({ formRef, messages, append }: Props) {
   const [role, setRole] = useState<Role>('user');
@@ -35,20 +34,18 @@ export function AiMessageTeachModeInput({ formRef, messages, append }: Props) {
     formRef.current?.reset();
   };
 
-  const renderTaskSuggestions = () => {
-    if (messages.length > 0 || TaskSuggestions.length < 1) return null;
+  const renderUserInstruction = () => {
     return (
       <>
-        <a className="flex w-full items-center justify-center text-white/70 underline">Recommended Tasks</a>
-        {TaskSuggestions.map((task, index) => (
-          <button
-            key={`task-${index}`}
-            className={cx('mb-2 w-full rounded-xl px-1 py-0.5 text-sm hover:bg-blue-300/50')}
-            onClick={() => append({ role: 'user', content: task, id: UUID() })}
-          >
-            {task}
-          </button>
-        ))}
+        <text className="flex w-full items-center justify-center text-white/70 underline">Instruction</text>
+        <div className="flex w-full flex-col items-start px-4 py-2 text-sm text-white/70">
+          <ol className="list-decimal pl-4">
+            <li>Describe the workflow or task on a high level</li>
+            <li>Click the record button to start to teach Aiden</li>
+            <li>Do the workflow in the browser</li>
+            <li>During the workflow, add comments that you think are helpful for Aiden to understand</li>
+          </ol>
+        </div>
       </>
     );
   };
@@ -78,7 +75,7 @@ export function AiMessageTeachModeInput({ formRef, messages, append }: Props) {
         messages.length > 0 ? 'bottom-0' : 'bottom-24',
       )}
     >
-      {renderTaskSuggestions()}
+      {renderUserInstruction()}
       {renderRolePicker()}
       <form
         ref={formRef}
