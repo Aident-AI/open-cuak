@@ -37,7 +37,7 @@ type KeyboardEvent = ProcessedEventBase & { type: 'key'; key: string };
 const REFRESH_INTERVAL_IN_MS = 350;
 const REVERSE_SHADOW_STEP_DELAY = 350;
 
-enum AidenState {
+export enum AidenState {
   IDLE = 'idle',
   SHADOWING = 'shadowing',
   REVERSE_SHADOWING = 'reverse-shadowing',
@@ -433,7 +433,12 @@ export default function TeachAidenWindow(props: Props) {
               }}
             />
           )}
-          <AiMessageTeachModeInput formRef={formRef} messages={messages} append={appendMessage} />
+          <AiMessageTeachModeInput
+            formRef={formRef}
+            messages={messages}
+            append={appendMessage}
+            aidenState={aidenState}
+          />
         </>
       </div>
     </div>

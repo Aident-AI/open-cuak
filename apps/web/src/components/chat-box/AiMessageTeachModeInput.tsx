@@ -1,17 +1,28 @@
 import { PaperAirplaneIcon } from '@heroicons/react/24/solid';
 import { Message } from 'ai';
 import cx from 'classnames';
-import { FormEvent } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { v4 as UUID } from 'uuid';
+import { AidenState } from '~src/app/portal/TeachAidenWindow';
 import { GrowableTextArea } from '~src/components/GrowableTextArea';
 
 interface Props {
   formRef: React.RefObject<HTMLFormElement>;
   messages: Message[];
   append: (message: Message) => void | Promise<void>;
+  aidenState: AidenState;
 }
 
-export function AiMessageTeachModeInput({ formRef, messages, append }: Props) {
+export function AiMessageTeachModeInput({ formRef, messages, append, aidenState }: Props) {
+  const [placeholderText, setPlaceholderText] = useState('Describe the workflow on a high level.');
+
+  useEffect(() => {
+    if (aidenState === AidenState.IDLE)
+      if (messages.length > 0) return setPlaceholderText('Click the record button to start to teach Aiden');
+    if (aidenState === AidenState.SHADOWING)
+      return setPlaceholderText('Add comments that you think are helpful for Aiden to understand');
+  }, [aidenState, messages]);
+
   const inputHistory = messages.map((m) => m.content);
 
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
@@ -62,7 +73,7 @@ export function AiMessageTeachModeInput({ formRef, messages, append }: Props) {
           formRef={formRef}
           history={inputHistory}
           name="message"
-          placeholder="Describe the workflow on a high level..."
+          placeholder={placeholderText}
           placeholderTextColor="placeholder:text-white/30"
           textColor="text-white"
         />
