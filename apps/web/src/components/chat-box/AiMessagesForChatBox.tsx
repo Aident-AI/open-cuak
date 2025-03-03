@@ -49,7 +49,7 @@ export default function AiMessagesForChatBox(props: Props) {
     if (messages.length < 1)
       return (
         <LogoInChatBox
-          subtitle={props.logoSubtitle || 'Aiden Engram'}
+          subtitle={props.logoSubtitle || 'Chat with Aiden'}
           handleButtonPress={handleButtonPress}
           handleButtonRelease={handleButtonRelease}
         />
