@@ -1,14 +1,12 @@
 #!/bin/bash
 set -e # Exit on error
 
-source ./scripts/detect_docker_compose.sh
-DOCKER_COMPOSE_CMD=$(detect_docker_compose) || exit 1
-if [ "$1" == "--build" ]; then
-  COMPOSE_FILE="docker/docker-compose.build.yaml"
-else
-  COMPOSE_FILE="docker/docker-compose.local-prod.yaml"
-fi
-echo "COMPOSE_FILE: $COMPOSE_FILE"
+# Check arguments
+source ./scripts/detect-quick-command-args.sh
+args="$(detect_command_args "$@")"
+echo "Running quick-start.sh with args:"
+echo "$args"
+eval "$args" || exit 1
 
 # Dependencies check
 check_command() {
@@ -27,7 +25,7 @@ export DOCKER_DEFAULT_PLATFORM=linux/${TARGETARCH}
 echo "Detected platform: $DOCKER_DEFAULT_PLATFORM"
 
 # Start the services
-bash installer/start-supabase.sh
+bash installer/start-supabase.sh $DOCKER_CONTEXT
 bash scripts/pull-envs-for-all-packages.sh --reset
 if [ -f .env.production ]; then
   OPEN_CUAK_VERSION=$(grep -E "^OPEN_CUAK_VERSION=" .env.production | cut -d= -f2- | tr -d '"')
@@ -39,17 +37,17 @@ fi
 remove_container_if_exists() {
   local container_name="$1"
 
-  if [ "$(docker ps -aq -f name=^${container_name}$)" ]; then
+  if [ "$(docker_cmd ps -aq -f name=^${container_name}$)" ]; then
     echo "Removing container: $container_name"
-    docker stop "$container_name" 2>/dev/null
-    docker rm "$container_name"
+    docker_cmd stop "$container_name" 2>/dev/null
+    docker_cmd rm "$container_name"
   fi
 }
 
 remove_container_if_exists "open-cuak-web"
 remove_container_if_exists "open-cuak-browserless"
 
-if [ "$1" != "--build" ]; then
+if [ $IS_BUILD != true ]; then
   echo "Pulling images..."
   $DOCKER_COMPOSE_CMD -f $COMPOSE_FILE pull
 fi
@@ -57,26 +55,25 @@ fi
 # run initialization scripts
 SCRIPT_CONTAINER_NAME="open-cuak-script"
 remove_container_if_exists "$SCRIPT_CONTAINER_NAME"
-if [ "$1" == "--build" ]; then
+if [ $IS_BUILD == true ]; then
   $DOCKER_COMPOSE_CMD -f $COMPOSE_FILE build
   SCRIPT_IMAGE_NAME="open-cuak-web:latest"
 else
   SCRIPT_IMAGE_NAME="ghcr.io/aident-ai/open-cuak-web:$OPEN_CUAK_VERSION"
 fi
-docker run -d --name $SCRIPT_CONTAINER_NAME \
+docker_cmd run -d --name $SCRIPT_CONTAINER_NAME \
   -v $(pwd)/.env.production:/app/apps/web/.env.production \
   -v $(pwd)/.env.local:/app/apps/web/.env \
   -v $(pwd)/package.json:/app/package.json \
   $SCRIPT_IMAGE_NAME
-docker network connect supabase_supabase-network $SCRIPT_CONTAINER_NAME
+docker_cmd network connect supabase_supabase-network $SCRIPT_CONTAINER_NAME
 
-docker exec -it $SCRIPT_CONTAINER_NAME sh -c "cd /app && npm run supabase -- db push --db-url \"postgresql://postgres:your-super-secret-and-long-postgres-password@host.docker.internal:54320/postgres\""
-docker exec -it $SCRIPT_CONTAINER_NAME sh -c "cd /app && npm run supabase:mock-user:init -- --prod"
-docker exec -it $SCRIPT_CONTAINER_NAME sh -c "cd /app && npm run supabase:storage:init -- --prod"
-docker container rm -f $SCRIPT_CONTAINER_NAME
+docker_cmd exec -it $SCRIPT_CONTAINER_NAME sh -c "cd /app && npm run supabase -- db push --db-url \"postgresql://postgres:your-super-secret-and-long-postgres-password@host.docker.internal:54320/postgres\""
+docker_cmd exec -it $SCRIPT_CONTAINER_NAME sh -c "cd /app && npm run supabase:mock-user:init -- --prod"
+docker_cmd exec -it $SCRIPT_CONTAINER_NAME sh -c "cd /app && npm run supabase:storage:init -- --prod"
+docker_cmd container rm -f $SCRIPT_CONTAINER_NAME
 
-# Check if the first argument is --build
-if [ "$1" == "--build" ]; then
+if [ $IS_BUILD == true ]; then
   echo "Running build process..."
   $DOCKER_COMPOSE_CMD --env-file .env.production -f $COMPOSE_FILE up -d
   rm -rf apps/browserless/out

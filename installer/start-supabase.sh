@@ -2,8 +2,8 @@
 set -e # Exit on error
 
 # run from repo root
-source ./scripts/detect_docker_compose.sh
-DOCKER_COMPOSE_CMD=$(detect_docker_compose) || exit 1
+source ./scripts/detect-quick-command-args.sh
+eval "$(detect_command_args "$@")" || exit 1
 
 echo "Starting Supabase services..."
 cp installer/supabase-docker/.env.example installer/supabase-docker/.env

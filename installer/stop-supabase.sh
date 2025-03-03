@@ -1,7 +1,9 @@
 #!/bin/bash
 set -e # Exit on error
-source ./scripts/detect_docker_compose.sh
-DOCKER_COMPOSE_CMD=$(detect_docker_compose) || exit 1
+
+# run from repo root
+source ./scripts/detect-quick-command-args.sh
+eval "$(detect_command_args "$@")" || exit 1
 
 echo "Stopping Supabase services..."
 $DOCKER_COMPOSE_CMD -f installer/supabase-docker/docker-compose.yml down

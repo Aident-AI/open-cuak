@@ -1,16 +1,19 @@
 #!/bin/bash
 
+# run from repo root
+source ./scripts/detect-quick-command-args.sh
+eval "$(detect_command_args "$@")" || exit 1
+
 echo "WARNING: This will remove all containers and container data, and will reset the .env file. This action cannot be undone!"
 read -p "Are you sure you want to proceed? (y/N) " -n 1 -r
-echo    # Move to a new line
-if [[ ! $REPLY =~ ^[Yy]$ ]]
-then
-    echo "Operation cancelled."
-    exit 1
+echo # Move to a new line
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+  echo "Operation cancelled."
+  exit 1
 fi
 
 echo "Stopping and removing all containers..."
-docker compose -f docker-compose.yml -f ./dev/docker-compose.build.yml down -v --remove-orphans
+$DOCKER_COMPOSE_CMD -f docker-compose.yml -f ./dev/docker-compose.build.yml down -v --remove-orphans
 
 echo "Cleaning up bind-mounted directories..."
 BIND_MOUNTS=(

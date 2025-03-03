@@ -1,14 +1,9 @@
 #!/bin/bash
 set -e # Exit on error
 
-source ./scripts/detect_docker_compose.sh
-DOCKER_COMPOSE_CMD=$(detect_docker_compose) || exit 1
-if [ "$1" == "--build" ]; then
-  COMPOSE_FILE="docker/docker-compose.build.yaml"
-else
-  COMPOSE_FILE="docker/docker-compose.local-prod.yaml"
-fi
-echo "COMPOSE_FILE: $COMPOSE_FILE"
+# Check arguments
+source ./scripts/detect-quick-command-args.sh
+eval "$(detect_command_args "$@")" || exit 1
 
 # Dependencies check
 check_command() {
@@ -31,5 +26,5 @@ $DOCKER_COMPOSE_CMD -f $COMPOSE_FILE down
 echo "✅ Open-CUAK services are all stopped!"
 
 echo "========================================"
-bash installer/stop-supabase.sh
+bash installer/stop-supabase.sh $DOCKER_CONTEXT
 echo "✅ Supabase services are all stopped!"
