@@ -7,7 +7,6 @@ import { useContext, useEffect, useMemo, useState } from 'react';
 import DebugInteractionsPage from '~src/app/extension/debug/interactions/DebugInteractionsPage';
 import ChatWithAidenWindow from '~src/app/portal/ChatWithAidenWindow';
 import CookieModal from '~src/app/portal/CookieModal';
-import RemoteBrowserControlIndicator from '~src/app/portal/RemoteBrowserControlIndicator';
 import SOPModal from '~src/app/portal/SOPModal';
 import TeachAidenWindow from '~src/app/portal/TeachAidenWindow';
 import UserConfigModal from '~src/app/portal/UserConfigModal';
@@ -48,7 +47,6 @@ export default function PortalPage() {
       <MeshBackgroundWithUserSession navigationTargetPath="/home" navigationTitle="Home">
         <WebsocketRemoteBrowserWindow
           className="flex h-full w-4/5 flex-1 flex-shrink-0 flex-grow"
-          footer={<RemoteBrowserControlIndicator teachModeOn={teachModeOn} />}
           remoteBrowserSessionId={remoteBrowserSessionId}
           setHideChatWithAiden={setHideChatWithAiden}
           setRemoteBrowserSessionId={setRemoteBrowserSessionId}
