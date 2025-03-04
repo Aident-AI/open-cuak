@@ -66,6 +66,9 @@ _Read more in our [launch blog](https://aident.ai/blog/openai-operator-open-sour
 
    ```bash
    brew install Aident-AI/homebrew-tap/open-cuak
+
+   # or use this to update to the latest version
+   brew update && brew upgrade Aident-AI/homebrew-tap/open-cuak
    ```
 
 2. Start Open-CUAK services
