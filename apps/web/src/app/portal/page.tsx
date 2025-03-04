@@ -2,8 +2,7 @@
 
 import { AcademicCapIcon, BriefcaseIcon, Cog8ToothIcon, KeyIcon } from '@heroicons/react/24/solid';
 import cx from 'classnames';
-import { Github } from 'lucide-react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useContext, useEffect, useMemo, useState } from 'react';
 import DebugInteractionsPage from '~src/app/extension/debug/interactions/DebugInteractionsPage';
 import ChatWithAidenWindow from '~src/app/portal/ChatWithAidenWindow';
@@ -32,7 +31,6 @@ export default function PortalPage() {
   const { session } = useContext(UserSessionContext);
 
   const searchParams = useSearchParams();
-  const router = useRouter();
   const sopId = searchParams?.get('sopId');
 
   useEffect(() => {
@@ -98,12 +96,6 @@ export default function PortalPage() {
             onClick={() => setShowSopModal(true)}
           >
             <BriefcaseIcon className="h-6 w-6" />
-          </button>
-          <button
-            className="mx-1 h-fit w-fit rounded-full bg-blue-300/50 p-2 text-white shadow-2xl shadow-black"
-            onClick={() => router.push('https://github.com/Aident-AI/open-cuak')}
-          >
-            <Github className="h-6 w-6" />
           </button>
         </div>
 
