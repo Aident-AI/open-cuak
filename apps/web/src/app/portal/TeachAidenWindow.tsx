@@ -15,6 +15,13 @@ import { ServiceWorkerMessageAction } from '~shared/messaging/service-worker/Ser
 import { ShadowModeWorkflowEnvironment } from '~shared/shadow-mode/ShadowModeWorkflowEnvironment';
 import { WaitUtils } from '~shared/utils/WaitUtils';
 import { AiAidenApiMessageAnnotation } from '~src/app/api/ai/aiden/AiAidenApi';
+import {
+  KeyboardEvent,
+  MouseClickEvent,
+  MouseMoveEvent,
+  MouseScrollEvent,
+  ProcessedEventBase,
+} from '~src/app/portal/TeachAidenEvent';
 import { AiMessageTeachModeInput } from '~src/components/chat-box/AiMessageTeachModeInput';
 import AiMessagesForChatBox from '~src/components/chat-box/AiMessagesForChatBox';
 import { ScrollToBottomButton } from '~src/components/chat-box/ScrollToBottomButton';
@@ -25,14 +32,6 @@ interface Props {
   className?: string;
   remoteBrowserSessionId?: string;
 }
-
-type ProcessedEventBase = { type: 'move' | 'click' | 'scroll' | 'key'; ts: number };
-type Position = { x: number; y: number };
-
-type MouseMoveEvent = ProcessedEventBase & { type: 'move'; from: Position; to: Position };
-type MouseClickEvent = ProcessedEventBase & { type: 'click'; position: Position };
-type MouseScrollEvent = ProcessedEventBase & { type: 'scroll'; distance: { deltaX: number; deltaY: number } };
-type KeyboardEvent = ProcessedEventBase & { type: 'key'; key: string };
 
 const REFRESH_INTERVAL_IN_MS = 1000;
 const REVERSE_SHADOW_STEP_DELAY = 350;
