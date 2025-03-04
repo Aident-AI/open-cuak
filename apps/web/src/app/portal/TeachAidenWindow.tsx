@@ -10,8 +10,11 @@ import { X_REMOTE_BROWSER_SESSION_ID_HEADER } from '~shared/http/headers';
 import { RuntimeMessageReceiver } from '~shared/messaging/RuntimeMessageReceiver';
 import { MouseClick_ActionConfig } from '~shared/messaging/action-configs/control-actions/MouseClick.ActionConfig';
 import { MouseWheel_ActionConfig } from '~shared/messaging/action-configs/control-actions/MouseWheel.ActionConfig';
+import { Screenshot_ActionConfig } from '~shared/messaging/action-configs/page-actions/Screenshot.ActionConfig';
+import { PageScreenshotAction } from '~shared/messaging/action-configs/page-actions/types';
 import { PortalMouseControl_ActionConfig } from '~shared/messaging/action-configs/portal-actions/PortalMouseControl.ActionConfig';
 import { ServiceWorkerMessageAction } from '~shared/messaging/service-worker/ServiceWorkerMessageAction';
+import { RuntimeMessageResponse } from '~shared/messaging/types';
 import { ShadowModeWorkflowEnvironment } from '~shared/shadow-mode/ShadowModeWorkflowEnvironment';
 import { WaitUtils } from '~shared/utils/WaitUtils';
 import { AiAidenApiMessageAnnotation } from '~src/app/api/ai/aiden/AiAidenApi';
@@ -20,6 +23,7 @@ import {
   MouseClickEvent,
   MouseMoveEvent,
   MouseScrollEvent,
+  ProcessedEvent,
   ProcessedEventBase,
 } from '~src/app/portal/TeachAidenEvent';
 import { AiMessageTeachModeInput } from '~src/components/chat-box/AiMessageTeachModeInput';
@@ -61,6 +65,11 @@ export enum AidenState {
   REVIEWED = 'reviewed',
 }
 
+type TeachAidenData = {
+  screenshot: string;
+  event: ProcessedEvent;
+};
+
 export default function TeachAidenWindow(props: Props) {
   const { events: interactionEvents, clearEvents } = useContext(InteractionEventContext);
   const { sendRuntimeMessage } = useRemoteBrowserMessaging({ remoteBrowserSessionId: props.remoteBrowserSessionId });
@@ -70,11 +79,13 @@ export default function TeachAidenWindow(props: Props) {
   const scrollableRef = useRef<HTMLDivElement>(null);
   const startPointEnvironmentRef = useRef<Partial<ShadowModeWorkflowEnvironment>>({});
   const messageCacheRef = useRef<Message[]>([]);
+  const teachAidenDataKeysRef = useRef<Set<number>>(new Set());
 
   const [userHasScrolled, setUserHasScrolled] = useState(false);
   const [aidenState, setAidenState] = useState<AidenState>(AidenState.IDLE);
   const [messages, setMessages] = useState<Message[]>([]);
   const [annotationMap, setAnnotationMap] = useState<Record<string, AiAidenApiMessageAnnotation>>({});
+  const [teachAidenDataMap, setTeachAidenDataMap] = useState<Record<number, TeachAidenData>>({});
 
   useEffect(() => {
     if (messages.length && !userHasScrolled) {
@@ -135,47 +146,82 @@ export default function TeachAidenWindow(props: Props) {
       // execute tool invocations
       const processedEvents = [...mouseMoveEvents, ...mouseClickEvents, ...mouseScrollEvents, ...keyboardEvents];
       processedEvents.sort((a, b) => a.ts - b.ts);
-      const toolCallMessages = processedEvents
-        .map((e) => {
-          const createMessage = (ti: ToolInvocation) =>
-            ({
-              id: UUID(),
-              role: 'assistant',
-              toolInvocations: [ti],
-              content: '',
-              createdAt: new Date(e.ts),
-            }) as Message;
-          switch (e.type) {
-            case 'move': {
-              const tool = PortalMouseControl_ActionConfig;
-              const toolName = tool.action.replace(':', '-');
-              const params = { deltaX: round(e.to.x - e.from.x, 1), deltaY: round(e.to.y - e.from.y, 1) };
-              if (params.deltaX === 0 && params.deltaY === 0) return null;
-              const args = tool.requestPayloadSchema.parse(params);
-              const result = JSON.stringify(tool.responsePayloadSchema.parse({ status: 'moved' }));
-              return createMessage({ state: 'result', toolCallId: UUID(), toolName, args, result } as ToolInvocation);
-            }
-            case 'click': {
-              const tool = MouseClick_ActionConfig;
-              const toolName = tool.action.replace(':', '-');
-              const args = tool.requestPayloadSchema.parse({ button: 'left' });
-              const result = JSON.stringify(tool.responsePayloadSchema.parse({ status: 'clicked' }));
-              return createMessage({ state: 'result', toolCallId: UUID(), toolName, args, result } as ToolInvocation);
-            }
-            // TODO: add the support of mouse-drag actions
-            case 'scroll': {
-              const tool = MouseWheel_ActionConfig;
-              const toolName = tool.action.replace(':', '-');
-              const args = tool.requestPayloadSchema.parse(e.distance);
-              const result = JSON.stringify(tool.responsePayloadSchema.parse({ status: 'scrolled' }));
-              return createMessage({ state: 'result', toolCallId: UUID(), toolName, args, result } as ToolInvocation);
-            }
-            case 'key':
-              // TODO: add tool call for keyboard events
-              return null;
+      const toolCallMessages = [] as Message[];
+      const newTeachData: Record<number, TeachAidenData> = {};
+      for (let i = 0; i < processedEvents.length; i++) {
+        const e = processedEvents[i];
+
+        if (!teachAidenDataKeysRef.current.has(e.ts)) {
+          teachAidenDataKeysRef.current.add(e.ts);
+          const response = await sendRuntimeMessage<RuntimeMessageResponse>({
+            receiver: RuntimeMessageReceiver.SERVICE_WORKER,
+            action: ServiceWorkerMessageAction.SCREENSHOT,
+            payload: {
+              action: PageScreenshotAction.SCREENSHOT,
+              config: { withCursor: true },
+            },
+          });
+          if (!response || !response.success) throw new Error('Failed to send runtime message to extension.');
+          const { base64 } = Screenshot_ActionConfig.responsePayloadSchema.parse(response.data);
+          if (!base64) throw new Error('Screenshot data is missing');
+          newTeachData[e.ts] = { screenshot: base64, event: e };
+        }
+
+        const createMessage = (ti: ToolInvocation) =>
+          ({
+            id: UUID(),
+            role: 'assistant',
+            toolInvocations: [ti],
+            content: '',
+            createdAt: new Date(e.ts),
+          }) as Message;
+        switch (e.type) {
+          case 'move': {
+            const tool = PortalMouseControl_ActionConfig;
+            const toolName = tool.action.replace(':', '-');
+            const params = { deltaX: round(e.to.x - e.from.x, 1), deltaY: round(e.to.y - e.from.y, 1) };
+            if (params.deltaX === 0 && params.deltaY === 0) return null;
+            const args = tool.requestPayloadSchema.parse(params);
+            const result = JSON.stringify(tool.responsePayloadSchema.parse({ status: 'moved' }));
+            toolCallMessages.push(
+              createMessage({ state: 'result', toolCallId: UUID(), toolName, args, result } as ToolInvocation),
+            );
+            break;
           }
-        })
-        .filter((m) => m !== null) as Message[];
+          case 'click': {
+            const tool = MouseClick_ActionConfig;
+            const toolName = tool.action.replace(':', '-');
+            const args = tool.requestPayloadSchema.parse({ button: 'left' });
+            const result = JSON.stringify(tool.responsePayloadSchema.parse({ status: 'clicked' }));
+            toolCallMessages.push(
+              createMessage({ state: 'result', toolCallId: UUID(), toolName, args, result } as ToolInvocation),
+            );
+            break;
+          }
+          // TODO: add the support of mouse-drag actions
+          case 'scroll': {
+            const tool = MouseWheel_ActionConfig;
+            const toolName = tool.action.replace(':', '-');
+            const args = tool.requestPayloadSchema.parse(e.distance);
+            const result = JSON.stringify(tool.responsePayloadSchema.parse({ status: 'scrolled' }));
+            toolCallMessages.push(
+              createMessage({ state: 'result', toolCallId: UUID(), toolName, args, result } as ToolInvocation),
+            );
+            break;
+          }
+          case 'key':
+            // TODO: add tool call for keyboard events
+            break;
+        }
+      }
+
+      if (Object.keys(newTeachData).length > 0) {
+        setTeachAidenDataMap((prev) => ({
+          ...prev,
+          ...newTeachData,
+        }));
+      }
+
       setMessages((prev) => [prev[0], ...toolCallMessages]);
 
       isProcessingEventRef.current = false;
@@ -210,6 +256,7 @@ export default function TeachAidenWindow(props: Props) {
   const resetMessages = () => {
     setAidenState(AidenState.IDLE);
     setMessages([]);
+    teachAidenDataKeysRef.current.clear();
   };
   const startReverseShadow = async () => {
     if (!props.remoteBrowserSessionId) throw new Error('No remote browser session id found');
