@@ -1,8 +1,24 @@
 <img src="./apps/web/public/assets/icons/open-cuak-logo.png" alt="Open CUAK Logo">
 
-<h1 align="center">🤖 - Reliable Automation Agents at Scale - 👥</h1>
+<p align="center">
+  <a href="https://aident.ai/cloud">Aident Cloud</a> ·
+  <a href="https://docs.aident.ai/docs/get-started">Host locally</a> ·
+  <a href="https://docs.aident.ai/">Documentation</a>
+</p>
 
-Open CUA Kit (Computer Use Agent), or Open-CUAK (pronounced "quack" 🦆🗣️), is THE platform for managing automation agents at scale — starting with browsers. The Kubernetes for CUA agents.
+<p align="center">
+    <img src="https://img.shields.io/github/stars/Aident-AI/open-cuak">
+    <a href="https://discord.gg/SHT4etYuX2" target="_blank">
+        <img src="https://img.shields.io/discord/1129411337727000606?logo=discord&labelColor=%20%235462eb&logoColor=%20%23f5f5f5"
+            alt="Chat on Discord"></a>
+    <a href="https://twitter.com/intent/follow?screen_name=Aident_AI" target="_blank">
+        <img src="https://img.shields.io/twitter/follow/Aident_AI?logo=X"
+            alt="Follow on X"></a>
+</p>
+
+<h1 align="center">🤖 - Free OpenAI Operator alternative - 👥</h1>
+
+Open CUA Kit (Computer Use Agent), or Open-CUAK (pronounced "quack" 🦆🗣️), is THE platform for teaching, hiring and managing automation agents at scale — starting with browsers.
 
 ### 🎯 Why Open-CUAK?
 
