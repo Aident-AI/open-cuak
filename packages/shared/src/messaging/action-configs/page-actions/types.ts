@@ -20,9 +20,3 @@ export enum PageNavigationAction {
   GOTO = 'goto',
   RELOAD = 'reload',
 }
-
-export enum PageScreenshotAction {
-  PDF = 'pdf',
-  // SCREENCAST = 'screencast',
-  SCREENSHOT = 'screenshot',
-}

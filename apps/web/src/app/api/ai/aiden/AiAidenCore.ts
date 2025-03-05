@@ -18,7 +18,6 @@ import { RegisteredToolSetName } from '~shared/agent/RegisteredToolSetName';
 import { RuntimeMessageReceiver } from '~shared/messaging/RuntimeMessageReceiver';
 import { FetchCurrentCursorType_ActionConfig } from '~shared/messaging/action-configs/FetchCurrentCursorType.ActionConfig';
 import { Screenshot_ActionConfig } from '~shared/messaging/action-configs/page-actions/Screenshot.ActionConfig';
-import { PageScreenshotAction } from '~shared/messaging/action-configs/page-actions/types';
 import { ServiceWorkerMessageAction } from '~shared/messaging/service-worker/ServiceWorkerMessageAction';
 import { RuntimeMessage, RuntimeMessageResponse } from '~shared/messaging/types';
 import { SupabaseClientForServer } from '~shared/supabase/client/SupabaseClientForServer';
@@ -67,7 +66,6 @@ export class AiAidenCore {
       receiver: RuntimeMessageReceiver.SERVICE_WORKER,
       action: ServiceWorkerMessageAction.SCREENSHOT,
       payload: {
-        action: PageScreenshotAction.SCREENSHOT,
         config: screenshotConfig,
         omniparserHost:
           userConfig.boundingBoxGenerator === BoundingBoxGenerator.OMNI_PARSER

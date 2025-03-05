@@ -11,7 +11,6 @@ import { RuntimeMessageReceiver } from '~shared/messaging/RuntimeMessageReceiver
 import { MouseClick_ActionConfig } from '~shared/messaging/action-configs/control-actions/MouseClick.ActionConfig';
 import { MouseWheel_ActionConfig } from '~shared/messaging/action-configs/control-actions/MouseWheel.ActionConfig';
 import { Screenshot_ActionConfig } from '~shared/messaging/action-configs/page-actions/Screenshot.ActionConfig';
-import { PageScreenshotAction } from '~shared/messaging/action-configs/page-actions/types';
 import { PortalMouseControl_ActionConfig } from '~shared/messaging/action-configs/portal-actions/PortalMouseControl.ActionConfig';
 import { ServiceWorkerMessageAction } from '~shared/messaging/service-worker/ServiceWorkerMessageAction';
 import { RuntimeMessageResponse } from '~shared/messaging/types';
@@ -157,7 +156,6 @@ export default function TeachAidenWindow(props: Props) {
             receiver: RuntimeMessageReceiver.SERVICE_WORKER,
             action: ServiceWorkerMessageAction.SCREENSHOT,
             payload: {
-              action: PageScreenshotAction.SCREENSHOT,
               config: { withCursor: true },
             },
           });

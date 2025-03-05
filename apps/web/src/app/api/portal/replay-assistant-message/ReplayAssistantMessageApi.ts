@@ -2,7 +2,6 @@ import { z } from 'zod';
 import { RuntimeMessageReceiver } from '~shared/messaging/RuntimeMessageReceiver';
 import { FetchCurrentCursorType_ActionConfig } from '~shared/messaging/action-configs/FetchCurrentCursorType.ActionConfig';
 import { Screenshot_ActionConfig } from '~shared/messaging/action-configs/page-actions/Screenshot.ActionConfig';
-import { PageScreenshotAction } from '~shared/messaging/action-configs/page-actions/types';
 import { ServiceWorkerMessageAction } from '~shared/messaging/service-worker/ServiceWorkerMessageAction';
 import { BaseEndpointApi, EndpointConfigType } from '~src/app/api/BaseEndpointApi';
 import { AiAidenApiMessageAnnotation, AiAidenApiMessageAnnotationSchema } from '~src/app/api/ai/aiden/AiAidenApi';
@@ -40,7 +39,7 @@ export class ReplayAssistantMessageApi extends BaseEndpointApi {
     const screenshotRsp = await context.sendRuntimeMessage({
       receiver: RuntimeMessageReceiver.SERVICE_WORKER,
       action: ServiceWorkerMessageAction.SCREENSHOT,
-      payload: { action: PageScreenshotAction.SCREENSHOT, config: { withCursor: true } },
+      payload: { config: { withCursor: true } },
     });
     if (!screenshotRsp.success) throw new Error('Failed to take screenshot');
     const { base64 } = Screenshot_ActionConfig.responsePayloadSchema.parse(screenshotRsp.data);
