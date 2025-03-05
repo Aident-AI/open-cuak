@@ -35,7 +35,15 @@ sidebar_label: 'Development Setup'
     ```bash
     # at repo root
     npm run dev
-
     ```
 
 3.  Now, it is ready locally at [http://localhost:3000](http://localhost:3000).
+
+### ▶️ Build and Run Production Build from Local
+
+1. Run local production build (with `docker`).
+
+   ```bash
+   # at repo root
+   npm run docker:start
+   ```
