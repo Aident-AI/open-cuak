@@ -28,7 +28,9 @@ export class AiAgentSOPNode extends AiAgentNode {
       if (this.sopRunState.currentStepIndex + 1 !== step.id)
         throw new Error(`Step ID mismatch: ${this.sopRunState.currentStepIndex + 1} !== ${step.id}`);
 
-      const message = [{ role: 'user', content: step.action }] as CoreMessage[];
+      const message = [
+        { role: 'user', content: step.action + '\n No more action after finishing the step' },
+      ] as CoreMessage[];
 
       if (this.sopRunState.currentStepIndex > 0) this.resetBeforeSOPStep();
       runResult = await this.genRun(message);
