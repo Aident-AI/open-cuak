@@ -5,6 +5,7 @@ import { Message, ToolInvocation, convertToCoreMessages } from 'ai';
 import { round } from 'lodash';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { v4 as UUID } from 'uuid';
+import { z } from 'zod';
 import { getHost } from '~shared/env/environment';
 import { X_REMOTE_BROWSER_SESSION_ID_HEADER } from '~shared/http/headers';
 import { RuntimeMessageReceiver } from '~shared/messaging/RuntimeMessageReceiver';
@@ -13,7 +14,6 @@ import { MouseWheel_ActionConfig } from '~shared/messaging/action-configs/contro
 import { Screenshot_ActionConfig } from '~shared/messaging/action-configs/page-actions/Screenshot.ActionConfig';
 import { PortalMouseControl_ActionConfig } from '~shared/messaging/action-configs/portal-actions/PortalMouseControl.ActionConfig';
 import { ServiceWorkerMessageAction } from '~shared/messaging/service-worker/ServiceWorkerMessageAction';
-import { RuntimeMessageResponse } from '~shared/messaging/types';
 import { ShadowModeWorkflowEnvironment } from '~shared/shadow-mode/ShadowModeWorkflowEnvironment';
 import { WaitUtils } from '~shared/utils/WaitUtils';
 import { AiAidenApiMessageAnnotation } from '~src/app/api/ai/aiden/AiAidenApi';
@@ -152,17 +152,15 @@ export default function TeachAidenWindow(props: Props) {
 
         if (!teachAidenDataKeysRef.current.has(e.ts)) {
           teachAidenDataKeysRef.current.add(e.ts);
-          const response = await sendRuntimeMessage<RuntimeMessageResponse>({
+          const response = await sendRuntimeMessage<z.infer<typeof Screenshot_ActionConfig.responsePayloadSchema>>({
             receiver: RuntimeMessageReceiver.SERVICE_WORKER,
             action: ServiceWorkerMessageAction.SCREENSHOT,
             payload: {
               config: { withCursor: true },
             },
           });
-          if (!response || !response.success) throw new Error('Failed to send runtime message to extension.');
-          const { base64 } = Screenshot_ActionConfig.responsePayloadSchema.parse(response.data);
-          if (!base64) throw new Error('Screenshot data is missing');
-          newTeachData[e.ts] = { screenshot: base64, event: e };
+          if (!response.base64) throw new Error('Screenshot data is missing');
+          newTeachData[e.ts] = { screenshot: response.base64, event: e };
         }
 
         const createMessage = (ti: ToolInvocation) =>
