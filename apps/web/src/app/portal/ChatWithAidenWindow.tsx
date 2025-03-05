@@ -44,13 +44,8 @@ export default function ChatWithAidenWindow(props: Props) {
       sopId: props.sop ? props.sop.id : undefined,
     },
     onError: (err) => {
-      const rawError = JSON.parse(err.message);
-      const error = rawError.error || rawError;
-      let errorMessage = error.message || error;
-      if (typeof errorMessage === 'object') {
-        errorMessage = JSON.stringify(errorMessage);
-      }
-      ALogger.warn({ context: 'Chat error received', error: errorMessage, rawError });
+      let errorMessage = err.message;
+      ALogger.warn({ context: 'Chat error received', error: errorMessage });
       if (errorMessage) setErrorSnackbar({ open: true, message: errorMessage });
     },
   });
