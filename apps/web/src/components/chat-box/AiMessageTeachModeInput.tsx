@@ -40,7 +40,7 @@ export function AiMessageTeachModeInput({ formRef, messages, append, aidenState 
     if (messages.length > 0) return null;
     return (
       <>
-        <text className="flex w-full items-center justify-center text-white/70 underline">Instruction</text>
+        <span className="flex w-full items-center justify-center text-white/70 underline">Instruction</span>
         <div className="flex w-full flex-col items-start px-4 py-2 text-sm text-white/70">
           <ol className="list-decimal pl-4">
             <li>Describe the workflow on a high level</li>
