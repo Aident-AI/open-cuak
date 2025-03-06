@@ -145,19 +145,6 @@ export default function TeachAidenWindow(props: Props) {
       for (let i = 0; i < processedEvents.length; i++) {
         const e = processedEvents[i];
 
-        if (!teachAidenDataKeysRef.current.has(e.ts)) {
-          teachAidenDataKeysRef.current.add(e.ts);
-          const response = await sendRuntimeMessage<z.infer<typeof Screenshot_ActionConfig.responsePayloadSchema>>({
-            receiver: RuntimeMessageReceiver.SERVICE_WORKER,
-            action: ServiceWorkerMessageAction.SCREENSHOT,
-            payload: {
-              config: { withCursor: true },
-            },
-          });
-          if (!response.base64) throw new Error('Screenshot data is missing');
-          newTeachData[e.ts] = { screenshot: response.base64, event: e.type };
-        }
-
         const createMessage = (ti: ToolInvocation) =>
           ({
             id: UUID(),
@@ -171,7 +158,7 @@ export default function TeachAidenWindow(props: Props) {
             const tool = PortalMouseControl_ActionConfig;
             const toolName = tool.action.replace(':', '-');
             const params = { deltaX: round(e.to.x - e.from.x, 1), deltaY: round(e.to.y - e.from.y, 1) };
-            if (params.deltaX === 0 && params.deltaY === 0) return null;
+            if (params.deltaX === 0 && params.deltaY === 0) continue;
             const args = tool.requestPayloadSchema.parse(params);
             const result = JSON.stringify(tool.responsePayloadSchema.parse({ status: 'moved' }));
             toolCallMessages.push(
@@ -203,6 +190,19 @@ export default function TeachAidenWindow(props: Props) {
           case 'key':
             // TODO: add tool call for keyboard events
             break;
+        }
+
+        if (!teachAidenDataKeysRef.current.has(e.ts)) {
+          teachAidenDataKeysRef.current.add(e.ts);
+          const response = await sendRuntimeMessage<z.infer<typeof Screenshot_ActionConfig.responsePayloadSchema>>({
+            receiver: RuntimeMessageReceiver.SERVICE_WORKER,
+            action: ServiceWorkerMessageAction.SCREENSHOT,
+            payload: {
+              config: { withCursor: true },
+            },
+          });
+          if (!response.base64) throw new Error('Screenshot data is missing');
+          newTeachData[e.ts] = { screenshot: response.base64, event: e.type };
         }
       }
 
