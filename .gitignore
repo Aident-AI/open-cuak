@@ -16,6 +16,8 @@
 
 # build
 build/**
+mac-app/build/**
+mac-app/OpenCuak.app/**
 dist/**
 .next/**
 

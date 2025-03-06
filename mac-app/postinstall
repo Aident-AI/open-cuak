@@ -1,0 +1,65 @@
+#!/bin/bash
+
+# Log the installation process
+mkdir -p /tmp/open-cuak
+LOGFILE="/tmp/open-cuak/install.log"
+exec >"$LOGFILE" 2>&1
+
+echo "Starting pre-install script..."
+
+# Get the currently logged-in user
+loggedInUser=$(stat -f "%Su" /dev/console)
+userHome=$(eval echo ~$loggedInUser)
+
+echo "Logged-in user: $loggedInUser"
+
+# Determine Homebrew path based on architecture
+if [[ "$(uname -m)" == "arm64" ]]; then
+  BREW_PATH="/opt/homebrew/bin/brew"
+else
+  BREW_PATH="/usr/local/bin/brew"
+fi
+
+# Function to check if brew is installed
+is_brew_installed() {
+  [[ -x "$BREW_PATH" ]]
+}
+
+# Install Homebrew if not found
+if ! is_brew_installed; then
+  echo "Homebrew not found. Installing Homebrew..."
+
+  # Run the installation as the logged-in user
+  sudo -u "$loggedInUser" /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+  # Ensure brew is available in the PATH
+  eval "$($BREW_PATH shellenv)"
+
+  if is_brew_installed; then
+    echo "Homebrew installed successfully."
+  else
+    echo "Homebrew installation failed."
+    exit 1
+  fi
+else
+  echo "Homebrew is already installed."
+fi
+
+# Ensure brew is up-to-date and install open-cuak
+if is_brew_installed; then
+  echo "Updating Homebrew..."
+  sudo -u "$loggedInUser" "$BREW_PATH" update
+
+  echo "Installing open-cuak..."
+  sudo -u "$loggedInUser" "$BREW_PATH" install Aident-AI/homebrew-tap/open-cuak
+
+  echo "Installation completed successfully."
+
+  echo "Launching OpenCuak..."
+  sudo -u "$loggedInUser" open /Applications/OpenCuak.app
+
+  echo "OpenCuak has been launched."
+else
+  echo "Homebrew installation failed unexpectedly."
+  exit 1
+fi
