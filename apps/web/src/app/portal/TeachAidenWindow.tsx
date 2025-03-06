@@ -22,9 +22,9 @@ import {
   MouseClickEvent,
   MouseMoveEvent,
   MouseScrollEvent,
-  ProcessedEvent,
   ProcessedEventBase,
 } from '~src/app/portal/TeachAidenEvent';
+import { TeachAidenData } from '~src/app/portal/TeachAidentData';
 import { AiMessageTeachModeInput } from '~src/components/chat-box/AiMessageTeachModeInput';
 import AiMessagesForChatBox from '~src/components/chat-box/AiMessagesForChatBox';
 import { ScrollToBottomButton } from '~src/components/chat-box/ScrollToBottomButton';
@@ -63,11 +63,6 @@ export enum AidenState {
   REVERSE_SHADOWING = 'reverse-shadowing',
   REVIEWED = 'reviewed',
 }
-
-type TeachAidenData = {
-  screenshot: string;
-  event: ProcessedEvent;
-};
 
 export default function TeachAidenWindow(props: Props) {
   const { events: interactionEvents, clearEvents } = useContext(InteractionEventContext);
@@ -160,7 +155,7 @@ export default function TeachAidenWindow(props: Props) {
             },
           });
           if (!response.base64) throw new Error('Screenshot data is missing');
-          newTeachData[e.ts] = { screenshot: response.base64, event: e };
+          newTeachData[e.ts] = { screenshot: response.base64, event: e.type };
         }
 
         const createMessage = (ti: ToolInvocation) =>
@@ -401,6 +396,13 @@ export default function TeachAidenWindow(props: Props) {
       if (aidenState === AidenState.REVIEWED) {
         setMessages(messageCacheRef.current);
         messageCacheRef.current = [];
+      }
+
+      if (aidenState === AidenState.SHADOWING) {
+        await fetch(getHost() + '/api/teach/generate-sop', {
+          method: 'POST',
+          body: JSON.stringify({ teachAidenDataMap: teachAidenDataMap }),
+        });
       }
 
       // update the state
