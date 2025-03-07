@@ -33,6 +33,7 @@
     "mac:build-app": "cd installer/mac-app && open OpenCuak.platypus",
     "mac:build-installer": "cd installer/mac-app && bash scripts/sign-mac-app.sh && bash scripts/build-mac-installer.sh",
     "mac:clean": "rm -rf installer/mac-app/build && rm -rf installer/mac-app/OpenCuak.app",
+    "mac:images": "cd installer/mac-app && bash scripts/download-docker-images.sh",
     "quick:reset": "bash quick-reset.sh",
     "quick:restart": "npm run quick:stop && npm run quick:start",
     "quick:start": "bash quick-start.sh",
