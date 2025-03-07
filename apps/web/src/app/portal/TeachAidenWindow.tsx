@@ -1,6 +1,13 @@
 'use client';
 
-import { ChevronLeftIcon, PencilSquareIcon, PlayCircleIcon, StopCircleIcon } from '@heroicons/react/24/solid';
+import {
+  ArrowPathIcon,
+  CheckCircleIcon,
+  ChevronLeftIcon,
+  PencilSquareIcon,
+  PlayCircleIcon,
+  StopCircleIcon,
+} from '@heroicons/react/24/solid';
 import { Message, ToolInvocation } from 'ai';
 import { round } from 'lodash';
 import { useContext, useEffect, useRef, useState } from 'react';
@@ -36,7 +43,6 @@ interface Props {
 }
 
 const REFRESH_INTERVAL_IN_MS = 1000;
-const REVERSE_SHADOW_STEP_DELAY = 350;
 
 const handleThrottledEvent = <T extends ProcessedEventBase>(
   events: T[],
@@ -59,6 +65,8 @@ const handleThrottledEvent = <T extends ProcessedEventBase>(
 export enum AidenState {
   IDLE = 'idle',
   SHADOWING = 'shadowing',
+  SOP_GENERATING = 'sop-generating',
+  SOP_GENERATED = 'sop-generated',
   REVERSE_SHADOWING = 'reverse-shadowing',
   REVIEWED = 'reviewed',
 }
@@ -287,12 +295,20 @@ export default function TeachAidenWindow(props: Props) {
 
   const shouldShowConfirmationBar =
     aidenState === AidenState.REVIEWED || (messages.length > 1 && aidenState === AidenState.IDLE);
-  const title =
-    aidenState === AidenState.IDLE
-      ? 'Teach Aiden'
-      : aidenState === AidenState.SHADOWING
-        ? 'Aiden shadowing...'
-        : 'Reverse shadowing...';
+  const getTitle = () => {
+    switch (aidenState) {
+      case AidenState.IDLE:
+        return 'Teach Aiden';
+      case AidenState.SHADOWING:
+        return 'Aiden shadowing...';
+      case AidenState.SOP_GENERATING:
+        return 'Generating SOP...';
+      case AidenState.SOP_GENERATED:
+        return 'SOP generated';
+      case AidenState.REVERSE_SHADOWING:
+        return 'Reverse shadowing...';
+    }
+  };
 
   const renderLeftNavButton = () => {
     const buttonOnClick = async () => {
@@ -325,34 +341,23 @@ export default function TeachAidenWindow(props: Props) {
 
         // non-blocking fetches
         void fetchStartPosition();
+        setAidenState(AidenState.SHADOWING);
       }
 
       if (aidenState === AidenState.REVIEWED) {
         setMessages(messageCacheRef.current);
         messageCacheRef.current = [];
+        setAidenState(AidenState.IDLE);
       }
 
       if (aidenState === AidenState.SHADOWING) {
+        setAidenState(AidenState.SOP_GENERATING);
         await fetch(getHost() + '/api/teach/generate-sop', {
           method: 'POST',
           body: JSON.stringify({ teachAidenDataMap: teachAidenDataMap }),
         });
+        setAidenState(AidenState.SOP_GENERATED);
       }
-
-      // update the state
-      const switchAidenState = (prev: AidenState) => {
-        switch (prev) {
-          case AidenState.IDLE:
-            return AidenState.SHADOWING;
-          case AidenState.SHADOWING:
-            return AidenState.IDLE;
-          case AidenState.REVERSE_SHADOWING:
-            return AidenState.IDLE;
-          case AidenState.REVIEWED:
-            return AidenState.IDLE;
-        }
-      };
-      setAidenState((prev) => switchAidenState(prev));
     };
     const buttonStyle = 'h-full w-full text-white';
     const renderButton = () => {
@@ -364,6 +369,10 @@ export default function TeachAidenWindow(props: Props) {
           return <StopCircleIcon className={buttonStyle} />;
         case AidenState.REVIEWED:
           return <ChevronLeftIcon className={buttonStyle} />;
+        case AidenState.SOP_GENERATING:
+          return <ArrowPathIcon className={buttonStyle} />;
+        case AidenState.SOP_GENERATED:
+          return <CheckCircleIcon className={buttonStyle} />;
       }
     };
 
@@ -398,7 +407,7 @@ export default function TeachAidenWindow(props: Props) {
     <div className={props.className}>
       <div className="relative h-full w-full overflow-hidden rounded-3xl shadow-2xl shadow-blue-600 backdrop-blur-md">
         <div className="fixed left-0 top-0 z-50 flex h-12 w-full items-center justify-center bg-sky-800/95 shadow-xl shadow-fuchsia-600/50 backdrop-blur-sm">
-          <h1 className="text-white">{title}</h1>
+          <h1 className="text-white">{getTitle()}</h1>
           {renderLeftNavButton()}
           <button className="absolute right-5 top-4 flex h-5 w-5 items-center justify-center" onClick={resetMessages}>
             <PencilSquareIcon className="h-full w-full text-white" />
@@ -412,7 +421,7 @@ export default function TeachAidenWindow(props: Props) {
             annotationMap={annotationMap}
             className={shouldShowConfirmationBar ? 'pt-24' : 'pt-14'}
             deleteMessage={deleteMessage}
-            logoSubtitle={title}
+            logoSubtitle={getTitle()}
             messages={messages}
             onScroll={handleScroll}
             scrollableRef={scrollableRef}
