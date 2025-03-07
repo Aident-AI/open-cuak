@@ -53,7 +53,7 @@
 	<key>ScriptArgs</key>
 	<array/>
 	<key>ScriptPath</key>
-	<string>/Users/ljhskyso/repos/open-cuak/mac-app/platypus-script.sh</string>
+	<string>./platypus-script.sh</string>
 	<key>SendNotifications</key>
 	<true/>
 	<key>StatusItemDisplayType</key>
