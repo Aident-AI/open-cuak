@@ -284,10 +284,6 @@ export default function TeachAidenWindow(props: Props) {
 
     resetMessages();
   };
-  const deleteMessage = (id: string) => {
-    setMessages((prev) => prev.filter((m) => m.id !== id));
-    setAidenState(AidenState.IDLE);
-  };
   const appendMessage = (m: Message) => {
     setMessages((prev) => [...prev, { ...m, id: m.id || UUID() }]);
     setAidenState(AidenState.IDLE);
@@ -420,7 +416,6 @@ export default function TeachAidenWindow(props: Props) {
           <AiMessagesForChatBox
             annotationMap={annotationMap}
             className={shouldShowConfirmationBar ? 'pt-24' : 'pt-14'}
-            deleteMessage={deleteMessage}
             logoSubtitle={getTitle()}
             messages={messages}
             onScroll={handleScroll}

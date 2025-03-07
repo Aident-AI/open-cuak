@@ -1,4 +1,3 @@
-import { XMarkIcon } from '@heroicons/react/24/solid';
 import { Tooltip } from '@mui/material';
 import { CreateMessage, Message } from 'ai';
 import cx from 'classnames';
@@ -17,7 +16,6 @@ interface Props {
 
   annotationMap?: Record<string, AiAidenApiMessageAnnotation>;
   className?: string;
-  deleteMessage?: (id: string) => void;
   error?: Error;
   handleButtonPress?: () => void;
   handleButtonRelease?: () => void;
@@ -137,18 +135,6 @@ export default function AiMessagesForChatBox(props: Props) {
           </Tooltip>
         );
       };
-      const renderMessageDeleteButton = () => {
-        if (!props.teachMode || role === 'user') return null;
-        const deleteMessage = () => props.deleteMessage?.(id);
-
-        return (
-          <div className="absolute right-[-8px] top-[-12px] h-fit w-fit cursor-pointer rounded-full">
-            <button className="h-fit w-fit rounded-full bg-blue-600/50 p-[2px]" onClick={deleteMessage}>
-              <XMarkIcon className="h-3 w-3 bg-transparent text-white" />
-            </button>
-          </div>
-        );
-      };
 
       const isUser = role === 'user';
       return (
@@ -163,7 +149,6 @@ export default function AiMessagesForChatBox(props: Props) {
         >
           {renderMainContent()}
           {renderMessageStateInfo()}
-          {props.teachMode && renderMessageDeleteButton()}
         </div>
       );
     };
