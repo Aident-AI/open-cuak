@@ -1,7 +1,7 @@
 'use client';
 
 import { ChevronLeftIcon, PencilSquareIcon, PlayCircleIcon, StopCircleIcon } from '@heroicons/react/24/solid';
-import { Message, ToolInvocation, convertToCoreMessages } from 'ai';
+import { Message, ToolInvocation } from 'ai';
 import { round } from 'lodash';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { v4 as UUID } from 'uuid';
@@ -15,7 +15,6 @@ import { Screenshot_ActionConfig } from '~shared/messaging/action-configs/page-a
 import { PortalMouseControl_ActionConfig } from '~shared/messaging/action-configs/portal-actions/PortalMouseControl.ActionConfig';
 import { ServiceWorkerMessageAction } from '~shared/messaging/service-worker/ServiceWorkerMessageAction';
 import { ShadowModeWorkflowEnvironment } from '~shared/shadow-mode/ShadowModeWorkflowEnvironment';
-import { WaitUtils } from '~shared/utils/WaitUtils';
 import { AiAidenApiMessageAnnotation } from '~src/app/api/ai/aiden/AiAidenApi';
 import {
   KeyboardEvent,
@@ -250,72 +249,7 @@ export default function TeachAidenWindow(props: Props) {
     teachAidenDataKeysRef.current.clear();
   };
   const startReverseShadow = async () => {
-    if (!props.remoteBrowserSessionId) throw new Error('No remote browser session id found');
-
-    messageCacheRef.current = messages;
-    const [firstMessage, ...executionMessages] = messages.map((m) => ({ ...m, annotations: undefined }));
-    const hasActions = executionMessages.some((m) => m.role === 'assistant' && (m.toolInvocations?.length ?? 0) > 0);
-    const { startPosition } = startPointEnvironmentRef.current;
-
-    if (hasActions) {
-      if (!startPosition) throw new Error('No start position found');
-      // setup the start position
-      await sendRuntimeMessage({
-        receiver: RuntimeMessageReceiver.SERVICE_WORKER,
-        action: ServiceWorkerMessageAction.MOUSE_MOVE,
-        payload: { x: startPosition.x, y: startPosition.y },
-      });
-    }
-
-    // execute step by step
-    setAidenState(AidenState.REVERSE_SHADOWING);
-    setMessages([firstMessage]); // keep the first message
-    const stepMessages = [firstMessage];
-    const stepAnnotations = [] as AiAidenApiMessageAnnotation[];
-    for (const msg of executionMessages) {
-      // wait for a second to mimic ai response
-      await WaitUtils.wait(REVERSE_SHADOW_STEP_DELAY);
-
-      if (msg.role !== 'assistant') {
-        setMessages((prev) => [...prev, { ...msg, id: msg.id ?? UUID() } as Message]);
-        continue;
-      }
-
-      // append the running message
-      setMessages((prev) => [...prev, msg]);
-      stepMessages.push(msg);
-      const stepCoreMessages = convertToCoreMessages(stepMessages);
-      if (msg.toolInvocations && msg.toolInvocations.length > 1)
-        throw new Error('Multiple tool invocations not supported yet.');
-
-      // execute tool invocation
-      const ti = !msg.toolInvocations ? undefined : msg.toolInvocations[0];
-      const url = getHost() + '/api/portal/replay-assistant-message';
-      const rsp = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          [X_REMOTE_BROWSER_SESSION_ID_HEADER]: props.remoteBrowserSessionId!,
-        },
-        body: JSON.stringify({
-          ts: msg.createdAt?.getTime() ?? Date.now(),
-          toolInvocation: ti,
-          stepMessages: stepCoreMessages,
-        }),
-      });
-      if (!rsp.ok) throw new Error('Failed to execute tool invocation');
-      const json = await rsp.json();
-      if (!json.success) throw new Error('Failed to execute tool invocation');
-
-      // append message annotations
-      stepAnnotations.push(json.annotation);
-      if (!msg.id) throw new Error('Message ID not found');
-      setAnnotationMap((prev) => ({ ...prev, [msg.id]: json.annotation }));
-    }
-
-    // wait for a second to mimic ai response
-    await WaitUtils.wait(REVERSE_SHADOW_STEP_DELAY);
-    setAidenState(AidenState.REVIEWED);
+    // TODO: reverse shadowing based on the generated SOP
   };
   const saveMessages = async () => {
     const lastMessage = messages[messages.length - 1];
