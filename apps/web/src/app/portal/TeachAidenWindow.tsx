@@ -289,7 +289,7 @@ export default function TeachAidenWindow(props: Props) {
     setAidenState(AidenState.IDLE);
   };
 
-  const shouldShowConfirmationBar = aidenState === AidenState.REVIEWED || AidenState.SOP_GENERATED;
+  const shouldShowConfirmationBar = aidenState === AidenState.REVIEWED || aidenState === AidenState.SOP_GENERATED;
   const getTitle = () => {
     switch (aidenState) {
       case AidenState.IDLE:
@@ -389,7 +389,7 @@ export default function TeachAidenWindow(props: Props) {
           <button onClick={startReverseShadow}>Start Reverse Shadow SOP execution</button>
         </div>
       );
-
+    console.log('>>>>>>>>>>>>>>', aidenState);
     return (
       <div className="absolute left-0 top-12 flex h-10 w-full items-center justify-evenly bg-sky-800/50">
         <button onClick={startReverseShadow}>Replay</button>
