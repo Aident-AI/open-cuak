@@ -24,8 +24,23 @@ export function useRemoteBrowserMessaging(props: Props) {
 
       if (!response.ok) throw new Error(`Failed to send runtime message: ${response.statusText}`);
 
-      const data = await response.json();
-      return data as T;
+      try {
+        const data = await response.json();
+
+        // Handle empty response
+        if ((data === null || data === undefined) && response.ok) {
+          return undefined as unknown as T;
+        }
+
+        return data as T;
+      } catch (error) {
+        // Handle intentional void response
+        if (response.ok) {
+          return undefined as unknown as T;
+        }
+
+        throw new Error('Failed to parse response');
+      }
     };
   }, [props.remoteBrowserSessionId]);
 
