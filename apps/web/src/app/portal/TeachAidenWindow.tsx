@@ -9,6 +9,7 @@ import {
   StopCircleIcon,
 } from '@heroicons/react/24/solid';
 import { Message, ToolInvocation } from 'ai';
+import { useChat } from 'ai/react';
 import { round } from 'lodash';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { v4 as UUID } from 'uuid';
@@ -19,10 +20,11 @@ import { RuntimeMessageReceiver } from '~shared/messaging/RuntimeMessageReceiver
 import { MouseClick_ActionConfig } from '~shared/messaging/action-configs/control-actions/MouseClick.ActionConfig';
 import { MouseWheel_ActionConfig } from '~shared/messaging/action-configs/control-actions/MouseWheel.ActionConfig';
 import { Screenshot_ActionConfig } from '~shared/messaging/action-configs/page-actions/Screenshot.ActionConfig';
+import { PageNavigationAction } from '~shared/messaging/action-configs/page-actions/types';
 import { PortalMouseControl_ActionConfig } from '~shared/messaging/action-configs/portal-actions/PortalMouseControl.ActionConfig';
 import { ServiceWorkerMessageAction } from '~shared/messaging/service-worker/ServiceWorkerMessageAction';
 import { ShadowModeWorkflowEnvironment } from '~shared/shadow-mode/ShadowModeWorkflowEnvironment';
-import { AiAidenApiMessageAnnotation } from '~src/app/api/ai/aiden/AiAidenApi';
+import { AiAidenApiMessageAnnotation, AiAidenStreamDataSchema } from '~src/app/api/ai/aiden/AiAidenApi';
 import {
   KeyboardEvent,
   MouseClickEvent,
@@ -81,6 +83,7 @@ export default function TeachAidenWindow(props: Props) {
   const startPointEnvironmentRef = useRef<Partial<ShadowModeWorkflowEnvironment>>({});
   const messageCacheRef = useRef<Message[]>([]);
   const teachAidenDataKeysRef = useRef<Set<number>>(new Set());
+  const draftSopIdRef = useRef<string | undefined>(undefined);
 
   const [userHasScrolled, setUserHasScrolled] = useState(false);
   const [aidenState, setAidenState] = useState<AidenState>(AidenState.IDLE);
@@ -88,7 +91,31 @@ export default function TeachAidenWindow(props: Props) {
   const [annotationMap, setAnnotationMap] = useState<Record<string, AiAidenApiMessageAnnotation>>({});
   const [teachAidenDataMap, setTeachAidenDataMap] = useState<Record<number, TeachAidenData>>({});
 
-  const draftSopId = UUID();
+  if (!draftSopIdRef.current) {
+    draftSopIdRef.current = UUID();
+  }
+  const aiSdkApi = '/api/ai/aiden';
+  const {
+    messages: reverseShadowMessages,
+    append,
+    data: rawData,
+  } = useChat({
+    api: aiSdkApi,
+    headers: props.remoteBrowserSessionId
+      ? { [X_REMOTE_BROWSER_SESSION_ID_HEADER]: props.remoteBrowserSessionId }
+      : undefined,
+    body: { sopId: draftSopIdRef.current },
+  });
+  const data = rawData?.map((d) => AiAidenStreamDataSchema.parse(d)) ?? [];
+  const stateInfos = data.filter((d) => d.type === 'state-info');
+  const reverseShadowAnnotationMap = stateInfos.reduce(
+    (acc, stateInfo, i) => {
+      const messageId = messages.filter((m) => m.role === 'assistant')[i]?.id;
+      if (messageId) acc[messageId] = stateInfo.annotation;
+      return acc;
+    },
+    {} as Record<string, AiAidenApiMessageAnnotation>,
+  );
 
   useEffect(() => {
     if (messages.length && !userHasScrolled) {
@@ -259,7 +286,19 @@ export default function TeachAidenWindow(props: Props) {
     teachAidenDataKeysRef.current.clear();
   };
   const startReverseShadow = async () => {
-    // TODO: reverse shadowing based on the generated SOP
+    const { startUrl } = startPointEnvironmentRef.current;
+    await sendRuntimeMessage({
+      receiver: RuntimeMessageReceiver.SERVICE_WORKER,
+      action: ServiceWorkerMessageAction.NAVIGATE_PAGE,
+      payload: { action: PageNavigationAction.GOTO, url: startUrl },
+    });
+    await sendRuntimeMessage({
+      receiver: RuntimeMessageReceiver.SERVICE_WORKER,
+      action: ServiceWorkerMessageAction.MOUSE_RESET,
+      payload: {},
+    });
+    setAidenState(AidenState.REVERSE_SHADOWING);
+    append({ role: 'user', content: 'Start SOP execution' });
   };
   const saveMessages = async () => {
     const lastMessage = messages[messages.length - 1];
@@ -351,7 +390,7 @@ export default function TeachAidenWindow(props: Props) {
         setAidenState(AidenState.SOP_GENERATING);
         await fetch(getHost() + '/api/teach/generate-sop', {
           method: 'POST',
-          body: JSON.stringify({ teachAidenDataMap: teachAidenDataMap, draftSopId }),
+          body: JSON.stringify({ teachAidenDataMap: teachAidenDataMap, draftSopId: draftSopIdRef.current }),
         });
         setAidenState(AidenState.SOP_GENERATED);
       }
@@ -415,10 +454,10 @@ export default function TeachAidenWindow(props: Props) {
 
         <>
           <AiMessagesForChatBox
-            annotationMap={annotationMap}
+            annotationMap={aidenState === AidenState.REVERSE_SHADOWING ? reverseShadowAnnotationMap : annotationMap}
             className={shouldShowConfirmationBar ? 'pt-24' : 'pt-14'}
             logoSubtitle={getTitle()}
-            messages={messages}
+            messages={aidenState === AidenState.REVERSE_SHADOWING ? reverseShadowMessages : messages}
             onScroll={handleScroll}
             scrollableRef={scrollableRef}
             teachMode
