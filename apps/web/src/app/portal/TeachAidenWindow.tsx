@@ -88,6 +88,8 @@ export default function TeachAidenWindow(props: Props) {
   const [annotationMap, setAnnotationMap] = useState<Record<string, AiAidenApiMessageAnnotation>>({});
   const [teachAidenDataMap, setTeachAidenDataMap] = useState<Record<number, TeachAidenData>>({});
 
+  const draftSopId = UUID();
+
   useEffect(() => {
     if (messages.length && !userHasScrolled) {
       scrollToBottom();
@@ -349,7 +351,7 @@ export default function TeachAidenWindow(props: Props) {
         setAidenState(AidenState.SOP_GENERATING);
         await fetch(getHost() + '/api/teach/generate-sop', {
           method: 'POST',
-          body: JSON.stringify({ teachAidenDataMap: teachAidenDataMap }),
+          body: JSON.stringify({ teachAidenDataMap: teachAidenDataMap, draftSopId }),
         });
         setAidenState(AidenState.SOP_GENERATED);
       }
@@ -389,7 +391,7 @@ export default function TeachAidenWindow(props: Props) {
           <button onClick={startReverseShadow}>Start Reverse Shadow SOP execution</button>
         </div>
       );
-    console.log('>>>>>>>>>>>>>>', aidenState);
+
     return (
       <div className="absolute left-0 top-12 flex h-10 w-full items-center justify-evenly bg-sky-800/50">
         <button onClick={startReverseShadow}>Replay</button>

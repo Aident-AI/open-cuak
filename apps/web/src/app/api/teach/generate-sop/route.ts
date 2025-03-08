@@ -3,19 +3,20 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { GPTVariant, LlmRouterModel } from '~shared/llm/LlmRouterModel';
 import { ModelRouter } from '~shared/llm/ModelRouter';
+import { ALogger } from '~shared/logging/ALogger';
 import { simpleRequestWrapper } from '~src/app/api/simpleRequestWrapper';
 import { TeachAidenDataSchema } from '~src/app/portal/TeachAidentData';
 
 const requestSchema = z.object({
   teachAidenDataMap: z.record(z.string().transform(Number), TeachAidenDataSchema),
+  draftSopId: z.string(),
 });
 
 export const POST = simpleRequestWrapper<z.infer<typeof requestSchema>>(
   requestSchema,
   { assertUserLoggedIn: true },
-  async (request) => {
-    const { teachAidenDataMap } = request;
-
+  async (request, context) => {
+    const { teachAidenDataMap, draftSopId } = request;
     const model = await ModelRouter.genModel({ model: LlmRouterModel.AZURE_OAI, variant: GPTVariant.GPT_4O });
     const userMessageContent = [] as (TextPart | ImagePart)[];
     Object.entries(teachAidenDataMap).forEach(([ts, data]) => {
@@ -31,7 +32,29 @@ export const POST = simpleRequestWrapper<z.infer<typeof requestSchema>>(
       messages,
     });
 
-    return new NextResponse(JSON.stringify(response));
+    let parsedSteps;
+    try {
+      const jsonMatch = response.text.match(/```(?:json)?\n([\s\S]*?)\n```/);
+      const jsonString = jsonMatch ? jsonMatch[1] : response.text;
+      parsedSteps = JSON.parse(jsonString);
+    } catch (error) {
+      ALogger.error({ context: 'Error parsing SOP steps JSON', error, text: response.text });
+      return new NextResponse(JSON.stringify({ error: 'Invalid JSON format in generated steps' }), { status: 500 });
+    }
+    const supabase = context.getSupabase();
+    const { error } = await supabase.from('prebuilt_sops').insert({
+      id: draftSopId,
+      name: 'Draft SOP', // TODO: generate a name
+      description: 'A draft SOP', // TODO: use the description from the user
+      steps: parsedSteps,
+      is_draft: true,
+    });
+    if (error) {
+      ALogger.error({ context: 'Error creating draft SOP', error: error.message });
+      return new NextResponse(JSON.stringify({ error: error.message }), { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
   },
 );
 
