@@ -43,6 +43,9 @@ IMAGES=(
 # Maximum number of parallel processes
 MAX_PARALLEL=4
 
+# Enable image optimization to reduce size (set to false to disable)
+OPTIMIZE_IMAGES=true
+
 # Terminal control codes for colors
 GREEN="\033[0;32m"
 YELLOW="\033[0;33m"
@@ -131,6 +134,7 @@ update_progress_display() {
       case "$phase" in
       "pulling") color="$BLUE" ;;
       "saving") color="$YELLOW" ;;
+      "optimizing") color="$BLUE" ;;
       "compressing") color="$GREEN" ;;
       "completed") color="$GREEN" ;;
       "error") color="$RED" ;;
@@ -243,6 +247,31 @@ release_slot() {
   update_progress_display
 }
 
+# Function to optimize Docker image size
+optimize_docker_image() {
+  local IMAGE="$1"
+  local SLOT="$2"
+  local TEMP_TAG="optimized-$(date +%s)"
+
+  # Update progress
+  update_progress "$SLOT" "$IMAGE" "50" "optimizing" ""
+
+  # Create a new minimal image with only necessary layers
+  echo "Creating optimized version of $IMAGE..." >>"$OUTPUT_DIR/logs/optimize_$IMAGE.log" 2>&1
+
+  # Create a temporary container from the image
+  local CONTAINER_ID=$(docker create "$IMAGE" 2>>"$OUTPUT_DIR/logs/optimize_$IMAGE.log")
+
+  # Export the container to a tar file and import it back as a flattened image
+  docker export "$CONTAINER_ID" | docker import - "$TEMP_TAG" >>"$OUTPUT_DIR/logs/optimize_$IMAGE.log" 2>&1
+
+  # Remove the temporary container
+  docker rm "$CONTAINER_ID" >>"$OUTPUT_DIR/logs/optimize_$IMAGE.log" 2>&1
+
+  # Return the temporary tag name
+  echo "$TEMP_TAG"
+}
+
 # Process an image: pull, save as tar, and compress
 process_image() {
   local IMAGE="$1"
@@ -286,13 +315,26 @@ process_image() {
     fi
   }
 
+  # Optimize the image if enabled
+  local IMAGE_TO_SAVE="$IMAGE"
+  if [ "$OPTIMIZE_IMAGES" = true ]; then
+    echo "Optimizing image $IMAGE..." >>"$LOG_FILE"
+    local OPTIMIZED_TAG=$(optimize_docker_image "$IMAGE" "$SLOT")
+    if [ -n "$OPTIMIZED_TAG" ]; then
+      IMAGE_TO_SAVE="$OPTIMIZED_TAG"
+      echo "Using optimized image: $OPTIMIZED_TAG" >>"$LOG_FILE"
+    else
+      echo "Optimization failed, using original image" >>"$LOG_FILE"
+    fi
+  fi
+
   # Update status to saving
   update_progress "$SLOT" "$IMAGE" 0 "saving"
 
   # Save the image as .tar with progress tracking
   {
     # Start saving in background
-    docker save "$IMAGE" >"$OUTPUT_DIR/$FILENAME.tar" &
+    docker save "$IMAGE_TO_SAVE" >"$OUTPUT_DIR/$FILENAME.tar" &
     local save_pid=$!
 
     # Monitor progress
@@ -356,6 +398,11 @@ process_image() {
   # Get file sizes for reporting
   COMPRESSED_SIZE=$(stat -f %z "$OUTPUT_DIR/$FILENAME.tar.gz")
   COMPRESSED_SIZE_MB=$(echo "scale=2; $COMPRESSED_SIZE / 1048576" | bc)
+
+  # Clean up optimized image if it was created
+  if [ "$OPTIMIZE_IMAGES" = true ] && [ "$IMAGE_TO_SAVE" != "$IMAGE" ]; then
+    docker rmi "$IMAGE_TO_SAVE" >>"$LOG_FILE" 2>&1
+  fi
 
   # Update status to completed
   update_progress "$SLOT" "$IMAGE" 100 "completed" "${COMPRESSED_SIZE_MB}MB"
