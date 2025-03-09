@@ -357,7 +357,11 @@ export function WebsocketRemoteBrowserWindow(props: Props) {
             width={RemoteCursorSize}
             height={RemoteCursorSize}
             className="pointer-events-none absolute z-50 select-none"
-            style={{ left: `${remoteCursorAbsolutePosition.x}px`, top: `${remoteCursorAbsolutePosition.y}px` }}
+            style={{
+              left: `${remoteCursorAbsolutePosition.x}px`,
+              top: `${remoteCursorAbsolutePosition.y}px`,
+              transition: remoteControlOn ? 'none' : 'left 0.3s ease-out, top 0.3s ease-out',
+            }}
           />
         )}
         {!!cursorAbsolutePosition && (
