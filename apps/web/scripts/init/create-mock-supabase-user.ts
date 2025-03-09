@@ -27,5 +27,5 @@ execScript(
     if (error) ALogger.error({ error });
     else ALogger.info({ context: 'Mock user created', data });
   },
-  { skipMockUser: true, envPath: process.argv.slice(2)[0] === '--prod' ? '.env.production' : '.env' },
+  { envPath: process.argv.slice(2)[0] === '--prod' ? '.env.production' : '.env' },
 );

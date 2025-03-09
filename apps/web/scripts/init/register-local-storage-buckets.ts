@@ -26,5 +26,5 @@ execScript(
       ALogger.info({ context: 'bucket created', data });
     }
   },
-  { skipMockUser: true, envPath: process.argv.slice(2)[0] === '--prod' ? '.env.production' : '.env' },
+  { envPath: process.argv.slice(2)[0] === '--prod' ? '.env.production' : '.env' },
 );
