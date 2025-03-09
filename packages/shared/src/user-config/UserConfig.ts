@@ -13,6 +13,8 @@ export enum ClaudeHostingProvider {
   GCP = 'gcp',
 }
 
+export const SERVICE_ROLE_USER_ID = '00000000-0000-0000-0000-000000000000';
+
 export const UserConfigDataSchema = z.object({
   // Basic settings
   autoSaveAndApplyCookies: z.boolean().optional().default(false),
@@ -68,6 +70,9 @@ export const DefaultUserConfigData: UserConfigData = {
 
 export class UserConfig {
   public static async genFetch(userId: string, supabase: SupabaseClient): Promise<UserConfigData> {
+    // Special case for service role - return default config without DB query
+    if (userId === SERVICE_ROLE_USER_ID) return DefaultUserConfigData;
+
     const { data, error } = await supabase.from('user_configs').select('*').eq('user_id', userId).maybeSingle();
     if (error) throw error;
     if (!data?.config) return DefaultUserConfigData;

@@ -12,6 +12,7 @@ import { PageNavigationAction } from '~shared/messaging/action-configs/page-acti
 import { ServiceWorkerMessageAction } from '~shared/messaging/service-worker/ServiceWorkerMessageAction';
 import { RuntimeMessage } from '~shared/messaging/types';
 import { RemoteBrowserSocket } from '~shared/remote-browser/RemoteBrowserSocket';
+import { SERVICE_ROLE_USER_ID } from '~shared/user-config/UserConfig';
 import { WebVoyagerTaskSchema } from '~shared/web-voyager/WebVoyagerTaskType';
 import { BaseEndpointApi, EndpointConfigType } from '~src/app/api/BaseEndpointApi';
 import {
@@ -19,7 +20,6 @@ import {
   AiAidenCoreConfig,
   AiAidenCoreInstance,
   DefaultAiAidenCoreConfigPart,
-  SERVICE_ROLE_USER_ID,
 } from '~src/app/api/ai/aiden/AiAidenCore';
 import { ApiRequestContextService } from '~src/services/ApiRequestContextService';
 

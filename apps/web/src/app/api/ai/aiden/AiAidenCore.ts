@@ -49,7 +49,6 @@ export const DefaultAiAidenCoreConfigPart = {
 } as Partial<AiAidenCoreConfig>;
 
 export const DEFAULT_AGENT_STEP_HISTORY_DEPTH = 3;
-export const SERVICE_ROLE_USER_ID = 'service-role';
 
 export class AiAidenCore {
   public static async genMessageAnnotation(config: AiAidenCoreConfig): Promise<AiAidenApiMessageAnnotation> {
