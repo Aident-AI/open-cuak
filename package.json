@@ -6,6 +6,7 @@
   "author": "Aident AI",
   "scripts": {
     "browserless:debugger": "open http://localhost:11976/debugger/?token=be19d9f2-aa21-46dc-945c-2880c371719e",
+    "browserless:kill-all": "npm run web:run-script -- scripts/browserless/kill-all-sessions.ts",
     "browserless:package": "cd apps/browserless && npm run package",
     "browserless:sessions": "open http://localhost:11976/sessions?token=be19d9f2-aa21-46dc-945c-2880c371719e",
     "browserless:start": "cd apps/browserless && npm run start",

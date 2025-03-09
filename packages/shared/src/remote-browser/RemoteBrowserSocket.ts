@@ -68,6 +68,12 @@ export class RemoteBrowserSocket {
     this.emitEvent(auth, { remoteBrowserSessionId: remoteBrowserSessionId, event: 'close-browser' });
   }
 
+  public static killAllBrowserSessions(auth: RemoteBrowserSocketAuth): void {
+    const socket = this.getSocketConnection(auth);
+    socket.emit('close-all-sessions');
+    ALogger.info({ context: 'Request sent to kill all browser sessions' });
+  }
+
   public static emitEvent(auth: RemoteBrowserSocketAuth, config: RemoteBrowserSocketEventConfig): void {
     const socket = this.getSocketConnection(auth);
     socket.emit(config.event, { sessionId: config.remoteBrowserSessionId, ...config.data });

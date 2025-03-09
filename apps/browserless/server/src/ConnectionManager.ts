@@ -70,6 +70,10 @@ export class ConnectionManager {
     return allConnections.find((i) => i.socket?.id === socket.id) ?? null;
   }
 
+  public getAllSessionIds(): string[] {
+    return Object.keys(this.connections);
+  }
+
   private async genCacheCookie(connection: RemoteBrowserConnection): Promise<void> {
     const rsp = await connection.browser.sendRuntimeMessageToExtension({
       receiver: RuntimeMessageReceiver.SERVICE_WORKER,

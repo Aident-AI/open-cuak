@@ -1,7 +1,7 @@
 import * as dotenv from 'dotenv';
 import http from 'http';
 import { KeyInput } from 'puppeteer-core';
-import { Server as SocketIOServer, Socket } from 'socket.io';
+import { Socket, Server as SocketIOServer } from 'socket.io';
 import { BrowserConnectionData, ConnectionManager } from '~browserless/server/src/ConnectionManager';
 import { MouseHandler } from '~browserless/server/src/MouseHandler';
 import { ScreencastHandler } from '~browserless/server/src/ScreencastHandler';
@@ -194,6 +194,23 @@ io.on('connection', (socket: AuthenticatedSocket) => {
     ALogger.info(`Closing browser for sessionId: ${sessionId}`);
     await connectionManager.genCloseConnection(sessionId);
     console.log(`Browser disconnected, sessionId: ${sessionId}`);
+  });
+
+  socket.on('close-all-sessions', async () => {
+    ALogger.info('Closing all browser sessions');
+    const sessionIds = connectionManager.getAllSessionIds();
+
+    for (const sessionId of sessionIds) {
+      try {
+        await connectionManager.genCloseConnection(sessionId);
+        console.log(`Browser disconnected, sessionId: ${sessionId}`);
+      } catch (error) {
+        console.error(`Failed to close browser session ${sessionId}:`, error);
+      }
+    }
+
+    socket.emit('all-sessions-closed', { count: sessionIds.length });
+    ALogger.info(`Closed ${sessionIds.length} browser sessions`);
   });
 
   socket.on('start-screencast', async (data: BrowserConnectionData) => {
