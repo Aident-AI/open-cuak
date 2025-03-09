@@ -84,6 +84,7 @@ export function WebsocketRemoteBrowserWindow(props: Props) {
 
   const [canvasScale, setCanvasScale] = useState<WHSize>({ width: 1, height: 1 });
   const [cursorPosition, setCursorPosition] = useState<XYPosition | undefined>(undefined);
+  const [isMouseDown, setIsMouseDown] = useState(false);
   const [remoteControlOn, setRemoteControlOn] = useState(false);
   const [remoteCursorPosition, setRemoteCursorPosition] = useState<RemoteCursorPosition | undefined>(undefined);
   const [remoteCursorStyle, setRemoteCursorStyle] = useState<RemoteCursorStyle | undefined>(undefined);
@@ -142,6 +143,13 @@ export function WebsocketRemoteBrowserWindow(props: Props) {
 
       void handleContentSizeChange();
       setRemoteCursorPosition(data.position);
+
+      if (data.position.event === 'mousedown') {
+        setIsMouseDown(true);
+      } else if (data.position.event === 'mouseup') {
+        setIsMouseDown(false);
+      }
+
       if (!remoteControlOn) setCursorPosition(data.position);
       const cursorType = data.position.cursor.toLowerCase();
       const type = SupportedRemoteCursorTypes.has(cursorType) ? cursorType : 'default';
@@ -360,7 +368,11 @@ export function WebsocketRemoteBrowserWindow(props: Props) {
             style={{
               left: `${remoteCursorAbsolutePosition.x}px`,
               top: `${remoteCursorAbsolutePosition.y}px`,
-              transition: remoteControlOn ? 'none' : 'left 0.3s ease-out, top 0.3s ease-out',
+              transform: isMouseDown ? 'scale(0.85)' : 'scale(1)',
+              transformOrigin: 'center',
+              transitionDuration: '0.1s, 0.1s, 0.1s',
+              transitionProperty: remoteControlOn ? 'transform' : 'left, top, transform',
+              transitionTimingFunction: 'ease-out, ease-out, ease-out',
             }}
           />
         )}
