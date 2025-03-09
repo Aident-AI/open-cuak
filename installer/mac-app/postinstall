@@ -8,11 +8,7 @@ exec >"$LOGFILE" 2>&1
 echo "Starting pre-install script..."
 open -a Console "$LOGFILE"
 
-# Get the currently logged-in user
-loggedInUser=$(stat -f "%Su" /dev/console)
-userHome=$(eval echo ~$loggedInUser)
-
-echo "Logged-in user: $loggedInUser"
+echo "Logged-in user: $USER"
 
 # Determine Homebrew path based on architecture
 if [[ "$(uname -m)" == "arm64" ]]; then
@@ -31,7 +27,7 @@ if ! is_brew_installed; then
   echo "Homebrew not found. Installing Homebrew..."
 
   # Run the installation as the logged-in user
-  sudo -u "$loggedInUser" /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+  sudo -u "$USER" /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
   # Ensure brew is available in the PATH
   eval "$($BREW_PATH shellenv)"
@@ -49,15 +45,15 @@ fi
 # Ensure brew is up-to-date and install open-cuak
 if is_brew_installed; then
   echo "Updating Homebrew..."
-  sudo -u "$loggedInUser" "$BREW_PATH" update
+  sudo -u "$USER" "$BREW_PATH" update
 
   echo "Installing open-cuak..."
-  sudo -u "$loggedInUser" "$BREW_PATH" install Aident-AI/homebrew-tap/open-cuak
+  sudo -u "$USER" "$BREW_PATH" install Aident-AI/homebrew-tap/open-cuak
 
   echo "Installation completed successfully."
 
   echo "Launching OpenCuak..."
-  sudo -u "$loggedInUser" open /Applications/OpenCuak.app
+  sudo -u "$USER" open /Applications/OpenCuak.app
 
   echo "OpenCuak has been launched."
 else
@@ -65,4 +61,17 @@ else
   exit 1
 fi
 
-pkill -f "Console"
+# Check if docker-images folder exists in the current directory
+if [ -d "./docker-images" ]; then
+  echo "Found docker-images folder, copying to user's home directory..."
+  sudo -u "$USER" mkdir -p "$HOME/.open-cuak/docker-images"
+  sudo -u "$USER" cp -R "./docker-images/" "$HOME/.open-cuak/docker-images/"
+
+  echo "Docker images copied successfully to $HOME/.open-cuak/docker-images/"
+else
+  echo "No docker-images folder found, skipping copy operation."
+fi
+
+echo "Installation and setup completed."
+
+# pkill -f "Console"
