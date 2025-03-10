@@ -66,15 +66,32 @@ const runTask = async (task: WebVoyagerTask, remoteBrowserSessionId: string): Pr
   });
   if (!runTaskRsp.ok) throw new Error('Failed to prepare task');
   const runTaskJson = await runTaskRsp.json();
-  if (!runTaskJson.success) ALogger.info({ context: 'Failed to complete task', runTaskJson });
-  else ALogger.info({ context: 'Completed task', runTaskJson });
+  if (!runTaskJson.success) {
+    ALogger.info({ context: 'Failed to complete task', runTaskJson });
+    // Return default values when task fails
+    return {
+      answer: '',
+      images: { role: 'user', content: [] } as CoreUserMessage,
+      verdict: false,
+      elaboration: 'Task execution failed',
+    };
+  } else {
+    ALogger.info({ context: 'Completed task', runTaskJson });
+  }
 
   // Evaluate the task answer
   const { runState } = runTaskJson;
-  const answer = runState?.answer; // TODO: get task answer properly
-  const images = runState?.images; // TODO: get task images properly
-  const { verdict, elaboration } = await AutoEval.genEvalCore(task.ques, answer, images);
-  return { answer, images, verdict, elaboration };
+  const answer = runState?.answer || ''; // Default to empty string if undefined
+  const images = runState?.images || ({ role: 'user', content: [] } as CoreUserMessage); // Default to empty content if undefined
+
+  try {
+    const { verdict, elaboration } = await AutoEval.genEvalCore(task.ques, answer, images);
+    return { answer, images, verdict, elaboration };
+  } catch (error) {
+    ALogger.error({ context: 'Error in evaluation', error });
+    const elaboration = 'Evaluation failed: ' + (error instanceof Error ? error.message : String(error));
+    return { answer, images, verdict: false, elaboration };
+  }
 };
 
 execScript(async () => {
