@@ -112,21 +112,31 @@ read_slot_data() {
 update_progress_display() {
   acquire_mutex
 
-  # Hide cursor
+  # Hide cursor to prevent flickering
   echo -ne "$HIDE_CURSOR"
 
-  # Move cursor up to the beginning of the progress display area
+  # Move cursor up to overwrite previous output (ensuring we don't leave old lines behind)
+  for ((i = 0; i < $MAX_PARALLEL; i++)); do
+    echo -ne "$CURSOR_UP$CLEAR_LINE"
+  done
+
+  # Ensure all previous lines are erased before printing new output
+  for ((i = 0; i < $MAX_PARALLEL; i++)); do
+    echo -ne "\r$CLEAR_LINE"
+  done
+
+  # Reset cursor to the top of the progress display
   for ((i = 0; i < $MAX_PARALLEL; i++)); do
     echo -ne "$CURSOR_UP"
   done
 
-  # Display each progress slot
+  # Print each slot's progress
   for ((i = 0; i < $MAX_PARALLEL; i++)); do
-    # Clear the current line
-    echo -ne "$CLEAR_LINE"
+    # Read slot data (image, percent, phase, size)
+    read -r image percent phase size <<<"$(read_slot_data $i)"
 
-    # Read slot data
-    read -r image percent phase size <<<$(read_slot_data $i)
+    # Clear current line completely
+    echo -ne "\r$CLEAR_LINE"
 
     if [[ -n "$image" && "$image" != "reserved" ]]; then
       # Determine color based on phase
@@ -140,7 +150,7 @@ update_progress_display() {
       "error") color="$RED" ;;
       esac
 
-      # Create progress bar
+      # Generate progress bar
       local bar_size=20
       local filled=$((percent * bar_size / 100))
       local bar="["
@@ -152,19 +162,19 @@ update_progress_display() {
       done
       bar+="]"
 
-      # Display progress line
+      # Print the progress line
       if [[ "$phase" == "completed" && -n "$size" ]]; then
-        printf "[$i] $color%s$RESET: $bar $percent%% - $phase - $size\n" "$image"
+        printf "\r[$i] $color%s$RESET: %s %d%% - %s - %s\n" "$image" "$bar" "$percent" "$phase" "$size"
       else
-        printf "[$i] $color%s$RESET: $bar $percent%% - $phase\n" "$image"
+        printf "\r[$i] $color%s$RESET: %s %d%% - %s\n" "$image" "$bar" "$percent" "$phase"
       fi
     else
-      printf "[$i] <available>\n"
+      printf "\r[$i] <available>\n"
     fi
   done
 
-  # Show cursor again
-  echo -ne "$SHOW_CURSOR"
+  # Reset cursor for clean output
+  echo -ne "\r$SHOW_CURSOR"
 
   release_mutex
 }
@@ -251,24 +261,37 @@ release_slot() {
 optimize_docker_image() {
   local IMAGE="$1"
   local SLOT="$2"
-  local TEMP_TAG="optimized-$(date +%s)"
 
-  # Update progress
-  update_progress "$SLOT" "$IMAGE" "50" "optimizing" ""
+  if [ -z "$IMAGE" ]; then
+    echo "Error: IMAGE variable is empty!" >>"$OUTPUT_DIR/logs/debug.log"
+    return 1
+  fi
 
-  # Create a new minimal image with only necessary layers
-  echo "Creating optimized version of $IMAGE..." >>"$OUTPUT_DIR/logs/optimize_$IMAGE.log" 2>&1
+  # Sanitize the tag name
+  local SAFE_TAG=$(echo "$IMAGE" | tr '/:' '_')
+  local TEMP_TAG="optimized_${SAFE_TAG}_$(date +%s)"
 
-  # Create a temporary container from the image
-  local CONTAINER_ID=$(docker create "$IMAGE" 2>>"$OUTPUT_DIR/logs/optimize_$IMAGE.log")
+  # Ensure log directory exists
+  mkdir -p "$OUTPUT_DIR/logs"
 
-  # Export the container to a tar file and import it back as a flattened image
-  docker export "$CONTAINER_ID" | docker import - "$TEMP_TAG" >>"$OUTPUT_DIR/logs/optimize_$IMAGE.log" 2>&1
+  # Debug log
+  echo "Processing image: '$IMAGE'" >>"$OUTPUT_DIR/logs/debug.log"
+  echo "Sanitized tag: '$TEMP_TAG'" >>"$OUTPUT_DIR/logs/debug.log"
 
-  # Remove the temporary container
-  docker rm "$CONTAINER_ID" >>"$OUTPUT_DIR/logs/optimize_$IMAGE.log" 2>&1
+  # Create container
+  echo "Running: docker create '$IMAGE'" >>"$OUTPUT_DIR/logs/debug.log"
+  local CONTAINER_ID=$(docker create "$IMAGE" 2>>"$OUTPUT_DIR/logs/optimize_$SAFE_TAG.log")
 
-  # Return the temporary tag name
+  if [ -z "$CONTAINER_ID" ]; then
+    echo "Failed to create container for $IMAGE" >>"$OUTPUT_DIR/logs/debug.log"
+    return 1
+  fi
+
+  # Export and import to optimize image
+  docker export "$CONTAINER_ID" | docker import - "$TEMP_TAG" >>"$OUTPUT_DIR/logs/optimize_$SAFE_TAG.log" 2>&1
+  docker rm "$CONTAINER_ID" >>"$OUTPUT_DIR/logs/optimize_$SAFE_TAG.log" 2>&1
+
+  # Return optimized image tag
   echo "$TEMP_TAG"
 }
 
@@ -278,6 +301,9 @@ process_image() {
   local SLOT="$2"
   local FILENAME=$(echo "$IMAGE" | tr '/:' '_')
   local LOG_FILE="$OUTPUT_DIR/logs/${FILENAME}.log"
+
+  # Ensure logs directory exists
+  mkdir -p "$(dirname "$LOG_FILE")"
 
   echo "Processing $IMAGE in slot $SLOT" >>"$DEBUG_FILE"
 
