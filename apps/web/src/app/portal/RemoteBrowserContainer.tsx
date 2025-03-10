@@ -190,15 +190,9 @@ export default function RemoteBrowserContainer(props: Props) {
   const containerReady = containerDimension.width > 0 && containerDimension.height > 0;
 
   const renderNavigationBar = () => {
-    if (
-      props.browserStatus === RemoteBrowserWindowStatus.PENDING ||
-      props.browserStatus === RemoteBrowserWindowStatus.STOPPED
-    ) {
-      return null;
-    }
+    if (props.browserStatus !== RemoteBrowserWindowStatus.READY) return null;
 
     const remoteControlTooltipTitle = props.remoteControlOn ? 'Disable remote control' : 'Enable remote control';
-
     return (
       <div
         className="flex-0 mb-4 flex h-10 w-full flex-row items-center justify-center"
@@ -279,13 +273,7 @@ export default function RemoteBrowserContainer(props: Props) {
   };
 
   const renderTabs = () => {
-    if (
-      props.browserStatus === RemoteBrowserWindowStatus.PENDING ||
-      props.browserStatus === RemoteBrowserWindowStatus.STOPPED
-    ) {
-      return null;
-    }
-
+    if (props.browserStatus !== RemoteBrowserWindowStatus.READY) return null;
     return (
       <div className="mr-4 flex w-48 flex-col rounded-xl bg-black/50 p-2 backdrop-blur-md">
         {tabs.map((tab: RemoteBrowserTab) => (
