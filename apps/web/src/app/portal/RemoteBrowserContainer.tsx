@@ -20,6 +20,7 @@ import { PageNavigationAction } from '~shared/messaging/action-configs/page-acti
 import { ServiceWorkerMessageAction } from '~shared/messaging/service-worker/ServiceWorkerMessageAction';
 import { RuntimeMessage } from '~shared/messaging/types';
 import { RemoteBrowserTab } from '~shared/portal/RemoteBrowserTypes';
+import { BrowserRewind } from '~src/app/portal/BrowserRewind';
 import { RemoteBrowserWindowStatus } from '~src/app/portal/WebsocketRemoteBrowserWindow';
 import { useRemoteBrowserMessaging } from '~src/hooks/useRemoteBrowserMessaging';
 
@@ -314,6 +315,11 @@ export default function RemoteBrowserContainer(props: Props) {
     );
   };
 
+  const renderRewind = () => {
+    if (props.browserStatus !== RemoteBrowserWindowStatus.READY) return null;
+    return <BrowserRewind className="mt-2 w-[80%]" />;
+  };
+
   return (
     <div
       ref={containerRef}
@@ -342,6 +348,7 @@ export default function RemoteBrowserContainer(props: Props) {
           </div>
         </div>
       )}
+      {renderRewind()}
     </div>
   );
 }
