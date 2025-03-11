@@ -160,8 +160,8 @@ export function BrowserRewind(props: BrowserRewindProps) {
             </button>
 
             <div className="w-32 text-center text-xs text-blue-100">
-              {isRewindMode ? 'Viewing History' : 'Live Mode'}
-              {isRewindMode && rewindSteps.length > 0 && ` (${currentStepIndex + 1}/${rewindSteps.length})`}
+              {isRewindMode ? 'Step' : 'Live Mode'}
+              {isRewindMode && rewindSteps.length > 0 && ` ${currentStepIndex + 1}/${rewindSteps.length}`}
             </div>
 
             <button
