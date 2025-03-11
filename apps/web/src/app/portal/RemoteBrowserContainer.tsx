@@ -322,7 +322,7 @@ export default function RemoteBrowserContainer(props: Props) {
 
   const renderRewind = () => {
     if (props.browserStatus !== RemoteBrowserWindowStatus.READY) return null;
-    return <BrowserRewind className="mt-2 w-[80%]" />;
+    return <BrowserRewind className="mt-2 w-[60%]" />;
   };
 
   return (
