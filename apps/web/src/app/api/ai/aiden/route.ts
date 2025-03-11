@@ -88,6 +88,16 @@ export const POST = simpleRequestWrapper<z.infer<typeof api.RequestSchema.schema
             .withMaxSteps(maxSteps)
             .withSOP(sop)
             .build();
+
+          // Initial SOP progress
+          if (dataStream) {
+            const progressData = {
+              type: 'sop-progress',
+              currentStepIndex: 0,
+            };
+            dataStream.writeData(progressData);
+          }
+
           result = await sopAgent.genRunSOP();
         } else {
           const agent = AiAgentNodeBuilder.new()

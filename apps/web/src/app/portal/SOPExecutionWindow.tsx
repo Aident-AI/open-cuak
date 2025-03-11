@@ -1,6 +1,12 @@
 'use client';
 
-import { ChatBubbleLeftRightIcon, ChevronDownIcon, PencilSquareIcon } from '@heroicons/react/24/solid';
+import {
+  ChatBubbleLeftRightIcon,
+  CheckCircleIcon,
+  ChevronDownIcon,
+  ClockIcon,
+  PencilSquareIcon,
+} from '@heroicons/react/24/solid';
 import { Alert, Snackbar } from '@mui/material';
 import { useChat } from 'ai/react';
 import { useEffect, useRef, useState } from 'react';
@@ -15,7 +21,7 @@ import { ScrollToBottomButton } from '~src/components/chat-box/ScrollToBottomBut
 interface Props {
   className?: string;
   remoteBrowserSessionId?: string;
-  sop?: AiAgentSOP;
+  sop: AiAgentSOP;
   shouldStartSop?: boolean;
 }
 
@@ -40,9 +46,7 @@ export default function SOPExecutionWindow(props: Props) {
     headers: props.remoteBrowserSessionId
       ? { [X_REMOTE_BROWSER_SESSION_ID_HEADER]: props.remoteBrowserSessionId }
       : undefined,
-    body: {
-      sopId: props.sop ? props.sop.id : undefined,
-    },
+    body: { sopId: props.sop.id },
     onError: (err) => {
       let errorMessage = err.message;
       ALogger.warn({ context: 'Chat error received', error: errorMessage });
@@ -63,6 +67,10 @@ export default function SOPExecutionWindow(props: Props) {
   const lastErrorElement = errors.length > 0 ? errors[errors.length - 1] : undefined;
   const lastError = lastErrorElement ? new Error(lastErrorElement?.error) : undefined;
 
+  // Extract progress information from the data stream
+  const progressUpdates = data.filter((d) => d.type === 'sop-progress');
+  const latestProgress = progressUpdates.length > 0 ? progressUpdates[progressUpdates.length - 1] : null;
+
   useEffect(() => {
     if (messages.length && !userHasScrolled) {
       scrollToBottom();
@@ -70,9 +78,15 @@ export default function SOPExecutionWindow(props: Props) {
   }, [messages, userHasScrolled]);
 
   useEffect(() => {
-    if (!props.shouldStartSop || !props.sop || messages.length > 0) return;
+    if (!props.shouldStartSop || messages.length > 0) return;
     append({ role: 'user', content: 'Start SOP execution' });
   }, [props.shouldStartSop, props.sop]);
+
+  useEffect(() => {
+    if (latestProgress && scrollableRef.current) {
+      scrollToBottom();
+    }
+  }, [latestProgress]);
 
   const handleScroll = () => {
     const { scrollTop, scrollHeight, clientHeight } = scrollableRef.current || {};
@@ -126,6 +140,55 @@ export default function SOPExecutionWindow(props: Props) {
             <PencilSquareIcon className="h-full w-full text-white" />
           </button>
         </div>
+
+        {props.sop && latestProgress !== null && (
+          <div className="mb-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+            <h3 className="mb-2 text-lg font-semibold">{props.sop.name || 'SOP Execution'}</h3>
+            {latestProgress && (
+              <>
+                <div className="mb-2 flex items-center justify-between">
+                  <span className="text-sm text-gray-600">
+                    Step {Math.min(latestProgress.currentStepIndex + 1, props.sop.steps.length)} of{' '}
+                    {props.sop.steps.length}
+                  </span>
+                  <span className="text-sm font-medium text-blue-600">
+                    {Math.min(Math.round((latestProgress.currentStepIndex / props.sop.steps.length) * 100), 100)}%
+                  </span>
+                </div>
+
+                <div className="mb-4 h-2.5 w-full rounded-full bg-gray-200">
+                  <div
+                    className="h-2.5 rounded-full bg-blue-600"
+                    style={{
+                      width: `${Math.min((latestProgress.currentStepIndex / props.sop.steps.length) * 100, 100)}%`,
+                    }}
+                  ></div>
+                </div>
+
+                <div className="mt-4 max-h-32 overflow-y-auto">
+                  <ul className="space-y-2">
+                    {props.sop.steps.map((step, index) => (
+                      <li key={step.id} className="flex items-center">
+                        {index < latestProgress.currentStepIndex ? (
+                          <CheckCircleIcon className="mr-2 h-5 w-5 text-green-500" />
+                        ) : index === latestProgress.currentStepIndex ? (
+                          <ClockIcon className="mr-2 h-5 w-5 animate-pulse text-blue-500" />
+                        ) : (
+                          <div className="mr-2 h-5 w-5 rounded-full border border-gray-300"></div>
+                        )}
+                        <span
+                          className={`text-sm ${index === latestProgress.currentStepIndex ? 'font-medium text-blue-600' : 'text-gray-700'}`}
+                        >
+                          {step.action.substring(0, 30)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </>
+            )}
+          </div>
+        )}
 
         <>
           <AiMessagesForChatBox

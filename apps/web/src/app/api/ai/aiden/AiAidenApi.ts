@@ -19,14 +19,26 @@ export const AiAidenApiMessageAnnotationSchema = z.object({
 });
 export type AiAidenApiMessageAnnotation = z.infer<typeof AiAidenApiMessageAnnotationSchema>;
 
+export const AiAidenStreamSOPProgressSchema = z.object({
+  type: z.literal('sop-progress'),
+  currentStepIndex: z.number(),
+});
+export type AiAidenStreamSOPProgress = z.infer<typeof AiAidenStreamSOPProgressSchema>;
+
 export const AiAidenStreamErrorSchema = z.object({ type: z.literal('error'), error: z.string() });
 export type AiAidenStreamError = z.infer<typeof AiAidenStreamErrorSchema>;
+
 export const AiAidenStreamStateInfoSchema = z.object({
   type: z.literal('state-info'),
   annotation: AiAidenApiMessageAnnotationSchema,
 });
 export type AiAidenStreamStateInfo = z.infer<typeof AiAidenStreamStateInfoSchema>;
-export const AiAidenStreamDataSchema = AiAidenStreamErrorSchema.or(AiAidenStreamStateInfoSchema);
+
+export const AiAidenStreamDataSchema = z.discriminatedUnion('type', [
+  AiAidenStreamSOPProgressSchema,
+  AiAidenStreamErrorSchema,
+  AiAidenStreamStateInfoSchema,
+]);
 export type AiAidenStreamData = z.infer<typeof AiAidenStreamDataSchema>;
 
 export class AiAidenApi extends BaseEndpointApi {

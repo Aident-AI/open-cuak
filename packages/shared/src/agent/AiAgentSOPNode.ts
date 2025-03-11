@@ -28,6 +28,15 @@ export class AiAgentSOPNode extends AiAgentNode {
       if (this.sopRunState.currentStepIndex + 1 !== step.id)
         throw new Error(`Step ID mismatch: ${this.sopRunState.currentStepIndex + 1} !== ${step.id}`);
 
+      // Send progress update
+      if (this.dataStream) {
+        const progressData = {
+          type: 'sop-progress',
+          currentStepIndex: this.sopRunState.currentStepIndex,
+        };
+        this.dataStream.writeData(progressData);
+      }
+
       const message = [
         { role: 'user', content: step.action + '\n No more action after finishing the step' },
       ] as CoreMessage[];
@@ -43,6 +52,16 @@ export class AiAgentSOPNode extends AiAgentNode {
         retryCount = 0;
       }
     }
+
+    // Send final progress update
+    if (this.dataStream && this.sopRunState.sop.steps.length > 0) {
+      const progressData = {
+        type: 'sop-progress',
+        currentStepIndex: this.sopRunState.sop.steps.length,
+      };
+      this.dataStream.writeData(progressData);
+    }
+
     return runResult!;
   }
 
