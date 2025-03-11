@@ -23,7 +23,7 @@ interface Props {
 
 export default function ChatWithAidenWindow(props: Props) {
   const [errorSnackbar, setErrorSnackbar] = useState({ open: false, message: '' });
-  const [isChatWithGraphOpen, setIsChatWithGraphOpen] = useState(true);
+  const [isChatWithAidenOpen, setChatWithAidenOpen] = useState(true);
   const [userHasScrolled, setUserHasScrolled] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const scrollableRef = useRef<HTMLDivElement>(null);
@@ -142,11 +142,11 @@ export default function ChatWithAidenWindow(props: Props) {
     setErrorSnackbar({ ...errorSnackbar, open: false });
   };
 
-  if (!isChatWithGraphOpen)
+  if (!isChatWithAidenOpen)
     return (
       <button
         className="absolute bottom-12 right-12 flex h-10 w-10 items-center justify-center overflow-visible rounded-full shadow-centered shadow-blue-600/60 backdrop-blur-md transition-all duration-300 ease-in-out"
-        onClick={() => setIsChatWithGraphOpen(true)}
+        onClick={() => setChatWithAidenOpen(true)}
       >
         <ChatBubbleLeftRightIcon className="z-10 h-6 w-6 text-white" />
       </button>
@@ -159,7 +159,7 @@ export default function ChatWithAidenWindow(props: Props) {
           <h1 className="text-white">Chat with Aiden</h1>
           <button
             className="absolute left-5 top-4 flex h-5 w-5 items-center justify-center"
-            onClick={() => setIsChatWithGraphOpen(false)}
+            onClick={() => setChatWithAidenOpen(false)}
           >
             <ChevronDownIcon className="h-full w-full text-white" />
           </button>
