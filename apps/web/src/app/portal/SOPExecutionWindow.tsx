@@ -177,9 +177,10 @@ export default function SOPExecutionWindow(props: Props) {
                           <div className="mr-2 h-5 w-5 rounded-full border border-gray-300"></div>
                         )}
                         <span
-                          className={`text-sm ${index === latestProgress.currentStepIndex ? 'font-medium text-blue-600' : 'text-gray-700'}`}
+                          className={`block truncate text-sm ${index === latestProgress.currentStepIndex ? 'font-medium text-blue-600' : 'text-gray-700'}`}
+                          title={step.action}
                         >
-                          {step.action.substring(0, 30)}
+                          {step.action}
                         </span>
                       </li>
                     ))}
