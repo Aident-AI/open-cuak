@@ -60,7 +60,6 @@ export type Database = {
           created_at: string
           description: string
           id: string
-          is_draft: boolean
           name: string
           steps: Json
         }
@@ -68,7 +67,6 @@ export type Database = {
           created_at?: string
           description: string
           id?: string
-          is_draft?: boolean
           name: string
           steps: Json
         }
@@ -76,7 +74,6 @@ export type Database = {
           created_at?: string
           description?: string
           id?: string
-          is_draft?: boolean
           name?: string
           steps?: Json
         }
