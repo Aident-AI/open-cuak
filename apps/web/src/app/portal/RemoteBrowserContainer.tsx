@@ -22,6 +22,7 @@ import { RuntimeMessage } from '~shared/messaging/types';
 import { RemoteBrowserTab } from '~shared/portal/RemoteBrowserTypes';
 import { BrowserRewind } from '~src/app/portal/BrowserRewind';
 import { RemoteBrowserWindowStatus } from '~src/app/portal/WebsocketRemoteBrowserWindow';
+import { useBrowserRewindHistory } from '~src/contexts/BrowserRewindHistoryContext';
 import { useRemoteBrowserMessaging } from '~src/hooks/useRemoteBrowserMessaging';
 
 interface Props {
@@ -51,6 +52,7 @@ const RESETTING_PAGE_LOADING = 1000;
 
 export default function RemoteBrowserContainer(props: Props) {
   const { sendRuntimeMessage } = useRemoteBrowserMessaging({ remoteBrowserSessionId: props.sessionUUID });
+  const { isRewindMode, resumeLiveMode } = useBrowserRewindHistory();
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
@@ -245,7 +247,10 @@ export default function RemoteBrowserContainer(props: Props) {
           <Tooltip title={remoteControlTooltipTitle} arrow placement="top" enterDelay={500}>
             <CursorArrowRaysIcon
               className="h-8 w-8 rounded-full p-1 text-white hover:cursor-pointer hover:bg-blue-500/30"
-              onClick={() => props.setRemoteControlOn(!props.remoteControlOn)}
+              onClick={() => {
+                if (isRewindMode && !props.remoteControlOn) resumeLiveMode();
+                props.setRemoteControlOn(!props.remoteControlOn);
+              }}
             />
           </Tooltip>
         </div>

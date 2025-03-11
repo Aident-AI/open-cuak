@@ -26,7 +26,9 @@ const defaultContext: BrowserRewindHistoryContextType = {
 export const BrowserRewindHistoryContext = createContext<BrowserRewindHistoryContextType>(defaultContext);
 
 export function useBrowserRewindHistory() {
-  return useContext(BrowserRewindHistoryContext);
+  const context = useContext(BrowserRewindHistoryContext);
+  const currentStep = context.currentStepIndex >= 0 ? context.rewindSteps[context.currentStepIndex] : undefined;
+  return { ...context, currentStep };
 }
 
 interface BrowserRewindHistoryProviderProps {
@@ -52,9 +54,8 @@ export function BrowserRewindHistoryProvider({ children }: BrowserRewindHistoryP
 
   const rewindToStep = (index: number) => {
     if (index < 0 || index >= rewindSteps.length) return;
-    console.log('rewindToStep', index);
     setCurrentStepIndex(index);
-    setIsRewindMode(index < rewindSteps.length - 1);
+    setIsRewindMode(true);
   };
 
   const resumeLiveMode = () => {
@@ -80,7 +81,7 @@ export function BrowserRewindHistoryProvider({ children }: BrowserRewindHistoryP
 
     // A simple browser-like mock image (white with blue header)
     const browserMock =
-      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfQAAAH0CAYAAADL1t+KAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAJDSURBVHgB7dexDcAwDARBw4X778ymABswJWxOmv5GALfMzAIg7TgHAMGgAwQYdIAAgw4QYNABAgw6QIBBBwgw6AABBh0gwKADBBh0gACDDhBg0AECDDpAgEEHCDDoAAEGHSDAoAMEGHSAAIMOEGDQAQIMOkCAQQcIMOgAAQYdIMCgAwQYdIAAgw4QYNABAgw6QIBBBwgw6AABBh0gwKADBBh0gACDDhBg0AECDDpAgEEHCDDoAAEGHSDAoAMEGHSAAIMOEGDQAQIMOkCAQQcIMOgAAQYdIMCgAwQYdIAAgw4QYNABAgw6QIBBBwgw6AABBh0gwKADBBh0gACDDhBg0AECDDpAgEEHCDDoAAEGHSDAoAMEGHSAAIMOEGDQAQIMOkCAQQcIMOgAAQYdIMCgAwQYdIAAgw4QYNABAgw6QIBBBwgw6AABBh0gwKADBBh0gACDDhBg0AECDDpAgEEHCDDoAAEGHSDAoAMEGHSAAIMOEGDQAQIMOkCAQQcIMOgAAQYdIOADDtMDATpTrPsAAAAASUVORK5CYII=';
+      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAfQAAAH0CAYAAADL1t+KAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAJDSURBVHgB7dexDcAwDARBw4X778ymABswJWxOmv5GALfMzAIg7TgHAMGgAwQYdIAAgw4QYNABAgw6QIBBBwgw6AABBh0gwKADBBh0gACDDhBg0AECDDpAgEEHCDDoAAEGHSDAoAMEGHSAAIMOEGDQAQIMOkCAQQcIMOgAAQYdIMCgAwQYdIAAgw4QYNABAgw6QIBBBwgw6AABBh0gwKADBBh0gACDDhBg0AECDDpAgEEHCDDoAAEGHSDAoAMEGHSAAIMOEGDQAQIMOkCAQQcIMOgAAQYdIMCgAwQYdIAAgw4QYNABAgw6QIBBBwgw6AABBh0gwKADBBh0gACDDhBg0AECDDpAgEEHCDDoAAEGHSDAoAMEGHSAAIMOEGDQAQIMOkCAQQcIMOgAAQYdIOADDtMDATpTrPsAAAAASUVORK5CYII=';
 
     for (let i = 0; i < 10; i++) {
       const stepTimestamp = baseTimestamp + i * 1000; // Spread over 10 seconds

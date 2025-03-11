@@ -21,6 +21,7 @@ import {
 } from '~shared/remote-browser/RemoteCursor';
 import { WaitUtils } from '~shared/utils/WaitUtils';
 import RemoteBrowserContainer from '~src/app/portal/RemoteBrowserContainer';
+import { useBrowserRewindHistory } from '~src/contexts/BrowserRewindHistoryContext';
 import { UserSessionContext } from '~src/contexts/UserSessionContext';
 import { useRemoteBrowserSession } from '~src/hooks/useRemoteBrowserSession';
 
@@ -47,6 +48,7 @@ type RemoteCursorStyle = { base64: string; centerOffset: XYPosition };
 
 export function WebsocketRemoteBrowserWindow(props: Props) {
   const { isAdminUser, logout } = useContext(UserSessionContext);
+  const { currentStep, isRewindMode } = useBrowserRewindHistory();
   const {
     attachToSessionId: attachToRemoteBrowserSession,
     browserStatus,
@@ -90,6 +92,22 @@ export function WebsocketRemoteBrowserWindow(props: Props) {
   const [remoteCursorStyle, setRemoteCursorStyle] = useState<RemoteCursorStyle | undefined>(undefined);
   const [serviceWorkerDevtoolUrl, setServiceWorkerDevtoolUrl] = useState<string | undefined>(undefined);
 
+  // Disable remote control and hide cursors when in rewind mode
+  useEffect(() => {
+    if (isRewindMode) {
+      // Disable remote control and interaction events when in rewind mode
+      setRemoteControlOn(false);
+      disableInteractionEvents();
+
+      // Hide cursors when in rewind mode
+      setCursorPosition(undefined);
+      setRemoteCursorPosition(undefined);
+    } else if (isBrowserSocketConnected) {
+      // Re-enable interaction events when returning to live mode
+      enableInteractionEvents();
+    }
+  }, [isRewindMode, isBrowserSocketConnected, disableInteractionEvents, enableInteractionEvents]);
+
   // handle screencast
   useEffect(() => {
     if (!isBrowserSocketConnected) return;
@@ -102,36 +120,60 @@ export function WebsocketRemoteBrowserWindow(props: Props) {
     if (!canvasImageWorkerRef.current) canvasImageWorkerRef.current = new Worker('/web-workers/CanvasImageWorker.js');
     const canvasImageWorker = canvasImageWorkerRef.current;
 
-    emitBrowserEvent('get-tabs'); // tabs will be handled by the RemoteBrowserContainer
-    emitBrowserEvent('start-screencast');
-    browserSocket.on('screencast-frame', (data) => {
-      canvasImageWorker.postMessage({
-        type: 'PROCESS_FRAME',
-        frame: data.frame,
-        ts: data.frame.metadata.timestamp,
-      });
-      canvasImageWorker.onmessage = function (event) {
-        const { image, ts } = event.data;
-        if (ts < currentFrameTsRef.current) return; // Drop older frames
+    // Track if we need to setup screencast
+    let needScreencast = !isRewindMode;
 
-        canvas.width = image.width;
-        canvas.height = image.height;
+    // If we have a currentStep from rewind history and we're in rewind mode, use that screenshot
+    if (currentStep && isRewindMode) {
+      const img = new window.Image();
+      img.onload = () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
         const screenSize = RemoteBrowserConfigs.defaultViewport;
-        context.drawImage(image, 0, 0, image.width, image.height, 0, 0, screenSize.width, screenSize.height);
-
-        // Update last successful frame and broadcast to workers
-        currentFrameTsRef.current = ts;
-        canvasImageWorker.postMessage({ type: 'FRAME_PROCESSED', currentFrameTsRef: ts });
+        context.drawImage(img, 0, 0, img.width, img.height, 0, 0, screenSize.width, screenSize.height);
       };
-    });
-    sendBroadcastEvent({ type: BroadcastEventType.ON_REMOTE_CONNECTION_ATTACHED }, undefined);
+      img.src = currentStep.screenshot;
 
-    if (props.setShouldStartSop) props.setShouldStartSop(true);
+      // Don't need to set up screencast when in rewind mode
+      needScreencast = false;
+    }
 
-    return () => detachFromBrowser();
+    // Setup screencast if needed (in live mode)
+    if (needScreencast) {
+      emitBrowserEvent('get-tabs'); // tabs will be handled by the RemoteBrowserContainer
+      emitBrowserEvent('start-screencast');
+      browserSocket.on('screencast-frame', (data) => {
+        canvasImageWorker.postMessage({
+          type: 'PROCESS_FRAME',
+          frame: data.frame,
+          ts: data.frame.metadata.timestamp,
+        });
+        canvasImageWorker.onmessage = function (event) {
+          const { image, ts } = event.data;
+          if (ts < currentFrameTsRef.current) return; // Drop older frames
+
+          canvas.width = image.width;
+          canvas.height = image.height;
+          const screenSize = RemoteBrowserConfigs.defaultViewport;
+          context.drawImage(image, 0, 0, image.width, image.height, 0, 0, screenSize.width, screenSize.height);
+
+          // Update last successful frame and broadcast to workers
+          currentFrameTsRef.current = ts;
+          canvasImageWorker.postMessage({ type: 'FRAME_PROCESSED', currentFrameTsRef: ts });
+        };
+      });
+      sendBroadcastEvent({ type: BroadcastEventType.ON_REMOTE_CONNECTION_ATTACHED }, undefined);
+
+      if (props.setShouldStartSop) props.setShouldStartSop(true);
+    }
+
+    return () => {
+      // Remove screencast event listener if it was set up
+      if (needScreencast) browserSocket.off('screencast-frame');
+    };
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isBrowserSocketConnected]);
+  }, [isBrowserSocketConnected, currentStep, isRewindMode]);
 
   // handle remote control
   useEffect(() => {
@@ -220,6 +262,7 @@ export function WebsocketRemoteBrowserWindow(props: Props) {
   };
 
   const handleMouseEvent = (event: React.MouseEvent<HTMLCanvasElement>) => {
+    if (isRewindMode) return;
     if (!remoteControlOn) return;
     if (!canvasRef.current || !browserSocket) return;
 
@@ -244,10 +287,12 @@ export function WebsocketRemoteBrowserWindow(props: Props) {
   };
 
   const handleWheelEvent = (event: React.WheelEvent) => {
+    if (isRewindMode) return;
     if (!remoteControlOn) return;
     if (!browserSocket) return;
     if (event.ctrlKey) return; // Ignore zoom-related wheel events (usually ctrl + wheel)
 
+    event.preventDefault();
     const { deltaX, deltaY } = event;
     emitBrowserEvent('wheel-event', { deltaX, deltaY });
   };
@@ -350,7 +395,7 @@ export function WebsocketRemoteBrowserWindow(props: Props) {
           onMouseOut={handleMouseLeave}
           onMouseUp={handleMouseEvent}
         />
-        {browserStatus === RemoteBrowserWindowStatus.READY && !remoteControlOn && (
+        {browserStatus === RemoteBrowserWindowStatus.READY && !remoteControlOn && !isRewindMode && (
           <Tooltip title="Enable remote control" arrow placement="bottom" enterDelay={500}>
             <div
               className="absolute inset-0 h-full w-full cursor-pointer hover:bg-blue-500/30"
@@ -358,7 +403,7 @@ export function WebsocketRemoteBrowserWindow(props: Props) {
             />
           </Tooltip>
         )}
-        {!!remoteCursorStyle && !!remoteCursorAbsolutePosition && (
+        {!!remoteCursorStyle && !!remoteCursorAbsolutePosition && !isRewindMode && (
           <Image
             src={remoteCursorStyle.base64}
             alt="cursor"
@@ -376,7 +421,7 @@ export function WebsocketRemoteBrowserWindow(props: Props) {
             }}
           />
         )}
-        {!!cursorAbsolutePosition && (
+        {!!cursorAbsolutePosition && !isRewindMode && (
           <div
             className="pointer-events-none absolute z-10 flex h-fit w-fit -translate-x-[50%] -translate-y-[50%] select-none items-center justify-center rounded-full"
             style={{ left: `${cursorAbsolutePosition.x}px`, top: `${cursorAbsolutePosition.y}px` }}
