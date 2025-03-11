@@ -6,25 +6,25 @@ import { useChat } from 'ai/react';
 import { useEffect, useRef, useState } from 'react';
 import { X_REMOTE_BROWSER_SESSION_ID_HEADER } from '~shared/http/headers';
 import { ALogger } from '~shared/logging/ALogger';
+import { AiAgentSOP } from '~shared/sop/AiAgentSOP';
 import { AiAidenApiMessageAnnotation, AiAidenStreamDataSchema } from '~src/app/api/ai/aiden/AiAidenApi';
-import { BrowserRewindStep } from '~src/app/portal/BrowserRewind';
 import { AiMessageChatBoxInput } from '~src/components/chat-box/AiMessageChatBoxInput';
 import AiMessagesForChatBox from '~src/components/chat-box/AiMessagesForChatBox';
 import { ScrollToBottomButton } from '~src/components/chat-box/ScrollToBottomButton';
-import { useBrowserRewindHistory } from '~src/contexts/BrowserRewindHistoryContext';
 
 interface Props {
   className?: string;
   remoteBrowserSessionId?: string;
+  sop?: AiAgentSOP;
+  shouldStartSop?: boolean;
 }
 
-export default function ChatWithAidenWindow(props: Props) {
+export default function SOPExecutionWindow(props: Props) {
   const [errorSnackbar, setErrorSnackbar] = useState({ open: false, message: '' });
   const [isChatWithAidenOpen, setChatWithAidenOpen] = useState(true);
   const [userHasScrolled, setUserHasScrolled] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const scrollableRef = useRef<HTMLDivElement>(null);
-  const { addRewindStep } = useBrowserRewindHistory();
 
   const aiSdkApi = '/api/ai/aiden';
   const {
@@ -40,6 +40,9 @@ export default function ChatWithAidenWindow(props: Props) {
     headers: props.remoteBrowserSessionId
       ? { [X_REMOTE_BROWSER_SESSION_ID_HEADER]: props.remoteBrowserSessionId }
       : undefined,
+    body: {
+      sopId: props.sop ? props.sop.id : undefined,
+    },
     onError: (err) => {
       let errorMessage = err.message;
       ALogger.warn({ context: 'Chat error received', error: errorMessage });
@@ -66,43 +69,10 @@ export default function ChatWithAidenWindow(props: Props) {
     }
   }, [messages, userHasScrolled]);
 
-  // Process stream data to extract annotations and add to rewind history
   useEffect(() => {
-    if (!rawData) return;
-
-    try {
-      // Check if rawData is a string before parsing
-      const dataStr = typeof rawData === 'string' ? rawData : JSON.stringify(rawData);
-      const parsedData = AiAidenStreamDataSchema.safeParse(JSON.parse(dataStr));
-      if (parsedData.success && parsedData.data.type === 'state-info') {
-        const annotation = parsedData.data.annotation;
-
-        // Create a new step from the annotation
-        const newStep: BrowserRewindStep = {
-          timestamp: annotation.ts,
-          screenshot: `data:image/png;base64,${annotation.beforeStateBase64}`,
-          action: annotation.stateDescription || 'Agent action',
-          annotation: annotation,
-        };
-
-        // Add the step to the history
-        // Note: In the future, this will use the annotationMap to get a more complete
-        // history of steps with their associated message IDs
-        addRewindStep(newStep);
-      }
-    } catch (error) {
-      // Ignore parsing errors for non-JSON data
-    }
-  }, [rawData, addRewindStep]);
-
-  // Future enhancement: Add an effect to process annotationMap changes
-  // This would replace the current mock steps with real agent steps
-  // useEffect(() => {
-  //   // Process annotationMap and add steps to history
-  //   Object.entries(annotationMap).forEach(([messageId, annotation]) => {
-  //     // Create step from annotation and add to history
-  //   });
-  // }, [annotationMap, addRewindStep]);
+    if (!props.shouldStartSop || !props.sop || messages.length > 0) return;
+    append({ role: 'user', content: 'Start SOP execution' });
+  }, [props.shouldStartSop, props.sop]);
 
   const handleScroll = () => {
     const { scrollTop, scrollHeight, clientHeight } = scrollableRef.current || {};
@@ -145,7 +115,7 @@ export default function ChatWithAidenWindow(props: Props) {
     <div className={props.className}>
       <div className="relative h-full w-full overflow-hidden rounded-3xl shadow-2xl shadow-blue-600 backdrop-blur-md">
         <div className="fixed left-0 top-0 z-50 flex h-12 w-full items-center justify-center bg-sky-800/95 shadow-xl shadow-fuchsia-600/50 backdrop-blur-sm">
-          <h1 className="text-white">Chat with Aiden</h1>
+          <h1 className="text-white">Aiden SOP executor</h1>
           <button
             className="absolute left-5 top-4 flex h-5 w-5 items-center justify-center"
             onClick={() => setChatWithAidenOpen(false)}
@@ -161,7 +131,7 @@ export default function ChatWithAidenWindow(props: Props) {
           <AiMessagesForChatBox
             annotationMap={annotationMap}
             error={lastError}
-            logoSubtitle="Chat with Aiden"
+            logoSubtitle="SOP execution"
             messages={messages}
             onScroll={handleScroll}
             scrollableRef={scrollableRef}

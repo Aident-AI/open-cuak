@@ -7,6 +7,7 @@ import { useContext, useEffect, useMemo, useState } from 'react';
 import DebugInteractionsPage from '~src/app/extension/debug/interactions/DebugInteractionsPage';
 import ChatWithAidenWindow from '~src/app/portal/ChatWithAidenWindow';
 import CookieModal from '~src/app/portal/CookieModal';
+import SOPExecutionWindow from '~src/app/portal/SOPExecutionWindow'; // Add this import
 import SOPModal from '~src/app/portal/SOPModal';
 import TeachAidenWindow from '~src/app/portal/TeachAidenWindow';
 import UserConfigModal from '~src/app/portal/UserConfigModal';
@@ -43,6 +44,32 @@ export default function PortalPage() {
     return sopId && sops.length > 0 ? sops.find((s) => s.id === sopId) : undefined;
   }, [sopId, sops]);
 
+  const renderChatWindow = () => {
+    if (hideChatWithAiden) return null;
+    if (teachModeOn)
+      return (
+        <TeachAidenWindow
+          className="flex w-96 flex-shrink-0 flex-grow-0 p-4 pt-20"
+          remoteBrowserSessionId={remoteBrowserSessionId}
+        />
+      );
+    if (selectedSop)
+      return (
+        <SOPExecutionWindow
+          className="flex w-96 flex-shrink-0 flex-grow-0 p-4 pt-20"
+          remoteBrowserSessionId={remoteBrowserSessionId}
+          sop={selectedSop}
+          shouldStartSop={shouldStartSop}
+        />
+      );
+    return (
+      <ChatWithAidenWindow
+        className="flex w-96 flex-shrink-0 flex-grow-0 p-4 pt-20"
+        remoteBrowserSessionId={remoteBrowserSessionId}
+      />
+    );
+  };
+
   return (
     <InteractionEventProvider>
       <BrowserRewindHistoryProvider>
@@ -56,20 +83,7 @@ export default function PortalPage() {
             turnOffTeachMode={() => setTeachModeOn(false)}
             setShouldStartSop={selectedSop ? setShouldStartSop : undefined}
           />
-          {!hideChatWithAiden &&
-            (teachModeOn ? (
-              <TeachAidenWindow
-                className="flex w-96 flex-shrink-0 flex-grow-0 p-4 pt-20"
-                remoteBrowserSessionId={remoteBrowserSessionId}
-              />
-            ) : (
-              <ChatWithAidenWindow
-                className="flex w-96 flex-shrink-0 flex-grow-0 p-4 pt-20"
-                remoteBrowserSessionId={remoteBrowserSessionId}
-                sop={selectedSop}
-                shouldStartSop={shouldStartSop}
-              />
-            ))}
+          {renderChatWindow()}
 
           <div className="fixed bottom-4 left-4 z-50 flex h-fit w-fit flex-row text-white">
             <button
