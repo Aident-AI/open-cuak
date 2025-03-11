@@ -15,7 +15,6 @@ export const AiAidenApiMessageAnnotationSchema = z.object({
     .optional()
     .describe('Whether the state screenshot contains bounding boxes of interactable components on the screen.'),
   stateDescription: z.string().optional().describe('The description of the image.'),
-  interactableTree: z.string().optional().describe('The interactable tree of the current screen.'),
   boundingBoxCoordinates: z.string().optional().describe('Identifier and coordinates of bounding boxes'),
 });
 export type AiAidenApiMessageAnnotation = z.infer<typeof AiAidenApiMessageAnnotationSchema>;
