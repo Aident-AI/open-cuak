@@ -52,7 +52,7 @@ const RESETTING_PAGE_LOADING = 1000;
 
 export default function RemoteBrowserContainer(props: Props) {
   const { sendRuntimeMessage } = useRemoteBrowserMessaging({ remoteBrowserSessionId: props.sessionUUID });
-  const { isRewindMode, resumeLiveMode } = useBrowserRewindHistory();
+  const { isRewindMode, resumeLiveMode, clearHistory } = useBrowserRewindHistory();
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
@@ -190,6 +190,18 @@ export default function RemoteBrowserContainer(props: Props) {
     sendRuntimeMessage(message);
   };
 
+  const handleKillBrowser = () => {
+    setTabs([]);
+    setPageUrlToLoad(undefined);
+    clearHistory();
+    props.killBrowser();
+  };
+
+  const handleDetachFromBrowser = () => {
+    clearHistory();
+    props.detachFromBrowser();
+  };
+
   const containerReady = containerDimension.width > 0 && containerDimension.height > 0;
 
   const renderNavigationBar = () => {
@@ -258,11 +270,7 @@ export default function RemoteBrowserContainer(props: Props) {
           <Tooltip title="Turn off browser" arrow placement="top" enterDelay={500}>
             <PowerIcon
               className="h-8 w-8 rounded-full p-1 text-white hover:cursor-pointer hover:bg-blue-500/30"
-              onClick={() => {
-                setTabs([]);
-                setPageUrlToLoad(undefined);
-                props.killBrowser();
-              }}
+              onClick={handleKillBrowser}
             />
           </Tooltip>
         </div>
@@ -270,7 +278,7 @@ export default function RemoteBrowserContainer(props: Props) {
           <Tooltip title="Detach from browser" arrow placement="top" enterDelay={500}>
             <SignalSlashIcon
               className="h-8 w-8 rounded-full p-1 text-white hover:cursor-pointer hover:bg-blue-500/30"
-              onClick={props.detachFromBrowser}
+              onClick={handleDetachFromBrowser}
             />
           </Tooltip>
         </div>

@@ -95,14 +95,27 @@ export default function ChatWithAidenWindow(props: Props) {
     }
   }, [rawData, addRewindStep]);
 
-  // Future enhancement: Add an effect to process annotationMap changes
   // This would replace the current mock steps with real agent steps
-  // useEffect(() => {
-  //   // Process annotationMap and add steps to history
-  //   Object.entries(annotationMap).forEach(([messageId, annotation]) => {
-  //     // Create step from annotation and add to history
-  //   });
-  // }, [annotationMap, addRewindStep]);
+  const processedStateInfoTimestamps = useRef(new Set<number>());
+
+  useEffect(() => {
+    if (!stateInfos.length) return;
+
+    stateInfos.forEach((stateInfo) => {
+      const { annotation } = stateInfo;
+      if (processedStateInfoTimestamps.current.has(annotation.ts)) return;
+      processedStateInfoTimestamps.current.add(annotation.ts);
+      const screenshot = annotation.beforeStateBase64 ? `data:image/png;base64,${annotation.beforeStateBase64}` : '';
+      const step: BrowserRewindStep = {
+        timestamp: annotation.ts,
+        screenshot,
+        action: annotation.stateDescription || 'Browser action',
+        annotation,
+      };
+
+      addRewindStep(step);
+    });
+  }, [stateInfos, addRewindStep]);
 
   const handleScroll = () => {
     const { scrollTop, scrollHeight, clientHeight } = scrollableRef.current || {};

@@ -39,12 +39,27 @@ export function BrowserRewind(props: BrowserRewindProps) {
   // Handle slider change
   const handleSliderChange = (_event: Event, newValue: number | number[]) => {
     const value = Array.isArray(newValue) ? newValue[0] : newValue;
+
+    // For empty steps, make sure the slider can't go to position 0
+    if (rewindSteps.length === 0 && value === 0) {
+      setSliderValue(1);
+      return;
+    }
+
     setSliderValue(value);
   };
 
   // Handle slider change commit
   const handleSliderChangeCommitted = (_event: React.SyntheticEvent | Event, newValue: number | number[]) => {
     const value = Array.isArray(newValue) ? newValue[0] : newValue;
+
+    if (rewindSteps.length === 0) {
+      // For empty steps, position 1 is live mode, position 0 is no mode (but shouldn't be selectable)
+      if (value === 1) resumeLiveMode();
+      return;
+    }
+
+    // Normal case with steps
     if (value === rewindSteps.length) resumeLiveMode();
     else if (value !== currentStepIndex || isLiveMode) rewindToStep(value);
   };
@@ -52,31 +67,26 @@ export function BrowserRewind(props: BrowserRewindProps) {
   const marks =
     rewindSteps.length > 0
       ? Array.from({ length: rewindSteps.length + 1 }).map((_, index) => ({ value: index, label: '' }))
-      : [];
+      : [
+          { value: 0, label: '' },
+          { value: 1, label: '' },
+        ];
   const firstMarkStyle = { opacity: 0 };
   const customMarkStyles: Record<string, React.CSSProperties> = {};
   if (rewindSteps.length > 0) customMarkStyles[`&[data-index="0"]`] = firstMarkStyle;
-
-  // If there are no steps, show a placeholder message
-  if (rewindSteps.length === 0)
-    return (
-      <div className={cx('relative mt-4 w-full text-center text-sm text-gray-500', className)}>
-        No browser steps recorded yet. Steps will appear here as they occur.
-      </div>
-    );
 
   return (
     <div className={cx('relative mt-4 w-full', className)}>
       {/* Timeline bar */}
       <div ref={timelineRef} className="relative w-full px-6">
         <Slider
-          value={isLiveMode ? rewindSteps.length : sliderValue}
+          value={isLiveMode ? (rewindSteps.length > 0 ? rewindSteps.length : 1) : sliderValue}
           onChange={handleSliderChange}
           onChangeCommitted={handleSliderChangeCommitted}
           step={1}
           marks={marks}
           min={0}
-          max={rewindSteps.length}
+          max={rewindSteps.length > 0 ? rewindSteps.length : 1}
           valueLabelDisplay="off"
           className="text-blue-600"
           sx={{
@@ -107,7 +117,7 @@ export function BrowserRewind(props: BrowserRewindProps) {
               height: 4,
             },
             '& .MuiSlider-mark': {
-              backgroundColor: 'rgb(156, 163, 175)', // gray-400
+              backgroundColor: rewindSteps.length === 0 ? 'transparent' : 'rgb(156, 163, 175)', // gray-400
               width: 4,
               height: 4,
               borderRadius: '50%',
@@ -137,9 +147,9 @@ export function BrowserRewind(props: BrowserRewindProps) {
             onClick={() => rewindToStep(0)}
             className={cx(
               'rounded p-1 text-blue-100',
-              currentStepIndex === 0 ? 'cursor-not-allowed' : 'hover:bg-blue-300',
+              currentStepIndex === 0 || rewindSteps.length === 0 ? 'cursor-not-allowed' : 'hover:bg-blue-300',
             )}
-            disabled={currentStepIndex === 0}
+            disabled={currentStepIndex === 0 || rewindSteps.length === 0}
           >
             <ChevronDoubleLeftIcon className="h-4 w-4" />
           </button>
@@ -152,15 +162,17 @@ export function BrowserRewind(props: BrowserRewindProps) {
               }}
               className={cx(
                 'rounded p-1 text-blue-100',
-                currentStepIndex === 0 && !isLiveMode ? 'cursor-not-allowed' : 'hover:bg-blue-300',
+                (currentStepIndex === 0 && !isLiveMode) || rewindSteps.length === 0
+                  ? 'cursor-not-allowed'
+                  : 'hover:bg-blue-300',
               )}
-              disabled={currentStepIndex === 0 && !isLiveMode}
+              disabled={(currentStepIndex === 0 && !isLiveMode) || rewindSteps.length === 0}
             >
               <ChevronLeftIcon className="h-3 w-3" />
             </button>
 
             <div className="w-32 text-center text-xs text-blue-100">
-              {isRewindMode ? 'Step' : 'Live Mode'}
+              {isRewindMode && rewindSteps.length > 0 ? 'Step' : 'Live Mode'}
               {isRewindMode && rewindSteps.length > 0 && ` ${currentStepIndex + 1}/${rewindSteps.length}`}
             </div>
 
@@ -170,8 +182,11 @@ export function BrowserRewind(props: BrowserRewindProps) {
                 else if (currentStepIndex === rewindSteps.length - 1) resumeLiveMode();
                 else rewindToStep(currentStepIndex + 1);
               }}
-              className={cx('rounded p-1 text-blue-100', isLiveMode ? 'cursor-not-allowed' : 'hover:bg-blue-300')}
-              disabled={isLiveMode}
+              className={cx(
+                'rounded p-1 text-blue-100',
+                isLiveMode || rewindSteps.length === 0 ? 'cursor-not-allowed' : 'hover:bg-blue-300',
+              )}
+              disabled={isLiveMode || rewindSteps.length === 0}
             >
               <ChevronRightIcon className="h-3 w-3" />
             </button>
@@ -179,8 +194,11 @@ export function BrowserRewind(props: BrowserRewindProps) {
 
           <button
             onClick={resumeLiveMode}
-            className={cx('rounded p-1 text-blue-100', isLiveMode ? 'cursor-not-allowed' : 'hover:bg-blue-300')}
-            disabled={isLiveMode}
+            className={cx(
+              'rounded p-1 text-blue-100',
+              isLiveMode || rewindSteps.length === 0 ? 'cursor-not-allowed' : 'hover:bg-blue-300',
+            )}
+            disabled={isLiveMode || rewindSteps.length === 0}
           >
             <ChevronDoubleRightIcon className="h-4 w-4" />
           </button>
