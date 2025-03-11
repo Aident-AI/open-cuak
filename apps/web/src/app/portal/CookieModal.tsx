@@ -12,39 +12,71 @@ interface CookieModalProps {
 }
 
 export default function CookieModal({ isOpen, onClose }: CookieModalProps) {
-  const [cookies, setCookies] = useState<{ domain: string }[]>([]);
   const [configData, setConfigData] = useState<UserConfigData | undefined>(undefined);
+  const [groupedCookies, setGroupedCookies] = useState<Record<string, string[]>>({});
 
   const { user } = useContext(UserSessionContext);
   const userId = user!.id;
 
   const supabase = SupabaseClientForClient.createForClientComponent();
 
+  const getEffectiveDomain = (domain: string): string => {
+    const cleanDomain = domain.startsWith('.') ? domain.substring(1) : domain;
+    const parts = cleanDomain.split('.');
+    return parts.length >= 2 ? parts.slice(-2).join('.') : cleanDomain;
+  };
+
   useEffect(() => {
-    const exec = async () => {
+    const fetchData = async () => {
       const [cookiesResult, userConfig] = await Promise.all([
         supabase.from('remote_browser_cookies').select('domain').eq('user_id', userId),
         UserConfig.genFetch(userId, supabase),
       ]);
 
       if (cookiesResult.error) throw cookiesResult.error;
-      setCookies(cookiesResult.data.map((d) => ({ domain: d.domain })));
+
+      const cookiesData = cookiesResult.data.map((d) => ({ domain: d.domain }));
+
+      // Group cookies by effective domain
+      const grouped = cookiesData.reduce(
+        (acc, cookie) => {
+          const effectiveDomain = getEffectiveDomain(cookie.domain);
+          if (!acc[effectiveDomain]) acc[effectiveDomain] = [];
+          acc[effectiveDomain].push(cookie.domain);
+          return acc;
+        },
+        {} as Record<string, string[]>,
+      );
+
+      setGroupedCookies(grouped);
       setConfigData(userConfig);
     };
-    exec();
+
+    fetchData();
   }, []);
 
-  const deleteCookie = async (domain: string) => {
-    const { error } = await supabase.from('remote_browser_cookies').delete().eq('domain', domain).eq('user_id', userId);
-    if (error) throw error;
-    setCookies((prev) => prev.filter((c) => c.domain !== domain));
+  const deleteAllDomainsInGroup = async (effectiveDomain: string) => {
+    const domainsToDelete = groupedCookies[effectiveDomain] || [];
+
+    // Delete all domains in the group with a single batch operation
+    await Promise.all(
+      domainsToDelete.map((domain) =>
+        supabase.from('remote_browser_cookies').delete().eq('domain', domain).eq('user_id', userId),
+      ),
+    );
+
+    setGroupedCookies((prev) => {
+      const updated = { ...prev };
+      delete updated[effectiveDomain];
+      return updated;
+    });
   };
 
   return (
     <Dialog open={isOpen} onClose={onClose} className="relative z-50">
       <div className="fixed inset-0 bg-black bg-opacity-50" aria-hidden="true" />
       <div className="fixed inset-0 flex items-center justify-center p-4">
-        <DialogPanel className="mx-auto rounded bg-white p-6">
+        <DialogPanel className="mx-auto max-h-[80vh] w-full max-w-lg overflow-y-auto rounded bg-white p-6">
           <DialogTitle className="mb-6 text-center text-xl font-medium text-gray-500">Cookies</DialogTitle>
           <div className="flex flex-col gap-4">
             <div className="inline-flex items-center space-x-2">
@@ -63,16 +95,16 @@ export default function CookieModal({ isOpen, onClose }: CookieModalProps) {
               </Tooltip>
             </div>
             <hr className="my-4" />
-            {cookies.length === 0 ? (
+            {Object.keys(groupedCookies).length === 0 ? (
               <div className="text-gray-500">No saved cookies</div>
             ) : (
               <ul className="flex flex-col gap-2">
-                {cookies.map((cookie) => (
-                  <li key={cookie.domain} className="flex items-center justify-between rounded bg-gray-100 p-2">
-                    <span className="text-black">{cookie.domain}</span>
+                {Object.entries(groupedCookies).map(([effectiveDomain, domains]) => (
+                  <li key={effectiveDomain} className="flex items-center justify-between rounded bg-gray-100 p-3">
+                    <span className="font-medium text-black">{effectiveDomain}</span>
                     <button
-                      onClick={() => deleteCookie(cookie.domain)}
-                      className="rounded bg-red-500 px-2 py-1 text-white hover:bg-red-600"
+                      onClick={() => deleteAllDomainsInGroup(effectiveDomain)}
+                      className="rounded bg-red-500 px-2 py-1 text-xs text-white hover:bg-red-600"
                     >
                       Delete
                     </button>
