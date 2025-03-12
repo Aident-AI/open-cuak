@@ -1,8 +1,11 @@
 import {
+  ArrowPathIcon,
   ChevronDoubleLeftIcon,
   ChevronDoubleRightIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  PauseIcon,
+  PlayIcon,
 } from '@heroicons/react/24/solid';
 import { Slider } from '@mui/material';
 import cx from 'classnames';
@@ -21,11 +24,16 @@ interface BrowserRewindProps {
   className?: string;
 }
 
+const REPLAY_STEP_DURATION = 1_000; // ms
+
 export function BrowserRewind(props: BrowserRewindProps) {
   const { className } = props;
   const { rewindSteps, currentStepIndex, isRewindMode, rewindToStep, resumeLiveMode } = useBrowserRewindHistory();
   const [sliderValue, setSliderValue] = useState<number>(0);
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [hasReachedEnd, setHasReachedEnd] = useState<boolean>(false);
   const timelineRef = useRef<HTMLDivElement>(null);
+  const playIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const isLiveMode = !isRewindMode;
 
@@ -35,6 +43,74 @@ export function BrowserRewind(props: BrowserRewindProps) {
     if (isLiveMode) setSliderValue(rewindSteps.length);
     else setSliderValue(currentStepIndex);
   }, [currentStepIndex, rewindSteps.length, isLiveMode]);
+
+  // Reset hasReachedEnd when currentStepIndex changes
+  useEffect(() => {
+    if (currentStepIndex < rewindSteps.length - 1) {
+      setHasReachedEnd(false);
+    }
+  }, [currentStepIndex, rewindSteps.length]);
+
+  // Handle auto-play functionality
+  useEffect(() => {
+    if (isPlaying && rewindSteps.length > 0) {
+      // Clear any existing interval
+      if (playIntervalRef.current) {
+        clearInterval(playIntervalRef.current);
+      }
+
+      // Set up new interval to advance steps
+      playIntervalRef.current = setInterval(() => {
+        if (isLiveMode || currentStepIndex === rewindSteps.length - 1) {
+          // Stop playing when we reach the end
+          setIsPlaying(false);
+          setHasReachedEnd(true);
+          if (playIntervalRef.current) {
+            clearInterval(playIntervalRef.current);
+            playIntervalRef.current = null;
+          }
+        } else {
+          rewindToStep(currentStepIndex + 1);
+        }
+      }, REPLAY_STEP_DURATION);
+    }
+
+    // Cleanup interval on component unmount or when play state changes
+    return () => {
+      if (playIntervalRef.current) {
+        clearInterval(playIntervalRef.current);
+        playIntervalRef.current = null;
+      }
+    };
+  }, [isPlaying, currentStepIndex, rewindSteps.length, isLiveMode, rewindToStep]);
+
+  // Stop playing if we switch to live mode
+  useEffect(() => {
+    if (isLiveMode && isPlaying) {
+      setIsPlaying(false);
+    }
+    if (isLiveMode) {
+      setHasReachedEnd(false);
+    }
+  }, [isLiveMode, isPlaying]);
+
+  const togglePlayPause = () => {
+    if (rewindSteps.length === 0) return;
+
+    if (hasReachedEnd || currentStepIndex === rewindSteps.length - 1) {
+      // If we've reached the end or are at the last step, restart from beginning
+      setHasReachedEnd(false);
+      rewindToStep(0);
+      setIsPlaying(true);
+    } else if (isLiveMode && !isPlaying) {
+      // If in live mode and starting to play, first rewind to beginning
+      rewindToStep(0);
+      setIsPlaying(true);
+    } else {
+      // Regular play/pause toggle
+      setIsPlaying(!isPlaying);
+    }
+  };
 
   // Handle slider change
   const handleSliderChange = (_event: Event, newValue: number | number[]) => {
@@ -75,8 +151,78 @@ export function BrowserRewind(props: BrowserRewindProps) {
   const customMarkStyles: Record<string, React.CSSProperties> = {};
   if (rewindSteps.length > 0) customMarkStyles[`&[data-index="0"]`] = firstMarkStyle;
 
+  // Determine which icon to show
+  const getButtonIcon = () => {
+    if (isPlaying) {
+      return <PauseIcon className="h-4 w-4" />;
+    } else if (!isLiveMode && (hasReachedEnd || currentStepIndex === rewindSteps.length - 1)) {
+      return <ArrowPathIcon className="h-4 w-4" />;
+    } else {
+      return <PlayIcon className="h-4 w-4" />;
+    }
+  };
+
+  // Determine button title
+  const getButtonTitle = () => {
+    if (isPlaying) {
+      return 'Pause';
+    } else if (!isLiveMode && (hasReachedEnd || currentStepIndex === rewindSteps.length - 1)) {
+      return 'Replay';
+    } else {
+      return 'Play';
+    }
+  };
+
   return (
     <div className={cx('relative mt-4 w-full', className)}>
+      {/* Timeline title and play/pause button */}
+      <div className="mb-2 flex items-center justify-between px-6">
+        <div className="flex items-center text-xs text-blue-100">
+          {isLiveMode && (
+            <div className="relative mr-1.5 flex items-center">
+              <div className="absolute h-2 w-2 rounded-full bg-green-500 opacity-75">
+                <div
+                  className="absolute h-2 w-2 rounded-full bg-green-500"
+                  style={{
+                    animation: 'breathing 1.5s ease-in-out infinite',
+                  }}
+                />
+              </div>
+              <style jsx>{`
+                @keyframes breathing {
+                  0% {
+                    transform: scale(0.8);
+                    opacity: 0.5;
+                  }
+                  50% {
+                    transform: scale(1.2);
+                    opacity: 0.8;
+                  }
+                  100% {
+                    transform: scale(0.8);
+                    opacity: 0.5;
+                  }
+                }
+              `}</style>
+              <div className="h-2 w-2 opacity-0">•</div>
+            </div>
+          )}
+          {isRewindMode && rewindSteps.length > 0 ? 'Step' : 'Live Mode'}
+          {isRewindMode && rewindSteps.length > 0 && ` ${currentStepIndex + 1}/${rewindSteps.length}`}
+        </div>
+        <button
+          onClick={togglePlayPause}
+          className={cx(
+            'rounded p-1 text-blue-100',
+            rewindSteps.length === 0 ? 'cursor-not-allowed' : 'hover:bg-blue-300',
+          )}
+          disabled={rewindSteps.length === 0}
+          title={getButtonTitle()}
+        >
+          {getButtonIcon()}
+        </button>
+      </div>
+
       {/* Timeline bar */}
       <div ref={timelineRef} className="relative w-full px-6">
         <Slider
@@ -162,18 +308,17 @@ export function BrowserRewind(props: BrowserRewindProps) {
               }}
               className={cx(
                 'rounded p-1 text-blue-100',
-                (currentStepIndex === 0 && !isLiveMode) || rewindSteps.length === 0
+                (currentStepIndex === 0 && !isRewindMode) || rewindSteps.length === 0
                   ? 'cursor-not-allowed'
                   : 'hover:bg-blue-300',
               )}
-              disabled={(currentStepIndex === 0 && !isLiveMode) || rewindSteps.length === 0}
+              disabled={(currentStepIndex === 0 && !isRewindMode) || rewindSteps.length === 0}
             >
               <ChevronLeftIcon className="h-3 w-3" />
             </button>
 
             <div className="w-32 text-center text-xs text-blue-100">
-              {isRewindMode && rewindSteps.length > 0 ? 'Step' : 'Live Mode'}
-              {isRewindMode && rewindSteps.length > 0 && ` ${currentStepIndex + 1}/${rewindSteps.length}`}
+              {isPlaying ? 'Playing' : hasReachedEnd ? 'End Reached' : 'Paused'}
             </div>
 
             <button
