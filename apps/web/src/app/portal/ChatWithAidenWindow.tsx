@@ -24,7 +24,7 @@ export default function ChatWithAidenWindow(props: Props) {
   const [userHasScrolled, setUserHasScrolled] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const scrollableRef = useRef<HTMLDivElement>(null);
-  const { addRewindStep } = useBrowserRewindHistory();
+  const { addRewindStep, rewindSteps } = useBrowserRewindHistory();
 
   const aiSdkApi = '/api/ai/aiden';
   const {
@@ -68,32 +68,27 @@ export default function ChatWithAidenWindow(props: Props) {
 
   // Process stream data to extract annotations and add to rewind history
   useEffect(() => {
-    if (!rawData) return;
+    if (!stateInfos.length) return;
 
-    try {
-      // Check if rawData is a string before parsing
-      const dataStr = typeof rawData === 'string' ? rawData : JSON.stringify(rawData);
-      const parsedData = AiAidenStreamDataSchema.safeParse(JSON.parse(dataStr));
-      if (parsedData.success && parsedData.data.type === 'state-info') {
-        const annotation = parsedData.data.annotation;
+    // Process all stateInfo elements that aren't already in rewindSteps
+    for (let i = rewindSteps.length; i < stateInfos.length; i++) {
+      const stateInfo = stateInfos[i];
+      if (stateInfo.type === 'state-info') {
+        const annotation = stateInfo.annotation;
 
         // Create a new step from the annotation
         const newStep: BrowserRewindStep = {
           timestamp: annotation.ts,
-          screenshot: `data:image/png;base64,${annotation.beforeStateBase64}`,
+          screenshot: annotation.beforeStateBase64,
           action: annotation.stateDescription || 'Agent action',
           annotation: annotation,
         };
 
         // Add the step to the history
-        // Note: In the future, this will use the annotationMap to get a more complete
-        // history of steps with their associated message IDs
         addRewindStep(newStep);
       }
-    } catch (error) {
-      // Ignore parsing errors for non-JSON data
     }
-  }, [rawData, addRewindStep]);
+  }, [stateInfos, addRewindStep, rewindSteps.length]);
 
   // This would replace the current mock steps with real agent steps
   const processedStateInfoTimestamps = useRef(new Set<number>());
@@ -105,7 +100,7 @@ export default function ChatWithAidenWindow(props: Props) {
       const { annotation } = stateInfo;
       if (processedStateInfoTimestamps.current.has(annotation.ts)) return;
       processedStateInfoTimestamps.current.add(annotation.ts);
-      const screenshot = annotation.beforeStateBase64 ? `data:image/png;base64,${annotation.beforeStateBase64}` : '';
+      const screenshot = annotation.beforeStateBase64 ?? '';
       const step: BrowserRewindStep = {
         timestamp: annotation.ts,
         screenshot,
