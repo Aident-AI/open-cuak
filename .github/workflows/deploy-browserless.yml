@@ -1,0 +1,78 @@
+name: Deploy Browserless to Azure
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Image tag to deploy (defaults to latest if empty)'
+        required: false
+        type: string
+  workflow_run:
+    workflows: ['CI Browserless']
+    types:
+      - completed
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+env:
+  AZURE_CONTAINER_APP_NAME: open-cuak-browserless
+  AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
+  AZURE_LOCATION: ${{ secrets.AZURE_LOCATION }}
+  AZURE_RESOURCE_GROUP: open-cuak-rg
+  DOCK_IMAGE_NAME: aident-ai/open-cuak-browserless
+
+jobs:
+  check-admin:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check user permission
+        id: check-permission
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          USER_PERMISSIONS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+          "https://api.github.com/repos/${{ github.repository }}/collaborators/${{ github.actor }}/permission" | jq -r '.permission')
+
+          echo "User permission: $USER_PERMISSIONS"
+
+          if [[ "$USER_PERMISSIONS" != "admin" ]]; then
+            echo "❌ You do not have admin permissions to run this workflow."
+            exit 1
+          fi
+
+          echo "User has admin permissions, proceeding with deployment."
+
+  deploy:
+    needs: check-admin
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    name: Deploy to Azure Container Apps
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set image tag
+        id: set-tag
+        run: |
+          if [ -z "${{ github.event.inputs.image_tag }}" ]; then
+            echo "IMAGE_TAG=latest" >> $GITHUB_ENV
+          else
+            echo "IMAGE_TAG=${{ github.event.inputs.image_tag }}" >> $GITHUB_ENV
+          fi
+
+      - name: Log in to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ env.AZURE_CREDENTIALS }}
+
+      - name: Deploy to Azure Container Apps
+        uses: azure/container-apps-deploy-action@v1
+        with:
+          resourceGroup: ${{ env.AZURE_RESOURCE_GROUP }}
+          containerAppName: ${{ env.AZURE_CONTAINER_APP_NAME }}
+          imageToDeploy: ghcr.io/${{ env.DOCK_IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          location: ${{ env.AZURE_LOCATION }}
+          yamlConfigPath: .github/.azure/containerapp.yaml

@@ -72,7 +72,7 @@ jobs:
         uses: ./.github/actions/build-browserless
 
   on-push:
-    name: Deploy Browserless
+    name: Build and Publish Browserless
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
     steps:
