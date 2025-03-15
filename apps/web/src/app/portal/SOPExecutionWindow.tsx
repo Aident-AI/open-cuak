@@ -142,27 +142,17 @@ export default function SOPExecutionWindow(props: Props) {
         </div>
 
         {props.sop && latestProgress !== null && (
-          <div className="mb-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-            <h3 className="mb-2 text-lg font-semibold">{props.sop.name || 'SOP Execution'}</h3>
+          <div className="fixed left-0 top-12 z-40 w-full rounded-b-lg border-b border-gray-200 bg-white p-3 shadow-sm">
             {latestProgress && (
               <>
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="text-sm text-gray-600">
+                <div className="mb-1 flex items-center justify-between">
+                  <span className="text-xs text-gray-600">
                     Step {Math.min(latestProgress.currentStepIndex + 1, props.sop.steps.length)} of{' '}
                     {props.sop.steps.length}
                   </span>
-                  <span className="text-sm font-medium text-blue-600">
+                  <span className="text-xs font-medium text-blue-600">
                     {Math.min(Math.round((latestProgress.currentStepIndex / props.sop.steps.length) * 100), 100)}%
                   </span>
-                </div>
-
-                <div className="mb-4 h-2.5 w-full rounded-full bg-gray-200">
-                  <div
-                    className="h-2.5 rounded-full bg-blue-600"
-                    style={{
-                      width: `${Math.min((latestProgress.currentStepIndex / props.sop.steps.length) * 100, 100)}%`,
-                    }}
-                  ></div>
                 </div>
 
                 <div className="mt-4 max-h-32 overflow-y-auto">
@@ -186,6 +176,15 @@ export default function SOPExecutionWindow(props: Props) {
                     ))}
                   </ul>
                 </div>
+
+                <div className="mb-1 mt-4 h-1.5 w-full rounded-full bg-gray-200">
+                  <div
+                    className="h-1.5 rounded-full bg-blue-600"
+                    style={{
+                      width: `${Math.min((latestProgress.currentStepIndex / props.sop.steps.length) * 100, 100)}%`,
+                    }}
+                  ></div>
+                </div>
               </>
             )}
           </div>
@@ -199,6 +198,7 @@ export default function SOPExecutionWindow(props: Props) {
             messages={messages}
             onScroll={handleScroll}
             scrollableRef={scrollableRef}
+            className={props.sop && latestProgress !== null ? 'pt-24' : 'pt-12'}
           />
           {userHasScrolled && (
             <ScrollToBottomButton
