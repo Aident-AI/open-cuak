@@ -67,6 +67,34 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      - name: Create resource group if not exists
+        run: |
+          az group show --name ${{ env.AZURE_RESOURCE_GROUP }} || \
+          az group create --name ${{ env.AZURE_RESOURCE_GROUP }} --location ${{ secrets.AZURE_LOCATION }}
+
+      - name: Create Container App environment if not exists
+        run: |
+          # Set Container App environment name
+          AZURE_CONTAINER_APP_ENV_NAME="open-cuak-env"
+          
+          # Check if environment exists
+          ENV_EXISTS=$(az containerapp env list -g ${{ env.AZURE_RESOURCE_GROUP }} --query "[?name=='$AZURE_CONTAINER_APP_ENV_NAME'].name" -o tsv)
+          
+          # Create environment if it doesn't exist
+          if [ -z "$ENV_EXISTS" ]; then
+            echo "Creating Container App environment $AZURE_CONTAINER_APP_ENV_NAME..."
+            az containerapp env create \
+              --name $AZURE_CONTAINER_APP_ENV_NAME \
+              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+              --location ${{ secrets.AZURE_LOCATION }}
+          else
+            echo "Container App environment $AZURE_CONTAINER_APP_ENV_NAME already exists."
+          fi
+          
+          # Get the environment ID and set as environment variable
+          AZURE_CONTAINER_APP_ENVIRONMENT_ID=$(az containerapp env show -g ${{ env.AZURE_RESOURCE_GROUP }} -n $AZURE_CONTAINER_APP_ENV_NAME --query id -o tsv)
+          echo "AZURE_CONTAINER_APP_ENVIRONMENT_ID=$AZURE_CONTAINER_APP_ENVIRONMENT_ID" >> $GITHUB_ENV
+
       - name: Deploy to Azure Container Apps
         uses: azure/container-apps-deploy-action@v1
         with:
