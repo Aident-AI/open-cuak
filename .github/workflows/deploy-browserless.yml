@@ -19,8 +19,6 @@ permissions:
 
 env:
   AZURE_CONTAINER_APP_NAME: open-cuak-browserless
-  AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
-  AZURE_LOCATION: ${{ secrets.AZURE_LOCATION }}
   AZURE_RESOURCE_GROUP: open-cuak-rg
   DOCK_IMAGE_NAME: aident-ai/open-cuak-browserless
 
@@ -67,7 +65,7 @@ jobs:
       - name: Azure login
         uses: azure/login@v2
         with:
-          creds: ${{ env.AZURE_CREDENTIALS }}
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Deploy to Azure Container Apps
         uses: azure/container-apps-deploy-action@v1
@@ -75,5 +73,5 @@ jobs:
           resourceGroup: ${{ env.AZURE_RESOURCE_GROUP }}
           containerAppName: ${{ env.AZURE_CONTAINER_APP_NAME }}
           imageToDeploy: ghcr.io/${{ env.DOCK_IMAGE_NAME }}:${{ env.IMAGE_TAG }}
-          location: ${{ env.AZURE_LOCATION }}
+          location: ${{ secrets.AZURE_LOCATION }}
           yamlConfigPath: .azure/containerapp.yaml
