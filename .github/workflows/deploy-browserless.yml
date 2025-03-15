@@ -74,4 +74,4 @@ jobs:
           containerAppName: ${{ env.AZURE_CONTAINER_APP_NAME }}
           imageToDeploy: ghcr.io/${{ env.DOCK_IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           location: ${{ secrets.AZURE_LOCATION }}
-          yamlConfigPath: .azure/containerapp.yaml
+          yamlConfigPath: .github/.azure/containerapp.yaml
