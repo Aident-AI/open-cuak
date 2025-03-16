@@ -13,11 +13,15 @@ on:
       - completed
     branches:
       - main
+  push:
+    branches:
+      - cd
 
 permissions:
   contents: read
 
 env:
+  AZURE_CONTAINER_APP_ENV_NAME: open-cuak-app-env
   AZURE_CONTAINER_APP_NAME: open-cuak-browserless
   AZURE_RESOURCE_GROUP: open-cuak-rg
   DOCK_IMAGE_NAME: aident-ai/open-cuak-browserless
@@ -48,7 +52,6 @@ jobs:
     if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     name: Deploy to Azure Container Apps
     runs-on: ubuntu-latest
-    environment: production
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -74,32 +77,98 @@ jobs:
 
       - name: Create Container App environment if not exists
         run: |
-          # Set Container App environment name
-          AZURE_CONTAINER_APP_ENV_NAME="open-cuak-env"
-          
           # Check if environment exists
           ENV_EXISTS=$(az containerapp env list -g ${{ env.AZURE_RESOURCE_GROUP }} --query "[?name=='$AZURE_CONTAINER_APP_ENV_NAME'].name" -o tsv)
           
           # Create environment if it doesn't exist
           if [ -z "$ENV_EXISTS" ]; then
-            echo "Creating Container App environment $AZURE_CONTAINER_APP_ENV_NAME..."
+            echo "Creating Container App environment ${{ env.AZURE_CONTAINER_APP_ENV_NAME }}..."
             az containerapp env create \
-              --name $AZURE_CONTAINER_APP_ENV_NAME \
+              --name ${{ env.AZURE_CONTAINER_APP_ENV_NAME }} \
               --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
               --location ${{ secrets.AZURE_LOCATION }}
           else
-            echo "Container App environment $AZURE_CONTAINER_APP_ENV_NAME already exists."
+            echo "Container App environment ${{ env.AZURE_CONTAINER_APP_ENV_NAME }} already exists."
           fi
           
           # Get the environment ID and set as environment variable
-          AZURE_CONTAINER_APP_ENVIRONMENT_ID=$(az containerapp env show -g ${{ env.AZURE_RESOURCE_GROUP }} -n $AZURE_CONTAINER_APP_ENV_NAME --query id -o tsv)
+          AZURE_CONTAINER_APP_ENVIRONMENT_ID=$(az containerapp env show -g ${{ env.AZURE_RESOURCE_GROUP }} -n ${{ env.AZURE_CONTAINER_APP_ENV_NAME }} --query id -o tsv)
           echo "AZURE_CONTAINER_APP_ENVIRONMENT_ID=$AZURE_CONTAINER_APP_ENVIRONMENT_ID" >> $GITHUB_ENV
+          
+          # Wait for environment to be fully provisioned
+          echo "Checking if environment is fully provisioned..."
+          MAX_RETRIES=30
+          RETRY_COUNT=0
+          SLEEP_SECONDS=20
+          
+          while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+            PROVISIONING_STATE=$(az containerapp env show -g ${{ env.AZURE_RESOURCE_GROUP }} -n ${{ env.AZURE_CONTAINER_APP_ENV_NAME }} --query "properties.provisioningState" -o tsv)
+            echo "Current provisioning state: $PROVISIONING_STATE"
+            
+            if [ "$PROVISIONING_STATE" == "Succeeded" ]; then
+              echo "Environment is fully provisioned!"
+              break
+            fi
+            
+            if [ "$PROVISIONING_STATE" == "Failed" ]; then
+              echo "Environment provisioning failed."
+              exit 1
+            fi
+            
+            echo "Environment still provisioning. Waiting $SLEEP_SECONDS seconds before checking again. Attempt $((RETRY_COUNT+1))/$MAX_RETRIES"
+            sleep $SLEEP_SECONDS
+            RETRY_COUNT=$((RETRY_COUNT+1))
+          done
+          
+          if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
+            echo "Timed out waiting for environment to be provisioned."
+            exit 1
+          fi
 
-      - name: Deploy to Azure Container Apps
-        uses: azure/container-apps-deploy-action@v1
-        with:
-          resourceGroup: ${{ env.AZURE_RESOURCE_GROUP }}
-          containerAppName: ${{ env.AZURE_CONTAINER_APP_NAME }}
-          imageToDeploy: ghcr.io/${{ env.DOCK_IMAGE_NAME }}:${{ env.IMAGE_TAG }}
-          location: ${{ secrets.AZURE_LOCATION }}
-          yamlConfigPath: .github/.azure/containerapp.yaml
+      - name: Deploy to Azure Container Apps using CLI
+        run: |
+          # Check if container app exists
+          APP_EXISTS=$(az containerapp show -n ${{ env.AZURE_CONTAINER_APP_NAME }} -g ${{ env.AZURE_RESOURCE_GROUP }} --query name -o tsv 2>/dev/null || echo "")
+          
+          if [ -z "$APP_EXISTS" ]; then
+            # Create new container app with multiple ports
+            echo "Creating new container app ${{ env.AZURE_CONTAINER_APP_NAME }}..."
+            
+            # Create the container app with all settings in a single command
+            az containerapp create \
+              --name ${{ env.AZURE_CONTAINER_APP_NAME }} \
+              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+              --environment ${{ env.AZURE_CONTAINER_APP_ENV_NAME }} \
+              --image ghcr.io/${{ env.DOCK_IMAGE_NAME }}:${{ env.IMAGE_TAG }} \
+              --ingress external \
+              --target-port 3000 \
+              --cpu 1.0 \
+              --memory 2Gi
+            
+            # Wait a bit for the app to be created
+            echo "Waiting for app to be fully created..."
+            sleep 10
+            
+            # Update the app with port mappings
+            echo "Configuring port mappings..."
+            az containerapp ingress traffic create \
+              --name ${{ env.AZURE_CONTAINER_APP_NAME }} \
+              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+              --port 11977 \
+              --target-port 3000 \
+              --traffic-weight latest=100
+              
+            # Now update the app with additional ports using JSON format
+            echo "Adding additional port mappings..."
+            az containerapp update \
+              --name ${{ env.AZURE_CONTAINER_APP_NAME }} \
+              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+              --set properties.configuration.ingress.additionalPortMappings='[{"targetPort": 11975, "externalPort": 11978, "external": true}, {"targetPort": 50000, "externalPort": 11979, "external": true}]'
+          else
+            # Update existing container app
+            echo "Updating existing container app ${{ env.AZURE_CONTAINER_APP_NAME }}..."
+            az containerapp update \
+              --name ${{ env.AZURE_CONTAINER_APP_NAME }} \
+              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+              --image ghcr.io/${{ env.DOCK_IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+          fi
