@@ -13,9 +13,6 @@ on:
       - completed
     branches:
       - main
-  push:
-    branches:
-      - cd
 
 permissions:
   contents: read
