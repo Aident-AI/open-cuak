@@ -146,12 +146,12 @@ jobs:
             echo "Waiting for app to be fully created..."
             sleep 10
             
-            # Update the app with port mappings
+            # Configure traffic to route to an actual listening port
             echo "Configuring port mappings..."
             az containerapp ingress traffic create \
               --name ${{ env.AZURE_CONTAINER_APP_NAME }} \
               --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
-              --port 11977 \
+              --port 3000 \
               --target-port 3000 \
               --traffic-weight latest=100
               
@@ -161,7 +161,7 @@ jobs:
               --name ${{ env.AZURE_CONTAINER_APP_NAME }} \
               --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
               --min-replicas 1 \
-              --set properties.configuration.ingress.additionalPortMappings='[{"targetPort": 11975, "externalPort": 11978, "external": true}, {"targetPort": 50000, "externalPort": 11979, "external": true}]'
+              --set properties.configuration.ingress.additionalPortMappings='[{"targetPort": 3000, "externalPort": 11977, "external": true}, {"targetPort": 11975, "externalPort": 11978, "external": true}, {"targetPort": 50000, "externalPort": 11979, "external": true}]'
           else
             # Update existing container app
             echo "Updating existing container app ${{ env.AZURE_CONTAINER_APP_NAME }}..."
@@ -170,4 +170,24 @@ jobs:
               --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
               --min-replicas 1 \
               --image ghcr.io/${{ env.DOCK_IMAGE_NAME }}:${{ env.IMAGE_TAG }}
+            
+            # Ensure the ingress traffic configuration is correct
+            echo "Ensuring traffic configuration is correct..."
+            az containerapp ingress show \
+              --name ${{ env.AZURE_CONTAINER_APP_NAME }} \
+              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+              --query "traffic[0].targetPort" -o tsv | grep -q "3000" || \
+            az containerapp ingress traffic create \
+              --name ${{ env.AZURE_CONTAINER_APP_NAME }} \
+              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+              --port 3000 \
+              --target-port 3000 \
+              --traffic-weight latest=100
+              
+            # Ensure additional port mappings are set correctly
+            echo "Updating additional port mappings..."
+            az containerapp update \
+              --name ${{ env.AZURE_CONTAINER_APP_NAME }} \
+              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+              --set properties.configuration.ingress.additionalPortMappings='[{"targetPort": 3000, "externalPort": 11977, "external": true}, {"targetPort": 11975, "externalPort": 11978, "external": true}, {"targetPort": 50000, "externalPort": 11979, "external": true}]'
           fi
