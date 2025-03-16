@@ -160,6 +160,7 @@ jobs:
             az containerapp update \
               --name ${{ env.AZURE_CONTAINER_APP_NAME }} \
               --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+              --min-replicas 1 \
               --set properties.configuration.ingress.additionalPortMappings='[{"targetPort": 11975, "externalPort": 11978, "external": true}, {"targetPort": 50000, "externalPort": 11979, "external": true}]'
           else
             # Update existing container app
@@ -167,5 +168,6 @@ jobs:
             az containerapp update \
               --name ${{ env.AZURE_CONTAINER_APP_NAME }} \
               --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+              --min-replicas 1 \
               --image ghcr.io/${{ env.DOCK_IMAGE_NAME }}:${{ env.IMAGE_TAG }}
           fi
