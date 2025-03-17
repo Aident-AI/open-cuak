@@ -522,6 +522,16 @@ export default function UserConfigModal(props: Props) {
               </label>
             </div>
 
+            <div className="mb-4">
+              <label className="block text-gray-700">Custom Prompt (Optional)</label>
+              <textarea
+                placeholder="Enter your custom prompt here"
+                value={userConfig.customPrompt || ''}
+                onChange={(e) => handleDataUpdate({ customPrompt: e.target.value.trim() })}
+                className="mt-2 min-h-[80px] w-full resize-y rounded border px-2 py-1 text-sm text-black"
+              />
+            </div>
+
             <div className="flex justify-end pt-2">
               <button
                 type="button"

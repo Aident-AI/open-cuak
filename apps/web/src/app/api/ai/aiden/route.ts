@@ -25,7 +25,10 @@ export const POST = simpleRequestWrapper<z.infer<typeof api.RequestSchema.schema
     const [user, userConfig] = await Promise.all([context.fetchUserOrThrow(), context.fetchUserConfig()]);
 
     const model = ModelRouter.getModelFromUserConfigOrThrow(userConfig);
-    const systemPromptVersion = AiAidenSystemPromptVersion.LIVE;
+    const systemPromptVersion =
+      userConfig.customPrompt && userConfig.customPrompt.trim() !== ''
+        ? userConfig.customPrompt
+        : AiAidenSystemPromptVersion.LIVE;
     const useReAct = true;
 
     // prepare core configs

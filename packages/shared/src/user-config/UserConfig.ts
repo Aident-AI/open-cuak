@@ -58,6 +58,8 @@ export const UserConfigDataSchema = z.object({
   llmOpenaiModelApiKey: z.string().optional(),
   llmOpenaiModelName: z.string().optional(),
   llmVllmServiceHost: z.string().optional(),
+  // custom prompt
+  customPrompt: z.string().optional(),
 });
 export type UserConfigData = z.infer<typeof UserConfigDataSchema>;
 
