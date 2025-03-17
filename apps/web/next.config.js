@@ -51,7 +51,7 @@ const nextConfig = {
   },
   transpilePackages: ['@aident/shared'],
   images: {
-    domains: ['localhost', 'app.aident.ai', 'api.aident.ai'],
+    domains: ['localhost', 'open-cuak.aident.ai', 'api.aident.ai'],
   },
 };
 

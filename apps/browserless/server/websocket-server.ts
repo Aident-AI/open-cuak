@@ -27,7 +27,7 @@ ALogger.genInit(undefined, ExecutionEnvironment.BROWSERLESS_WS_SERVER);
 const server = http.createServer();
 const io = new SocketIOServer(server, {
   cors: {
-    origin: ['http://localhost:3000', 'http://localhost:11970', 'https://app.aident.ai'],
+    origin: ['http://localhost:3000', 'http://localhost:11970', 'https://open-cuak.aident.ai'],
     methods: ['GET', 'POST'],
   },
 });
