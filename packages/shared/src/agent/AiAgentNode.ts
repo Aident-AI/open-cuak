@@ -20,7 +20,6 @@ import { AgentRunResult, AgentRunResultSchema } from '~shared/agent/AgentRunResu
 import { IAgentRunState } from '~shared/agent/IAgentRunState';
 import { IBaseAgentNode, IBaseAgentNodeEvents } from '~shared/agent/IBaseAgentNode';
 import { IBaseAgentNodeOptions, StepRunHistoryType } from '~shared/agent/IBaseAgentNodeOptions';
-import { ModelRouter } from '~shared/llm/ModelRouter';
 import { ALogger } from '~shared/logging/ALogger';
 
 export const DEFAULT_MAX_STEPS = 100;
@@ -55,11 +54,22 @@ export const ThinkAndPlanToolConfigs = {
 };
 export const ThinkAndPlanTool = tool(ThinkAndPlanToolConfigs);
 
+export const AskClarifyingQuestionToolName = 'ask-clarifying-question';
+export const AskClarifyingQuestionTool = tool({
+  description:
+    'Ask the user a clarifying question when the requirements are unclear. Use this before taking any actions if needed.',
+  parameters: z.object({ message: z.string() }),
+  execute: async () => 'ok',
+});
+
 export const isFinishRunTool = (name: string) =>
   name === DefaultAiFinishRunToolName || name === DefaultAiFinishRunToolName.replaceAll('-', '_');
 export const isThinkAndPlanTool = (name: string) =>
   name === ThinkAndPlanToolName || name === ThinkAndPlanToolName.replaceAll('-', '_');
-export const isRenderTextTool = (name: string) => isFinishRunTool(name) || isThinkAndPlanTool(name);
+export const isAskClarifyingQuestionTool = (name: string) =>
+  name === AskClarifyingQuestionToolName || name === AskClarifyingQuestionToolName.replaceAll('-', '_');
+export const isRenderTextTool = (name: string) =>
+  isFinishRunTool(name) || isThinkAndPlanTool(name) || isAskClarifyingQuestionTool(name);
 
 export class AiAgentNode implements IBaseAgentNode<CoreMessage, LanguageModel, CoreTool, ToolInvocation> {
   // main loop
@@ -149,29 +159,42 @@ export class AiAgentNode implements IBaseAgentNode<CoreMessage, LanguageModel, C
             const prepareTools = () => {
               let localToolDict = this.toolDict;
 
-              // If toolDict includes think-and-plan tool and the last tool call is not think-and-plan
-              // we force the model to use it.
-              if (localToolDict[ThinkAndPlanToolName]) {
-                const { stepCount, stepHistory } = this.getState();
-                const lastStepMessages = stepHistory.filter((m) => m.stepNum === stepCount - 1);
-
-                if (
-                  stepCount === 0 ||
-                  lastStepMessages.some((m) => m.role === 'tool' && !isThinkAndPlanTool(m.content[0].toolName))
-                ) {
-                  // Keep only the ThinkAndPlan tool
-                  localToolDict = { [ThinkAndPlanToolName]: localToolDict[ThinkAndPlanToolName] };
-                }
+              // First step: allow both clarifying questions and think-and-plan
+              if (this.getState().stepCount === 0) {
+                console.log('First step: allow both clarifying questions and think-and-plan');
+                return {
+                  [ThinkAndPlanToolName]: ThinkAndPlanTool,
+                  [AskClarifyingQuestionToolName]: AskClarifyingQuestionTool,
+                } as Record<string, CoreTool>;
               }
 
-              if (!ModelRouter.isClaude(this.model)) return localToolDict;
+              // Get last step info
+              const { stepCount, stepHistory } = this.getState();
+              const lastStepMessages = stepHistory.filter((m) => m.stepNum === stepCount - 1);
 
-              // Transform tool names to snake_case for Claude
-              const tools = {} as Record<string, CoreTool>;
-              Object.entries(localToolDict).forEach(([toolName, tool]) => {
-                tools[toolName.replaceAll('-', '_')] = tool;
-              });
-              return tools;
+              // After a clarifying question, allow both tools again for next step
+              if (
+                lastStepMessages.some((m) => m.role === 'tool' && isAskClarifyingQuestionTool(m.content[0].toolName))
+              ) {
+                return {
+                  [ThinkAndPlanToolName]: ThinkAndPlanTool,
+                  [AskClarifyingQuestionToolName]: AskClarifyingQuestionTool,
+                } as Record<string, CoreTool>;
+              }
+
+              // After think-and-plan, allow all tools for execution
+              if (lastStepMessages.some((m) => m.role === 'tool' && isThinkAndPlanTool(m.content[0].toolName))) {
+                const executionTools = {} as Record<string, CoreTool>;
+                Object.entries(this.toolDict).forEach(([name, tool]) => {
+                  if (name !== ThinkAndPlanToolName && name !== AskClarifyingQuestionToolName) {
+                    executionTools[name] = tool;
+                  }
+                });
+                return executionTools;
+              }
+
+              // In all other cases, force think-and-plan
+              return { [ThinkAndPlanToolName]: ThinkAndPlanTool } as Record<string, CoreTool>;
             };
 
             const tools = prepareTools();
@@ -330,6 +353,14 @@ export class AiAgentNode implements IBaseAgentNode<CoreMessage, LanguageModel, C
       const finishResult = DefaultAiFinishRunTool.parameters.parse(toolCalls[0].args);
       ALogger.info({ context: 'AiAgentNode.genGenerateToolResponses.finish_run', finish_run: finishResult });
       return void this.endRun({ success: true, finalResult: finishResult.message });
+    }
+
+    const isClarifyingQuestionToolCalled = toolCalls.some((c) => isAskClarifyingQuestionTool(c.toolName));
+    if (isClarifyingQuestionToolCalled) {
+      if (toolCalls.length !== 1)
+        throw new Error('When ask-clarifying-question tool is used, there should be exactly one tool call');
+      ALogger.info({ context: 'Asked clarifying question' });
+      return void this.endRun({ success: true, finalResult: 'Clarifying question asked' });
     }
 
     if (toolMessages.some((m) => Array.isArray(m.content) && m.content.length > 1))

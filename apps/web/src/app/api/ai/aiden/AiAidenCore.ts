@@ -1,4 +1,5 @@
 import { CoreMessage, CoreTool, CoreUserMessage, ImagePart, TextPart } from 'ai';
+import { stripIndents } from 'common-tags';
 import {
   DEFAULT_MAX_STEPS,
   DefaultAiFinishRunTool,
@@ -111,6 +112,20 @@ export class AiAidenCore {
       role: 'system',
       content: AiAidenSystemPrompts.getPrompt(config.systemPromptVersion, config.isClaude),
     } as CoreMessage);
+
+    systemMessages.push({
+      role: 'system',
+      content: stripIndents`
+        Before taking actions, first analyze if the user's request is clear and specific enough. 
+        If there are any ambiguities or missing details that could affect the execution, use the ask-clarifying-question tool to get more information. 
+        If everything is clear, use think-and-plan tool to plan for actions.
+        
+        Examples of when to ask for clarification:
+        - Vague or ambiguous instructions
+        - Multiple possible interpretations
+      `,
+    });
+
     systemMessages.push({ role: 'system', content: AiAidenBoundingBoxCoordinatesSystemPrompt } as CoreMessage);
 
     if (config.useReAct) systemMessages.push({ role: 'system', content: AiAidenReActSystemPrompt } as CoreMessage);
