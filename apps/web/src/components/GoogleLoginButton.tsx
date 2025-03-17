@@ -28,13 +28,14 @@ export default function GoogleLoginButton(props: Props) {
       return;
     }
 
-    const targetPath = props.targetPath || searchParams?.get('target');
+    const targetPath = props.targetPath || searchParams?.get('target') || '';
+    const redirectToUrl = `${location.origin}/auth/callback?target=${encodeURIComponent(targetPath)}`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         scopes: ['email', 'profile', ...(props.extraScopes ?? [])].join(','),
         queryParams: { access_type: 'offline', prompt: 'consent' },
-        redirectTo: location.origin + '/auth/callback?target=' + (targetPath ?? ''),
+        redirectTo: encodeURI(redirectToUrl),
       },
     });
 
