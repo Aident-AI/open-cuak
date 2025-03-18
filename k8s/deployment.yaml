@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: browserless
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: browserless
+  template:
+    metadata:
+      labels:
+        app: browserless
+    spec:
+      containers:
+        - name: browserless
+          image: ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
+          ports:
+            - containerPort: 3000
+            - containerPort: 50000
+            - containerPort: 11975

@@ -69,5 +69,11 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        
+      - name: Install gettext package
+        run: sudo apt-get update && sudo apt-get install -y gettext-base
+        
       - name: Deploy to Azure Container Apps using script
         run: bash scripts/deploy-containers-to-azure.sh

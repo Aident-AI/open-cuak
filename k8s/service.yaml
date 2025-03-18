@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: browserless-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: browserless
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 3000
+    - name: ws
+      port: 50000
+      targetPort: 50000
