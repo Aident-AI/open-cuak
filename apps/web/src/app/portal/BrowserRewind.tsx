@@ -210,17 +210,6 @@ export function BrowserRewind(props: BrowserRewindProps) {
           {isRewindMode && rewindSteps.length > 0 ? 'Step' : 'Live Mode'}
           {isRewindMode && rewindSteps.length > 0 && ` ${currentStepIndex + 1}/${rewindSteps.length}`}
         </div>
-        <button
-          onClick={togglePlayPause}
-          className={cx(
-            'rounded p-1 text-blue-100',
-            rewindSteps.length === 0 ? 'cursor-not-allowed' : 'hover:bg-blue-300',
-          )}
-          disabled={rewindSteps.length === 0}
-          title={getButtonTitle()}
-        >
-          {getButtonIcon()}
-        </button>
       </div>
 
       {/* Timeline bar */}
@@ -317,9 +306,17 @@ export function BrowserRewind(props: BrowserRewindProps) {
               <ChevronLeftIcon className="h-3 w-3" />
             </button>
 
-            <div className="w-32 text-center text-xs text-blue-100">
-              {isPlaying ? 'Playing' : hasReachedEnd ? 'End Reached' : 'Paused'}
-            </div>
+            <button
+              onClick={togglePlayPause}
+              className={cx(
+                'flex justify-center ml-4 mr-4 rounded p-1 text-blue-100',
+                rewindSteps.length === 0 ? 'cursor-not-allowed' : 'hover:bg-blue-300',
+              )}
+              disabled={rewindSteps.length === 0}
+              title={getButtonTitle()}
+            >
+              {getButtonIcon()}
+            </button>
 
             <button
               onClick={() => {
