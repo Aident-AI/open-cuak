@@ -4,6 +4,8 @@ services:
     image: ghcr.io/aident-ai/open-cuak-web:${OPEN_CUAK_VERSION:-stable}
     container_name: open-cuak-web
     restart: always
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
     ports:
       - '11970:11970'
     networks:

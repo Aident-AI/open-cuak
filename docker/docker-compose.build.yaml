@@ -12,6 +12,8 @@ services:
     image: open-cuak-web
     container_name: open-cuak-web
     restart: always
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
     ports:
       - '11970:11970'
     networks:
