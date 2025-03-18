@@ -113,6 +113,9 @@ export const POST = simpleRequestWrapper<z.infer<typeof api.RequestSchema.schema
             .withAbortSignal(signal)
             .withStepRunHistoryType(StepRunHistoryType.LAST_THREE_WITHOUT_ENV_STATE)
             .withMaxSteps(maxSteps)
+            .withSessionSOP(
+              remoteBrowserSessionId ? { remoteBrowserSessionId, supabase: context.getSupabase() } : undefined,
+            )
             .build();
           result = await agent.genRun();
         }

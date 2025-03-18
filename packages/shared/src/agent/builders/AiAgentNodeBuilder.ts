@@ -1,5 +1,5 @@
 import { CoreMessage, CoreTool, LanguageModel, ToolInvocation } from 'ai';
-import { AiAgentNode, IAiAgentNodeOptions } from '~shared/agent/AiAgentNode';
+import { AiAgentNode, IAiAgentNodeOptions, IAiAgentSessionSOPConfig } from '~shared/agent/AiAgentNode';
 import { BaseAgentNodeBuilder } from '~shared/agent/builders/BaseAgentNodeBuilder';
 
 export class AiAgentNodeBuilder extends BaseAgentNodeBuilder<
@@ -22,5 +22,10 @@ export class AiAgentNodeBuilder extends BaseAgentNodeBuilder<
     const node = new AiAgentNode(this.options as IAiAgentNodeOptions);
     this.options = {};
     return node;
+  }
+
+  public withSessionSOP(sessionSOPConfig: IAiAgentSessionSOPConfig | undefined): this {
+    if (sessionSOPConfig) this.options.sessionSOPConfig = sessionSOPConfig;
+    return this;
   }
 }
