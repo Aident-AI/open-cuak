@@ -445,6 +445,9 @@ services:
         "-c",
         "log_min_messages=fatal" # prevents Realtime polling queries from appearing in logs
       ]
+    networks:
+      - default            # Keep the default network
+      - supabase-network
 
   vector:
     container_name: supabase-vector
