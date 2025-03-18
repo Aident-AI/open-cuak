@@ -1,5 +1,4 @@
 #!/bin/bash
-
 set -e # Exit immediately if a command exits with a non-zero status
 
 # Check if the required environment variables are set
@@ -9,6 +8,8 @@ AZURE_LOCATION="${AZURE_LOCATION:?Exception: Missing AZURE_LOCATION}"
 # Set variables for AKS deployment
 AZURE_ACI_SUBNET_NAME="$AZURE_APP_ENV_NAME-aci-subnet" # Dedicated subnet for Virtual Nodes (ACI)
 AZURE_AKS_NAME="$AZURE_APP_ENV_NAME-k8s"
+AZURE_BROWSERLESS_SERVICE_NAME="browserless-service"
+AZURE_INGRESS_PUBLIC_IP_NAME="$AZURE_APP_ENV_NAME-ingress-ip"
 AZURE_NSG_NAME="$AZURE_APP_ENV_NAME-nsg"
 AZURE_RESOURCE_GROUP="$AZURE_APP_ENV_NAME-resource-group"
 AZURE_SUBNET_NAME="$AZURE_APP_ENV_NAME-subnet" # Subnet for AKS nodes
@@ -26,15 +27,15 @@ handle_error() {
 }
 trap 'handle_error $LINENO' ERR
 
-#############################
-# 1. Create Resource Group  #
-#############################
+##############################
+#  1. Create Resource Group  #
+##############################
 az group show --name $AZURE_RESOURCE_GROUP ||
   az group create --name $AZURE_RESOURCE_GROUP --location $AZURE_LOCATION
 
-#############################
-# 2. Create VNet and Subnets#
-#############################
+################################
+#  2. Create VNet and Subnets  #
+################################
 # Create VNet if it doesn't exist
 VNET_EXISTS=$(az network vnet show -g $AZURE_RESOURCE_GROUP -n $AZURE_VNET_NAME --query name -o tsv 2>/dev/null || echo "")
 if [ -z "$VNET_EXISTS" ]; then
@@ -69,7 +70,7 @@ if [ -z "$ACI_SUBNET_EXISTS" ]; then
 fi
 
 #############################
-# 3. Create NSG and Rules   #
+#  3. Create NSG and Rules  #
 #############################
 NSG_EXISTS=$(az network nsg show -g $AZURE_RESOURCE_GROUP -n $AZURE_NSG_NAME --query name -o tsv 2>/dev/null || echo "")
 if [ -z "$NSG_EXISTS" ]; then
@@ -119,7 +120,6 @@ else
   echo "NSG rule Allow-Port-3000 already exists"
 fi
 
-# Create NSG rules for HTTPS (port 443) and HTTP (port 80) if needed
 echo "Creating NSG rule for port 443 (HTTPS)..."
 if ! az network nsg rule show --resource-group $AZURE_RESOURCE_GROUP --nsg-name $AZURE_NSG_NAME --name Allow-Port-443 &>/dev/null; then
   az network nsg rule create \
@@ -154,9 +154,9 @@ else
   echo "NSG rule Allow-Port-80 already exists"
 fi
 
-#####################################
-# 5. Create AKS Cluster in the Subnet #
-#####################################
+#########################################
+#  5. Create AKS Cluster in the Subnet  #
+#########################################
 SUBNET_ID=$(az network vnet subnet show --resource-group $AZURE_RESOURCE_GROUP \
   --vnet-name $AZURE_VNET_NAME --name $AZURE_SUBNET_NAME --query id -o tsv)
 
@@ -195,15 +195,27 @@ fi
 # Get credentials to manage the cluster
 az aks get-credentials --resource-group $AZURE_RESOURCE_GROUP --name $AZURE_AKS_NAME
 
-##########################################
-# 6. Deploy Application to AKS (K8s)     #
-##########################################
+########################################
+#  6. Deploy Application to AKS (K8s)  #
+########################################
 SERVICE_ERROR=false
 DEPLOYMENT_ERROR=false
 
+# Reserve a static public IP for the LoadBalancer
+echo "Creating static public IP for the service..."
+az network public-ip create \
+  --resource-group $AZURE_RESOURCE_GROUP \
+  --name $AZURE_INGRESS_PUBLIC_IP_NAME \
+  --sku Standard \
+  --allocation-method static \
+  --location $AZURE_LOCATION
+
+INGRESS_IP=$(az network public-ip show --resource-group $AZURE_RESOURCE_GROUP --name $AZURE_INGRESS_PUBLIC_IP_NAME --query ipAddress -o tsv)
+echo "Reserved static public IP: $INGRESS_IP"
+
 # Prepare and apply deployment manifest
 echo "Preparing deployment manifest..."
-export DOCKER_IMAGE_NAME DOCKER_IMAGE_TAG FORCE_REVISION_TIMESTAMP
+export DOCKER_IMAGE_NAME DOCKER_IMAGE_TAG FORCE_REVISION_TIMESTAMP AZURE_BROWSERLESS_SERVICE_NAME
 cat k8s/deployment.yaml | envsubst >deployment.yaml
 echo "Applying deployment manifest..."
 kubectl apply -f deployment.yaml || {
@@ -211,8 +223,9 @@ kubectl apply -f deployment.yaml || {
   DEPLOYMENT_ERROR=true
 }
 
-# Prepare and apply service manifest
+# Prepare and apply service manifest with the static IP
 echo "Preparing service manifest..."
+export AZURE_BROWSERLESS_SERVICE_NAME AZURE_RESOURCE_GROUP AZURE_INGRESS_PUBLIC_IP_NAME INGRESS_IP
 cat k8s/service.yaml | envsubst >service.yaml
 
 if [ "$SERVICE_ERROR" != true ]; then
@@ -247,45 +260,80 @@ if [ "$DEPLOYMENT_ERROR" != true ] && [ "$SERVICE_ERROR" != true ]; then
     echo "Not all pods are in Running state after 5 minutes"
     DEPLOYMENT_ERROR=true
   fi
-
-  # Set specific service name instead of getting first service
-  SERVICE_NAME="browserless-service"
-  echo "Waiting for LoadBalancer external IP to be assigned..."
-
-  SERVICE_IP=""
-  for i in {1..30}; do
-    SERVICE_IP=$(kubectl get service $SERVICE_NAME -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
-    if [ -n "$SERVICE_IP" ]; then
-      break
-    fi
-    echo "Waiting for external IP... (attempt $i/30)"
-    sleep 10
-  done
-
-  if [ -z "$SERVICE_IP" ]; then
-    echo "Warning: External IP was not assigned within timeout period"
-    echo "Current service status:"
-    kubectl get service $SERVICE_NAME
-    SERVICE_ERROR=true
-  else
-    HTTP_PORT=3000
-    WS_PORT=50000
-
-    echo "Service $SERVICE_NAME is exposed on external IP: $SERVICE_IP"
-    echo "HTTP Port: $HTTP_PORT"
-    echo "WebSocket Port: $WS_PORT"
-  fi
 fi
 
-#############################
-# Final Status Report       #
-#############################
+# Wait for service to get external IP
+echo "Waiting for service to get external IP..."
+for i in {1..30}; do
+  SERVICE_IP=$(kubectl get service $AZURE_BROWSERLESS_SERVICE_NAME -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
+  if [ "$SERVICE_IP" = "$INGRESS_IP" ]; then
+    echo "Service successfully assigned static IP: $INGRESS_IP"
+    break
+  elif [ -n "$SERVICE_IP" ]; then
+    echo "Warning: Service was assigned IP $SERVICE_IP instead of requested $INGRESS_IP"
+    INGRESS_IP=$SERVICE_IP
+    break
+  elif [ $i -eq 30 ]; then
+    echo "Warning: Timed out waiting for service to get IP"
+
+    # Enhanced diagnostics
+    echo "======= DIAGNOSTICS ======="
+    echo "Checking service details:"
+    kubectl describe service $AZURE_BROWSERLESS_SERVICE_NAME
+
+    echo "Verifying reserved static IP:"
+    az network public-ip show --resource-group $AZURE_RESOURCE_GROUP --name $AZURE_INGRESS_PUBLIC_IP_NAME --query [provisioningState,ipAddress] -o tsv
+
+    echo "Checking AKS network profile:"
+    az aks show --resource-group $AZURE_RESOURCE_GROUP --name $AZURE_AKS_NAME --query networkProfile -o json
+
+    echo "You can manually check later with:"
+    echo "kubectl get service $AZURE_BROWSERLESS_SERVICE_NAME"
+
+    # Don't exit immediately, continue with rest of script
+    echo "Continuing deployment despite missing service IP..."
+  else
+    echo "Waiting for service IP... (attempt $i/30)"
+    sleep 10
+  fi
+done
+
+#########################
+#  Final Status Report  #
+#########################
 if [ "$DEPLOYMENT_ERROR" = true ] || [ "$SERVICE_ERROR" = true ]; then
   echo "AKS deployment completed with errors. Check the logs above for details."
   exit 1
 else
   echo "AKS deployment complete and verified."
-  echo "Your application is now accessible at:"
-  echo "HTTP: http://$SERVICE_IP:$HTTP_PORT"
-  echo "WebSocket: ws://$SERVICE_IP:$WS_PORT"
+  echo "Your browserless service is accessible directly at:"
+  echo " - http://$INGRESS_IP:3000/       (HTTP)"
+  echo " - http://$INGRESS_IP:50000/      (WebSocket)"
 fi
+
+############################
+#  7. Connectivity Tests   #
+############################
+echo "Running connectivity tests..."
+
+# Check service details
+echo "Checking service details:"
+kubectl get service $AZURE_BROWSERLESS_SERVICE_NAME
+
+# Check service endpoints
+echo "Checking service endpoints:"
+kubectl get endpoints -n default
+
+# Test connectivity to the browserless service
+echo "Testing internal connectivity to browserless service:"
+kubectl run -i --tty --rm curl-test --image=curlimages/curl --restart=Never -- curl -v http://$AZURE_BROWSERLESS_SERVICE_NAME:3000
+
+# Test external connectivity
+echo "Testing external connectivity (may require manual verification):"
+echo "Run the following command from your local machine:"
+echo "curl -v http://$INGRESS_IP:3000/"
+echo "curl -v http://$INGRESS_IP:50000/"
+
+echo "Public IP address for browserless service: $INGRESS_IP"
+echo "Your browserless service should now be accessible at: http://$INGRESS_IP:3000/"
+echo "And websocket connection at: http://$INGRESS_IP:50000/"

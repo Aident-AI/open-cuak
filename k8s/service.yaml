@@ -1,9 +1,13 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: browserless-service
+  annotations:
+    service.beta.kubernetes.io/azure-load-balancer-resource-group: ${AZURE_RESOURCE_GROUP}
+    service.beta.kubernetes.io/azure-pip-name: ${AZURE_INGRESS_PUBLIC_IP_NAME}
+  name: ${AZURE_BROWSERLESS_SERVICE_NAME}
 spec:
   type: LoadBalancer
+  loadBalancerIP: ${INGRESS_IP}
   selector:
     app: browserless
   ports:
