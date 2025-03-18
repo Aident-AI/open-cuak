@@ -25,7 +25,7 @@ export default function SOPModal(props: Props) {
     if (error) return <label className="block text-black">Error loading SOPs</label>;
     if (sops.length === 0) return <label className="block text-black">No SOPs found</label>;
     return (
-      <section className="grid grid-cols-1 gap-4 px-2">
+      <section className="grid max-h-[60vh] grid-cols-1 gap-4 overflow-y-auto px-2">
         {sops.map((sop) => (
           <Link key={sop.id} href={`/portal?sopId=${sop.id}`} onClick={props.onClose}>
             <div className="cursor-pointer rounded bg-gray-600 p-4 text-white shadow transition-all duration-200 hover:bg-gray-500">
