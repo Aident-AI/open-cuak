@@ -2,6 +2,7 @@
 // This file is auto-generated. Do not edit manually.
 // ====================
 
+export * from './agent/AIAgentSessionSOP';
 export * from './agent/AgentRunResult';
 export * from './agent/AiAgentNode';
 export * from './agent/AiAgentSOPNode';
