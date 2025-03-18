@@ -68,7 +68,7 @@ docker_cmd run -d --name $SCRIPT_CONTAINER_NAME \
   $SCRIPT_IMAGE_NAME
 docker_cmd network connect supabase_supabase-network $SCRIPT_CONTAINER_NAME
 
-docker_cmd exec -it $SCRIPT_CONTAINER_NAME sh -c "cd /app && npm run supabase -- db push --db-url \"postgresql://postgres:your-super-secret-and-long-postgres-password@host.docker.internal:54320/postgres\""
+npx supabase db push --db-url "postgresql://postgres:your-super-secret-and-long-postgres-password@supabase-db:5432/postgres"
 docker_cmd exec -it $SCRIPT_CONTAINER_NAME sh -c "cd /app && npm run supabase:mock-user:init -- --prod"
 docker_cmd exec -it $SCRIPT_CONTAINER_NAME sh -c "cd /app && npm run supabase:storage:init -- --prod"
 docker_cmd container rm -f $SCRIPT_CONTAINER_NAME
