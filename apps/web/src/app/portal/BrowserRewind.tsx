@@ -174,7 +174,7 @@ export function BrowserRewind(props: BrowserRewindProps) {
   };
 
   return (
-    <div className={cx('relative mt-4 w-full', className)}>
+    <div className={cx('relative mt-4', className)}>
       {/* Timeline title and play/pause button */}
       <div className="mb-2 flex items-center justify-between px-6">
         <div className="flex items-center text-xs text-blue-100">
@@ -309,7 +309,7 @@ export function BrowserRewind(props: BrowserRewindProps) {
             <button
               onClick={togglePlayPause}
               className={cx(
-                'flex justify-center ml-4 mr-4 rounded p-1 text-blue-100',
+                'ml-4 mr-4 flex justify-center rounded p-1 text-blue-100',
                 rewindSteps.length === 0 ? 'cursor-not-allowed' : 'hover:bg-blue-300',
               )}
               disabled={rewindSteps.length === 0}
