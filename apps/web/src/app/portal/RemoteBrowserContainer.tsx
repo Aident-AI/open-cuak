@@ -64,6 +64,8 @@ export default function RemoteBrowserContainer(props: Props) {
   const [pageUrlToLoad, setPageUrlToLoad] = useState<string | undefined>(undefined);
   const [tabs, setTabs] = useState<RemoteBrowserTab[]>([]);
   const [activeTabId, setActiveTabIdState] = useState<number | undefined>(undefined);
+  const [isUrlInputFocused, setIsUrlInputFocused] = useState(false);
+
   const setActiveTabId = (tabId?: number) => {
     setActiveTabIdState(tabId);
     if (props.onActiveTabChange) props.onActiveTabChange(tabId);
@@ -237,9 +239,17 @@ export default function RemoteBrowserContainer(props: Props) {
           <div className="relative flex w-full items-center">
             <input
               type="text"
-              value={pageUrlToLoad || tabs.find((tab) => tab.id === activeTabId)?.url}
+              value={
+                !isUrlInputFocused && (pageUrlToLoad === undefined || pageUrlToLoad === '')
+                  ? tabs.find((tab) => tab.id === activeTabId)?.url
+                  : pageUrlToLoad !== undefined
+                    ? pageUrlToLoad
+                    : tabs.find((tab) => tab.id === activeTabId)?.url
+              }
               onChange={(e) => setPageUrlToLoad(e.target.value)}
               onKeyDown={handleUrlKeyDown}
+              onFocus={() => setIsUrlInputFocused(true)}
+              onBlur={() => setIsUrlInputFocused(false)}
               className="w-full border-none bg-transparent text-lg text-white outline-none focus:outline-none focus:ring-0"
               placeholder="Enter URL"
             />
