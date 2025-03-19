@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ActionConfigAutoAttachesToInteractable } from '~shared/decorators/ActionConfigAutoAttachesToInteractable';
+import { ALogger } from '~shared/logging/ALogger';
 import { Base_ActionConfig, enforceBaseActionConfigStatic } from '~shared/messaging/action-configs/Base.ActionConfig';
 import {
   MouseClick_ActionConfig,
@@ -10,7 +11,6 @@ import { genMouseCurrentPositionOrThrow } from '~shared/messaging/action-configs
 import { ServiceWorkerMessageAction } from '~shared/messaging/service-worker/ServiceWorkerMessageAction';
 
 import type { IActionConfigExecContext } from '~shared/messaging/action-configs/Base.ActionConfig';
-
 export class MouseDrag_ActionConfig extends Base_ActionConfig {
   public static action = ServiceWorkerMessageAction.MOUSE_DRAG;
 
@@ -33,17 +33,25 @@ export class MouseDrag_ActionConfig extends Base_ActionConfig {
     const its = context.getInteractableService();
     const mouse = its.getPageOrThrow().mouse;
     const tabId = its.getActiveTab().id;
+
     const sendBroadcastEvent = context.getBroadcastService().send;
     const genMoveMouse = (target: { x: number; y: number }) =>
       genSetMousePosition(context, sendBroadcastEvent, target, tabId);
-    const genMouseClick = async (event: 'mousedown' | 'mouseup') =>
-      await Promise.all([
-        (event === 'mousedown' ? mouse.down : mouse.up)({ button: payload.button }),
-        async () => {
-          const position = await genMouseCurrentPositionOrThrow(context);
-          await genBroadcastMouseClickEvent(context, sendBroadcastEvent, position, event, tabId);
-        },
-      ]);
+    const genMouseClick = async (event: 'mousedown' | 'mouseup') => {
+      const position = await genMouseCurrentPositionOrThrow(context);
+      if (position.event === event) {
+        ALogger.warn({
+          context: 'mouse-drag',
+          message: 'Mouse is already in the desired state',
+          resolution: 'Do nothing',
+        });
+        return;
+      }
+
+      if (event === 'mousedown') await mouse.down({ button: payload.button });
+      else await mouse.up({ button: payload.button });
+      await genBroadcastMouseClickEvent(context, sendBroadcastEvent, position, event, tabId);
+    };
 
     await genMouseClick('mousedown');
     await genMoveMouse({ x: payload.x, y: payload.y });
