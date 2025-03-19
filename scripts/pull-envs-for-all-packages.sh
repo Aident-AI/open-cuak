@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [[ "$1" == "--reset" ]]; then
+if [ "$1" = "--reset" ]; then
   echo "Resetting environment files..."
   sh ./scripts/rm-envs-for-all-packages.sh
   echo "✅ Removed all the env files"
@@ -26,22 +26,23 @@ if [ -f .env.override ]; then
   echo "Overriding values in .env with .env.override"
   while IFS='=' read -r key value; do
     # Skip empty lines or comments
-    if [[ -z "$key" || "$key" =~ ^# ]]; then
+    if [ -z "$key" ] || [ "$(echo "$key" | cut -c1)" = "#" ]; then
       continue
     fi
 
     key=$(echo "$key" | xargs)
     value=$(echo "$value" | xargs)
-    escaped_value=$(echo "\"$value\"" | sed 's|/|\\/|g')
-    echo "\n"
+    escaped_value=$(printf "%s" "$value" | sed 's|/|\\/|g')
+
+    echo ""
     echo "key=$key"
-    echo "value=$escaped_value"
+    echo "value=\"$escaped_value\""
 
     for file in .env.local .env.production; do
       if grep -q "^$key=" "$file"; then
-        sed -i '' "s|^$key=.*|$key=$escaped_value|" "$file"
+        sed -i.bak "s|^$key=.*|$key=\"$escaped_value\"|" "$file" && rm "$file.bak"
       else
-        echo "$key=$value" >>"$file"
+        echo "$key=\"$value\"" >>"$file"
       fi
     done
   done <.env.override
