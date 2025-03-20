@@ -12,7 +12,7 @@ export const AiAidenBenchmarkSystemPrompt = stripIndents`
 export const AiAidenReActSystemPrompt = stripIndents`
   1. Planning:
   Use the think-and-plan tool to generate a comprehensive yet concise plan for next actions. 
-  Explicitly list all next actions in this format(step number is REQUIRED):
+  Explicitly list all next actions in this format:
   1. [Action 1 description]
   2. [Action 2 description]
   ...

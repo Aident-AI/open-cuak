@@ -16,8 +16,7 @@ import {
 import { AISDKExporter } from 'langsmith/vercel';
 import { v4 as UUID } from 'uuid';
 import { z } from 'zod';
-import { AIAgentSessionSOPStep } from '~shared/agent/AIAgentSessionSOP';
-import { AgentRunResult } from '~shared/agent/AgentRunResult';
+import { AgentRunResult, AgentRunResultSchema } from '~shared/agent/AgentRunResult';
 import { IAgentRunState } from '~shared/agent/IAgentRunState';
 import { IBaseAgentNode, IBaseAgentNodeEvents } from '~shared/agent/IBaseAgentNode';
 import { IBaseAgentNodeOptions, StepRunHistoryType } from '~shared/agent/IBaseAgentNodeOptions';
@@ -327,19 +326,29 @@ export class AiAgentNode implements IBaseAgentNode<CoreMessage, LanguageModel, C
     const [assistantMessage, ...toolMessages] = this.state.stepHistory.filter((m) => m.stepNum === stepNum);
     if (!assistantMessage) throw new Error('No assistant message for step found!');
 
-    const toolCalls = this.extractToolCalls(assistantMessage);
-
-    const isThinkAndPlanToolCalled = toolCalls.some((c) => isThinkAndPlanTool(c.toolName));
-    if (isThinkAndPlanToolCalled) {
-      if (toolCalls.length !== 1)
-        throw new Error('When think-and-plan tool is used, there should be exactly one tool call');
-
-      const planCall = toolCalls[0];
-      const planArgs = ThinkAndPlanTool.parameters.parse(planCall.args);
-
-      await this.genUpsertSessionSOPToDB(planArgs.message);
-      return;
+    if (toolMessages.length < 1) {
+      let text: string = '';
+      if (typeof assistantMessage.content === 'string') text = assistantMessage.content;
+      else {
+        assistantMessage.content.forEach((part) => {
+          // TODO: whether to concatenate or append as newline
+          if (typeof part === 'string') text += part;
+          else if (part.type === 'text') text += part.text;
+          else throw new Error('Unexpected tool-call without response.');
+        });
+      }
+      const runResult = AgentRunResultSchema.parse({ success: true, finalResult: text });
+      return void this.endRun(runResult);
     }
+
+    const toolCallContent = assistantMessage.content;
+    if (typeof toolCallContent === 'string') throw new Error('Unexpected string as tool call');
+    const toolCalls: ToolCallPart[] = [];
+    toolCallContent.forEach((part) => {
+      if (part.type !== 'tool-call') return; // do nothing for now
+      toolCalls.push(part);
+    });
+    if (toolCalls.length < 1) throw new Error('No tool calls found in tool call response');
 
     const isFinishRunToolCalled = toolCalls.some((c) => isFinishRunTool(c.toolName));
     if (isFinishRunToolCalled) {
@@ -519,69 +528,18 @@ export class AiAgentNode implements IBaseAgentNode<CoreMessage, LanguageModel, C
     return error instanceof DOMException && error.name === 'AbortError';
   }
 
-  private parsePlanSteps(rawTextForSessionSOP: string): AIAgentSessionSOPStep[] {
-    // Split the text by newlines and filter out empty lines
-    const lines = rawTextForSessionSOP.split('\n').filter((line) => line.trim());
-
-    // Find numbered steps (matches patterns like "1.", "1)", etc.)
-    const steps = lines
-      .filter((line) => /^\d+[\.\)]/.test(line.trim()))
-      .map((line, index) => {
-        // Remove the number and any following punctuation, then trim
-        const stepText = line.replace(/^\d+[\.\)]/, '').trim();
-        return {
-          description: stepText,
-          index: index,
-          status: 'pending',
-        } as AIAgentSessionSOPStep;
-      });
-
-    return steps;
-  }
-
-  private async genUpsertSessionSOPToDB(rawTextForSessionSOP: string): Promise<void> {
+  private async saveSessionSOPToDB(rawTextForSessionSOP: string): Promise<void> {
     if (!this.sessionSOPConfig) {
-      ALogger.warn({ context: 'AiAgentNode.genUpsertSessionSOPToDB, sessionSOPConfig is not set' });
+      ALogger.warn({ context: 'AiAgentNode.saveSessionSOPToDB, sessionSOPConfig is not set' });
       return;
     }
 
-    try {
-      const { data: existingSOP } = await this.sessionSOPConfig.supabase
-        .from('agent_session_sops')
-        .select('id')
-        .eq('remote_browser_session_id', this.sessionSOPConfig.remoteBrowserSessionId)
-        .limit(1);
-
-      if (existingSOP && existingSOP.length > 0) {
-        return;
-      }
-
-      const structuredSteps = this.parsePlanSteps(rawTextForSessionSOP);
-
-      const { error } = await this.sessionSOPConfig.supabase.from('agent_session_sops').insert({
-        remote_browser_session_id: this.sessionSOPConfig.remoteBrowserSessionId,
-        steps: structuredSteps,
-        current_step_index: -1,
-      });
-
-      if (error) throw error;
-    } catch (error) {
-      ALogger.error({ context: 'AiAgentNode.genUpsertSessionSOPToDB', error });
-      // TODO Do not break the main flow for now
-      return;
-    }
-  }
-
-  private extractToolCalls(assistantMessage: CoreMessage): ToolCallPart[] {
-    const toolCallContent = assistantMessage.content;
-    if (typeof toolCallContent === 'string') throw new Error('Unexpected string as tool call');
-
-    const toolCalls: ToolCallPart[] = [];
-    toolCallContent.forEach((part) => {
-      if (part.type === 'tool-call') toolCalls.push(part);
+    const { error } = await this.sessionSOPConfig.supabase.from('agent_session_sops').insert({
+      remote_browser_session_id: this.sessionSOPConfig.remoteBrowserSessionId,
+      steps: rawTextForSessionSOP,
+      current_step_index: -1,
     });
 
-    if (toolCalls.length < 1) throw new Error('No tool calls found in tool call response');
-    return toolCalls;
+    if (error) throw error;
   }
 }
