@@ -31,16 +31,10 @@ export interface IAiAgentInspectionConfig {
   supabase: SupabaseClient;
 }
 
-export interface IAiAgentSessionSOPConfig {
-  remoteBrowserSessionId: string;
-  supabase: SupabaseClient;
-}
-
 export interface IAiAgentNodeOptions
   extends IBaseAgentNodeOptions<CoreMessage, LanguageModel, CoreTool, ToolInvocation> {
   dataStream?: DataStreamWriter;
   inspectionConfig?: IAiAgentInspectionConfig;
-  sessionSOPConfig?: IAiAgentSessionSOPConfig;
 }
 
 export const DefaultAiFinishRunToolName = 'finish-run';
@@ -440,7 +434,6 @@ export class AiAgentNode implements IBaseAgentNode<CoreMessage, LanguageModel, C
     messages: CoreMessage[],
   ) => CoreMessage[] | Promise<CoreMessage[]>;
   public inspectionConfig?: IAiAgentInspectionConfig;
-  public sessionSOPConfig?: IAiAgentSessionSOPConfig;
 
   constructor(options: IAiAgentNodeOptions) {
     this.eventHandlers = options.eventHandlers ?? {};
@@ -475,7 +468,6 @@ export class AiAgentNode implements IBaseAgentNode<CoreMessage, LanguageModel, C
     this.dataStream = options.dataStream;
     this.abortSignal = options.abortSignal;
     this.inspectionConfig = options.inspectionConfig;
-    this.sessionSOPConfig = options.sessionSOPConfig;
   }
 
   async #genStepRunHistory(state: IAgentRunState<CoreMessage>): Promise<CoreMessage[]> {
@@ -526,20 +518,5 @@ export class AiAgentNode implements IBaseAgentNode<CoreMessage, LanguageModel, C
 
   #isAbortError(error: unknown): boolean {
     return error instanceof DOMException && error.name === 'AbortError';
-  }
-
-  private async saveSessionSOPToDB(rawTextForSessionSOP: string): Promise<void> {
-    if (!this.sessionSOPConfig) {
-      ALogger.warn({ context: 'AiAgentNode.saveSessionSOPToDB, sessionSOPConfig is not set' });
-      return;
-    }
-
-    const { error } = await this.sessionSOPConfig.supabase.from('agent_session_sops').insert({
-      remote_browser_session_id: this.sessionSOPConfig.remoteBrowserSessionId,
-      steps: rawTextForSessionSOP,
-      current_step_index: -1,
-    });
-
-    if (error) throw error;
   }
 }
