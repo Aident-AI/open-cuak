@@ -4,6 +4,7 @@ import { UserCircleIcon } from '@heroicons/react/24/solid';
 import cx from 'classnames';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useContext } from 'react';
+import { getHost } from '~shared/env/environment';
 import { signInAsGuest } from '~src/actions/signInAsGuest';
 import { UserSessionContext } from '~src/contexts/UserSessionContext';
 
@@ -22,7 +23,7 @@ export function GuestLoginButton(props: Props) {
     const { session } = await signInAsGuest();
     if (!session) return;
     await overrideSession(session);
-    router.push(target || '/');
+    router.push(getHost() + target || '/');
   };
 
   return (

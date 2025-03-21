@@ -1,7 +1,7 @@
 import { CookieOptions, createServerClient } from '@supabase/ssr';
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuid } from 'uuid';
-import { getDockerFriendlyUrl } from '~shared/env/environment';
+import { getDockerFriendlyUrl, getHost } from '~shared/env/environment';
 import { X_REQUEST_ID_HEADER } from '~shared/http/headers';
 
 export async function middleware(request: NextRequest) {
@@ -34,8 +34,9 @@ export async function middleware(request: NextRequest) {
   if (data.session) {
     if (reqUrl.pathname.startsWith('/login')) {
       const target = reqUrl.searchParams.get('target');
-      const url = target || '/';
-      return NextResponse.redirect(new URL(url, reqUrl));
+      const url = new URL(target || '/', reqUrl);
+      if (!url.host) url.host = getHost();
+      return NextResponse.redirect(url);
     }
     return response;
   }
@@ -47,6 +48,7 @@ export async function middleware(request: NextRequest) {
     const url = reqUrl.clone();
     url.pathname = '/login';
     url.searchParams.set('target', reqUrl.pathname ?? '');
+    if (!url.host) url.host = getHost();
     return NextResponse.redirect(url);
   }
   return response;

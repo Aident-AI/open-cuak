@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { getHost } from '~shared/env/environment';
 
 interface Props {
   targetPath?: string;
@@ -12,7 +13,7 @@ export default function NavigationButton(props: Props) {
 
   return (
     <button
-      onClick={() => (props.targetPath ? router.push(props.targetPath) : router.back())}
+      onClick={() => (props.targetPath ? router.push(getHost() + props.targetPath) : router.back())}
       className="text-foreground bg-btn-background hover:bg-btn-background-hover group absolute left-8 top-8 z-50 flex items-center rounded-md px-4 py-2 text-sm text-white no-underline"
     >
       <svg

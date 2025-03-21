@@ -23,8 +23,8 @@
     "gen-types": "npx supabase gen types typescript --local > ../../packages/shared/src/schema.gen.ts",
     "lint": "next lint",
     "repl": "npx ts-node --esm --interactive --compilerOptions '{\"target\": \"esnext\"}' --pretty",
-    "start": "next start -p 11970",
-    "start-prod": "npx env-cmd -f .env.production next dev",
+    "start": "npx env-cmd -f .env.production next start -p 11970",
+    "start-prod": "npx env-cmd -f .env.production next dev -p 11970",
     "supabase": "npx supabase",
     "test-deno": "deno test --allow-all"
   },

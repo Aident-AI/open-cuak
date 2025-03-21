@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { getHost } from '~shared/env/environment';
 import { SupabaseClientForServer } from '~shared/supabase/client/SupabaseClientForServer';
 
 export async function signOutAction(from?: string) {
@@ -13,6 +14,6 @@ export async function signOutAction(from?: string) {
   if (from) {
     revalidatePath(from);
   } else {
-    redirect('/login');
+    redirect(getHost() + '/login');
   }
 }

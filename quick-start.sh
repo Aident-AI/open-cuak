@@ -82,4 +82,12 @@ else
   $DOCKER_COMPOSE_CMD --env-file .env.production -f $COMPOSE_FILE up --force-recreate --pull always -d
 fi
 
-echo "Open-CUAK service is now running @ http://localhost:11970"
+# Read NEXT_PUBLIC_ORIGIN from .env.production for service URL
+SERVICE_URL="http://localhost:11970"
+if [ -f .env.production ]; then
+  NEXT_PUBLIC_ORIGIN=$(grep "^NEXT_PUBLIC_ORIGIN=" .env.production | sed 's/^NEXT_PUBLIC_ORIGIN=//g' | sed 's/"//g' | sed "s/'//g" | xargs)
+  if [ -n "$NEXT_PUBLIC_ORIGIN" ]; then
+    SERVICE_URL="${NEXT_PUBLIC_ORIGIN}"
+  fi
+fi
+echo "Open-CUAK service is now running @ ${SERVICE_URL}"

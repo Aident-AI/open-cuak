@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { createContext, useEffect, useState } from 'react';
 import { BroadcastEventType } from '~shared/broadcast/types';
 import { ExecutionEnvironment } from '~shared/env/ExecutionEnvironment';
-import { isChromeExtensionPage } from '~shared/env/environment';
+import { getHost, isChromeExtensionPage } from '~shared/env/environment';
 import { ALogger } from '~shared/logging/ALogger';
 import { RuntimeMessageReceiver } from '~shared/messaging/RuntimeMessageReceiver';
 import { ServiceWorkerMessageAction } from '~shared/messaging/service-worker/ServiceWorkerMessageAction';
@@ -111,9 +111,9 @@ export const UserSessionContextProvider = ({
     document.cookie = 'sb-kong-auth-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'; // for local.production build
     document.cookie = 'sb-api-auth-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'; // for cloud.production build
 
-    if (redirectTo) router.replace(redirectTo);
+    if (redirectTo) router.replace(getHost() + redirectTo);
     if (!pathname) return;
-    router.replace(pathname);
+    router.replace(getHost() + pathname);
   };
 
   const setSessionToState = async (newSession: Session | null) => {

@@ -4,6 +4,7 @@ import { Tooltip } from '@mui/material';
 import cx from 'classnames';
 import { useRouter } from 'next/navigation';
 import { useContext } from 'react';
+import { getHost } from '~shared/env/environment';
 import NavigationButton from '~src/components/NavigationButton';
 import '~src/components/styles/mesh-bg.scss';
 import { UserSessionContext } from '~src/contexts/UserSessionContext';
@@ -23,7 +24,7 @@ export function MeshBackgroundWithUserSession(props: Props) {
 
   const onClick = async () => {
     if (!session) {
-      router.push('/login?target=%2Fportal');
+      router.push(getHost() + '/login?target=%2Fportal');
       return;
     }
 

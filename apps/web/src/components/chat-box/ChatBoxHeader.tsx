@@ -10,6 +10,7 @@ import {
 import cx from 'classnames';
 import { useRouter } from 'next/router';
 import { createElement } from 'react';
+import { getHost } from '~shared/env/environment';
 import { ALogger } from '~shared/logging/ALogger';
 import { RuntimeMessageReceiver } from '~shared/messaging/RuntimeMessageReceiver';
 import { ServiceWorkerMessageAction } from '~shared/messaging/service-worker/ServiceWorkerMessageAction';
@@ -31,7 +32,7 @@ export function ChatBoxHeader(props: Props) {
   const { tabId: chatgptTabId } = useChatgptPage();
   const router = useRouter();
 
-  const onClose = async () => router.replace(props.closeRedirectUrl || '/extension/home');
+  const onClose = async () => router.replace(props.closeRedirectUrl || getHost() + '/extension/home');
   const onPopup = async () => {
     if (!chatgptTabId) throw new Error('ChatGPT tab is not open');
     await sendRuntimeMessage({

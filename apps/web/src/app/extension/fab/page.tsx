@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import Script from 'next/script';
 import AidentLogo from '~assets/aident-logo-white.svg';
+import { getHost } from '~shared/env/environment';
 import { RuntimeMessageReceiver } from '~shared/messaging/RuntimeMessageReceiver';
 import { ServiceWorkerMessageAction } from '~shared/messaging/service-worker/ServiceWorkerMessageAction';
 import { ServiceWorkerMessage } from '~shared/messaging/service-worker/types';
@@ -19,7 +20,7 @@ export default function CompanionFAB() {
       action: ServiceWorkerMessageAction.GET_CHATGPT_TAB_ID,
     } as ServiceWorkerMessage);
     if (!chatgptTabId) throw new Error('ChatGPT tab not found');
-    router.push('/extension/box');
+    router.push(getHost() + '/extension/box');
   };
 
   return (
