@@ -301,7 +301,7 @@ for env_file in .env.local .env.production; do
     modified_line="$line"
 
     # Handle localhost with specific ports first (don't add our own port to these)
-    if [[ "$modified_line" =~ "localhost:" ]]; then
+    if echo "$modified_line" | grep -q "localhost:"; then
       # For URLs that already have a port, only replace the hostname part
       modified_line=$(echo "$modified_line" | sed "s|http://localhost:|${PROTOCOL}${HOSTNAME_ONLY}:|g")
       modified_line=$(echo "$modified_line" | sed "s|https://localhost:|${PROTOCOL}${HOSTNAME_ONLY}:|g")
