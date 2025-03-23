@@ -224,7 +224,7 @@ for env_file in .env.local .env.production; do
   # Validate SERVER_HOST_PORT if it's set
   if [ -n "$FILE_SERVER_HOST_PORT" ]; then
     # Check if it's a number
-    if ! [[ "$FILE_SERVER_HOST_PORT" =~ ^[0-9]+$ ]]; then
+    if ! [ "$FILE_SERVER_HOST_PORT" -eq "$FILE_SERVER_HOST_PORT" ] 2>/dev/null; then
       echo "❌ Error: SERVER_HOST_PORT must be a number in $env_file"
       exit 1
     fi
