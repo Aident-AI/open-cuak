@@ -19,10 +19,13 @@ permissions:
 
 env:
   AZURE_APP_ENV_NAME: ${{ secrets.AZURE_APP_ENV_NAME }}
-  AZURE_CONTAINER_APP_ENV_NAME: open-cuak-app-env
+  AZURE_APP_NAME: ${{ secrets.AZURE_APP_NAME }}
+  AZURE_CONTAINER_APP_ENV_NAME: ${{ secrets.AZURE_CONTAINER_APP_ENV_NAME }}
   AZURE_CONTAINER_APP_NAME: open-cuak-browserless
+  AZURE_DOMAIN_NAME: ${{ secrets.AZURE_DOMAIN_NAME }}
   AZURE_LOCATION: ${{ secrets.AZURE_LOCATION }}
   AZURE_RESOURCE_GROUP: open-cuak-rg
+  AZURE_TLS_SECRET_NAME: ${{ secrets.AZURE_TLS_SECRET_NAME }}
   DOCK_IMAGE_NAME: aident-ai/open-cuak-browserless
 
 jobs:
