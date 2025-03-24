@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: browserless
+  name: ${AZURE_DEPLOYMENT_NAME}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: browserless
+      app: ${AZURE_APP_NAME}
   template:
     metadata:
       labels:
-        app: browserless
+        app: ${AZURE_APP_NAME}
     spec:
       containers:
-        - name: browserless
+        - name: ${AZURE_CONTAINER_NAME}
           image: ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
           ports:
             - containerPort: 3000

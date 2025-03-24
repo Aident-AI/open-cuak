@@ -3,16 +3,16 @@ kind: Ingress
 metadata:
   name: browserless-ingress
   annotations:
-    kubernetes.io/ingress.class: "nginx"
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
     cert-manager.io/acme-challenge-type: "http01"
 spec:
+  ingressClassName: nginx
   tls:
     - hosts:
-        - browserless.aident.ai
-      secretName: tls-secret-browserless # Replace with your actual TLS secret name
+        - ${AZURE_DOMAIN_NAME}
+      secretName: ${AZURE_TLS_SECRET_NAME}
   rules:
-    - host: browserless.aident.ai
+    - host: ${AZURE_DOMAIN_NAME}
       http:
         paths:
           - path: /
