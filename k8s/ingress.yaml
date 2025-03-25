@@ -5,6 +5,11 @@ metadata:
   annotations:
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
     cert-manager.io/acme-challenge-type: "http01"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/websocket-services: "${AZURE_BROWSERLESS_SERVICE_NAME}"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "30"
 spec:
   ingressClassName: nginx
   tls:
