@@ -14,7 +14,8 @@ AZURE_AKS_NAME="$AZURE_APP_ENV_NAME-k8s"
 AZURE_BROWSERLESS_SERVICE_NAME="$AZURE_APP_NAME-service"
 AZURE_CONTAINER_NAME="$AZURE_APP_NAME"
 AZURE_DEPLOYMENT_NAME="$AZURE_APP_NAME"
-AZURE_INGRESS_PUBLIC_IP_NAME="$AZURE_APP_ENV_NAME-ingress-ip"
+AZURE_HTTP_INGRESS_IP_NAME="$AZURE_APP_ENV_NAME-http-ingress-ip"
+AZURE_WS_INGRESS_IP_NAME="$AZURE_APP_ENV_NAME-ws-ingress-ip"
 AZURE_NSG_NAME="$AZURE_APP_ENV_NAME-nsg"
 AZURE_RESOURCE_GROUP="$AZURE_APP_ENV_NAME-resource-group"
 AZURE_SUBNET_NAME="$AZURE_APP_ENV_NAME-subnet"
@@ -29,6 +30,9 @@ export AZURE_APP_NAME
 export AZURE_CONTAINER_NAME
 export AZURE_DOMAIN_NAME
 export AZURE_TLS_SECRET_NAME
+export AZURE_HTTP_INGRESS_IP_NAME
+export AZURE_WS_INGRESS_IP_NAME
+export AZURE_RESOURCE_GROUP
 export DOCKER_IMAGE_NAME
 export DOCKER_IMAGE_TAG
 
@@ -217,16 +221,27 @@ SERVICE_ERROR=false
 DEPLOYMENT_ERROR=false
 
 # Reserve a static public IP for ingress
-echo "Creating static public IP for ingress..."
+echo "Creating static public IP for HTTP ingress..."
 az network public-ip create \
   --resource-group $AZURE_RESOURCE_GROUP \
-  --name $AZURE_INGRESS_PUBLIC_IP_NAME \
+  --name $AZURE_HTTP_INGRESS_IP_NAME \
   --sku Standard \
   --allocation-method static \
   --location $AZURE_LOCATION
 
-INGRESS_IP=$(az network public-ip show --resource-group $AZURE_RESOURCE_GROUP --name $AZURE_INGRESS_PUBLIC_IP_NAME --query ipAddress -o tsv)
-echo "Reserved static public IP: $INGRESS_IP"
+HTTP_INGRESS_IP=$(az network public-ip show --resource-group $AZURE_RESOURCE_GROUP --name $AZURE_HTTP_INGRESS_IP_NAME --query ipAddress -o tsv)
+echo "Reserved static public IP for HTTP: $HTTP_INGRESS_IP"
+
+echo "Creating static public IP for WebSocket ingress..."
+az network public-ip create \
+  --resource-group $AZURE_RESOURCE_GROUP \
+  --name $AZURE_WS_INGRESS_IP_NAME \
+  --sku Standard \
+  --allocation-method static \
+  --location $AZURE_LOCATION
+
+WS_INGRESS_IP=$(az network public-ip show --resource-group $AZURE_RESOURCE_GROUP --name $AZURE_WS_INGRESS_IP_NAME --query ipAddress -o tsv)
+echo "Reserved static public IP for WebSocket: $WS_INGRESS_IP"
 
 # Prepare and apply deployment manifest
 echo "Preparing deployment manifest..."
@@ -369,22 +384,48 @@ fi
 
 # Try to install ingress-nginx if we haven't yet handled the installation (via upgrade)
 if [ "${INSTALLATION_SUCCESS:-true}" = true ] && [ "${INSTALLATION_HANDLED:-false}" = false ]; then
-  echo "Installing NGINX Ingress Controller with name 'ingress-nginx'..."
-  helm install ingress-nginx ingress-nginx/ingress-nginx \
+  echo "Installing HTTP NGINX Ingress Controller with name 'ingress-nginx-http'..."
+  helm install ingress-nginx-http ingress-nginx/ingress-nginx \
     --namespace ingress-nginx \
     $EXTRA_ARGS \
-    --set controller.service.loadBalancerIP=$INGRESS_IP \
+    --set controller.service.loadBalancerIP=$HTTP_INGRESS_IP \
     --set controller.service.annotations."service\.beta\.kubernetes\.io/azure-load-balancer-resource-group"=$AZURE_RESOURCE_GROUP \
     --set controller.service.externalTrafficPolicy=Local \
     --set controller.config.proxy-body-size="0" \
     --set controller.config.proxy-read-timeout="300" \
-    --set controller.config.proxy-send-timeout="300"
+    --set controller.config.proxy-send-timeout="300" \
+    --set controller.ingressClass=nginx-http
 
-  INSTALLATION_RESULT=$?
-  if [ $INSTALLATION_RESULT -ne 0 ]; then
-    echo "Installation failed with status $INSTALLATION_RESULT"
-    INSTALLATION_SUCCESS=false
+  HTTP_INSTALLATION_RESULT=$?
+  if [ $HTTP_INSTALLATION_RESULT -ne 0 ]; then
+    echo "HTTP Installation failed with status $HTTP_INSTALLATION_RESULT"
+    HTTP_INSTALLATION_SUCCESS=false
+  else
+    HTTP_INSTALLATION_SUCCESS=true
   fi
+
+  echo "Installing WebSocket NGINX Ingress Controller with name 'ingress-nginx-ws'..."
+  helm install ingress-nginx-ws ingress-nginx/ingress-nginx \
+    --namespace ingress-nginx \
+    $EXTRA_ARGS \
+    --set controller.service.loadBalancerIP=$WS_INGRESS_IP \
+    --set controller.service.annotations."service\.beta\.kubernetes\.io/azure-load-balancer-resource-group"=$AZURE_RESOURCE_GROUP \
+    --set controller.service.externalTrafficPolicy=Local \
+    --set controller.config.proxy-body-size="0" \
+    --set controller.config.proxy-read-timeout="3600" \
+    --set controller.config.proxy-send-timeout="3600" \
+    --set controller.config.proxy-connect-timeout="60" \
+    --set controller.ingressClass=nginx-ws
+
+  WS_INSTALLATION_RESULT=$?
+  if [ $WS_INSTALLATION_RESULT -ne 0 ]; then
+    echo "WebSocket Installation failed with status $WS_INSTALLATION_RESULT"
+    WS_INSTALLATION_SUCCESS=false
+  else
+    WS_INSTALLATION_SUCCESS=true
+  fi
+
+  INSTALLATION_SUCCESS=$([[ "$HTTP_INSTALLATION_SUCCESS" = true ]] && [[ "$WS_INSTALLATION_SUCCESS" = true ]] && echo true || echo false)
 fi
 
 if [ "${INSTALLATION_SUCCESS:-false}" = false ] && [ "${INSTALLATION_HANDLED:-false}" = false ]; then
@@ -528,32 +569,22 @@ if [ -f "k8s/acme-solver.yaml" ]; then
     echo "Continuing deployment process..."
   }
 else
-  echo "Warning: ACME solver configuration (k8s/acme-solver.yaml) not found. HTTPS certificate issuance may fail."
-  echo "Creating a temporary ACME solver configuration..."
-  cat >/tmp/acme-solver.yaml <<EOF
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: acme-solver-ingress
-  annotations:
-    kubernetes.io/ingress.class: "nginx"
-    nginx.ingress.kubernetes.io/ssl-redirect: "false"
-    nginx.ingress.kubernetes.io/whitelist-source-range: "0.0.0.0/0"
-spec:
-  ingressClassName: nginx
-  rules:
-    - host: ${AZURE_DOMAIN_NAME}
-      http:
-        paths:
-          - path: "/"
-            pathType: Prefix
-            backend:
-              service:
-                name: ${AZURE_BROWSERLESS_SERVICE_NAME}
-                port:
-                  number: 3000
-EOF
-  kubectl apply -f /tmp/acme-solver.yaml || echo "Failed to apply temporary ACME solver configuration."
+  echo "Error: Required file k8s/acme-solver.yaml not found"
+  exit 1
+fi
+
+# Deploy dedicated WebSocket service (bypassing ingress)
+echo "Deploying dedicated WebSocket service..."
+export AZURE_CONTAINER_NAME AZURE_RESOURCE_GROUP
+if [ -f "k8s/service-websocket.yaml" ]; then
+  echo "Applying WebSocket service configuration..."
+  cat k8s/service-websocket.yaml | envsubst | kubectl apply -f - || {
+    echo "Warning: Failed to apply WebSocket service configuration."
+    echo "WebSocket connections may not work properly."
+  }
+else
+  echo "Warning: WebSocket service file k8s/service-websocket.yaml not found"
+  echo "This may affect WebSocket connectivity."
 fi
 
 echo "HTTPS setup complete!"
@@ -566,24 +597,48 @@ echo "You can check ingress status with: kubectl get ingress"
 
 # Print DNS configuration instructions
 echo ""
-echo "To complete HTTPS setup, ensure your DNS points to the ingress IP: $INGRESS_IP"
-echo "If using ${AZURE_DOMAIN_NAME} (as configured in ingress.yaml), create an A record:"
-echo "${AZURE_DOMAIN_NAME}. IN A $INGRESS_IP"
+echo "To complete HTTPS setup, ensure your DNS points to the ingress IPs:"
+echo "HTTP Service (${AZURE_DOMAIN_NAME}): $HTTP_INGRESS_IP"
+echo "WebSocket Service (ws.${AZURE_DOMAIN_NAME}): $WS_INGRESS_IP"
 
 # Test external connectivity through ingress
-echo "Testing external connectivity through ingress (may require manual verification):"
-echo "Run the following commands from your local machine after DNS is configured:"
-echo "For HTTP/HTTPS connections:"
-echo "curl -v https://${AZURE_DOMAIN_NAME}/"
-echo "curl -v https://${AZURE_DOMAIN_NAME}/websocket"
 echo ""
-echo "For WebSocket connections (install websocat with 'brew install websocat' or use wscat):"
-echo "websocat wss://${AZURE_DOMAIN_NAME}/websocket"
+echo "Test connectivity after DNS configuration:"
+echo "HTTP/HTTPS:"
+echo "  curl -v https://${AZURE_DOMAIN_NAME}/"
 echo ""
-echo "For direct port connections:"
-echo "- For WebSocket service on port 50000: websocat wss://${AZURE_DOMAIN_NAME}:50000"
-echo "- For HTTP service on port 3000: curl -v https://${AZURE_DOMAIN_NAME}:3000"
+echo "WebSocket:"
+echo "  websocat wss://ws.${AZURE_DOMAIN_NAME}/"
 echo ""
-echo "Note: If direct port connections don't work, use the standard paths instead:"
-echo "- WebSocket: wss://${AZURE_DOMAIN_NAME}/websocket"
-echo "- HTTP: https://${AZURE_DOMAIN_NAME}/"
+echo "Direct ports (alternative):"
+echo "  kubectl get service browserless-websocket -o jsonpath='{.status.loadBalancer.ingress[0].ip}'"
+echo "  websocat ws://$WS_INGRESS_IP:50000"
+echo ""
+echo "Fallback paths:"
+echo "  WebSocket: wss://ws.${AZURE_DOMAIN_NAME}/"
+echo "  HTTP: https://${AZURE_DOMAIN_NAME}/"
+
+# Add instructions for dedicated WebSocket service
+echo ""
+echo "After deployment is complete, get the WebSocket service IP:"
+echo "  kubectl get service browserless-websocket -o jsonpath='{.status.loadBalancer.ingress[0].ip}'"
+echo "  # Create another DNS record that points to this IP"
+echo "  # Example: ws.${AZURE_DOMAIN_NAME} -> <WebSocket service IP>"
+echo ""
+echo "Then connect using the dedicated WebSocket service:"
+echo "  websocat wss://ws.${AZURE_DOMAIN_NAME}/"
+
+# Add WebSocket troubleshooting steps
+echo ""
+echo "WebSocket troubleshooting (if you encounter 502/504 errors):"
+echo "  1. Check ingress configuration:"
+echo "     kubectl get ingress browserless-ingress -o yaml"
+echo ""
+echo "  2. Verify service endpoints:"
+echo "     kubectl get endpoints ${AZURE_BROWSERLESS_SERVICE_NAME}"
+echo ""
+echo "  3. Check ingress controller logs:"
+echo "     kubectl logs -n ingress-nginx -l app.kubernetes.io/component=controller --tail=100"
+echo ""
+echo "  4. Test internal connectivity:"
+echo "     kubectl run -i --tty --rm debug --image=curlimages/curl --restart=Never -- curl -v http://${AZURE_BROWSERLESS_SERVICE_NAME}:50000"
