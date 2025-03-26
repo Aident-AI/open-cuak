@@ -597,11 +597,19 @@ echo "You can check ingress status with: kubectl get ingress"
 
 # Print DNS configuration instructions
 echo ""
-echo "To complete HTTPS setup, ensure your DNS points to the ingress IPs:"
-echo "HTTP Service (${AZURE_DOMAIN_NAME}): $HTTP_INGRESS_IP"
-echo "WebSocket Service (ws.${AZURE_DOMAIN_NAME}): $WS_INGRESS_IP"
+echo "To complete HTTPS setup, ensure your DNS points to the ingress controller IP:"
+INGRESS_CONTROLLER_IP=$(kubectl get service ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "Not found")
+if [ "$INGRESS_CONTROLLER_IP" = "Not found" ]; then
+  echo "Warning: Could not find ingress controller IP. Check with: kubectl get service ingress-nginx-controller -n ingress-nginx"
+  echo "Both domains should point to the same ingress controller IP:"
+else
+  echo "Main domain (${AZURE_DOMAIN_NAME}): $INGRESS_CONTROLLER_IP"
+  echo "WebSocket domain (ws.${AZURE_DOMAIN_NAME}): $INGRESS_CONTROLLER_IP"
+fi
 
-# Test external connectivity through ingress
+# Get WebSocket service IP for direct connections
+WS_SERVICE_IP=$(kubectl get service browserless-websocket -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "Not found")
+
 echo ""
 echo "Test connectivity after DNS configuration:"
 echo "HTTP/HTTPS:"
@@ -610,9 +618,12 @@ echo ""
 echo "WebSocket:"
 echo "  websocat wss://ws.${AZURE_DOMAIN_NAME}/"
 echo ""
-echo "Direct ports (alternative):"
-echo "  kubectl get service browserless-websocket -o jsonpath='{.status.loadBalancer.ingress[0].ip}'"
-echo "  websocat ws://$WS_INGRESS_IP:50000"
+
+if [ "$WS_SERVICE_IP" != "Not found" ]; then
+  echo "Direct WebSocket connection (alternative):"
+  echo "  websocat ws://${WS_SERVICE_IP}:50000"
+fi
+
 echo ""
 echo "Fallback paths:"
 echo "  WebSocket: wss://ws.${AZURE_DOMAIN_NAME}/"
@@ -620,19 +631,15 @@ echo "  HTTP: https://${AZURE_DOMAIN_NAME}/"
 
 # Add instructions for dedicated WebSocket service
 echo ""
-echo "After deployment is complete, get the WebSocket service IP:"
-echo "  kubectl get service browserless-websocket -o jsonpath='{.status.loadBalancer.ingress[0].ip}'"
-echo "  # Create another DNS record that points to this IP"
-echo "  # Example: ws.${AZURE_DOMAIN_NAME} -> <WebSocket service IP>"
-echo ""
-echo "Then connect using the dedicated WebSocket service:"
-echo "  websocat wss://ws.${AZURE_DOMAIN_NAME}/"
+echo "After deployment is complete, your services should be accessible at:"
+echo "  HTTPS: https://${AZURE_DOMAIN_NAME}"
+echo "  WebSocket: wss://ws.${AZURE_DOMAIN_NAME}"
 
 # Add WebSocket troubleshooting steps
 echo ""
-echo "WebSocket troubleshooting (if you encounter 502/504 errors):"
+echo "Troubleshooting (if you encounter connectivity issues):"
 echo "  1. Check ingress configuration:"
-echo "     kubectl get ingress browserless-ingress -o yaml"
+echo "     kubectl get ingress -o wide"
 echo ""
 echo "  2. Verify service endpoints:"
 echo "     kubectl get endpoints ${AZURE_BROWSERLESS_SERVICE_NAME}"

@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: ${AZURE_DEPLOYMENT_NAME}
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: ${AZURE_APP_NAME}

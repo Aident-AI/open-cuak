@@ -5,8 +5,13 @@ metadata:
   annotations:
     service.beta.kubernetes.io/azure-load-balancer-resource-group: "${AZURE_RESOURCE_GROUP}"
     service.beta.kubernetes.io/azure-pip-name: "${AZURE_WS_INGRESS_IP_NAME}"
+    service.beta.kubernetes.io/azure-load-balancer-tcp-idle-timeout: "30"
 spec:
   type: LoadBalancer
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 86400
   ports:
     - port: 50000
       targetPort: 50000

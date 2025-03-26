@@ -5,6 +5,7 @@ metadata:
 spec:
   selector:
     app: ${AZURE_APP_NAME}
+  sessionAffinity: ClientIP
   ports:
     - name: http
       port: 3000
