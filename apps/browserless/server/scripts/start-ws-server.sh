@@ -1,5 +1,11 @@
 #! /bin/bash
 
+if [[ "$@" == *--cloud* ]]; then
+  echo "Starting in cloud environment"
+  bash /app/scripts/fetch-vercel-envs.sh
+  bash /app/scripts/pull-envs-for-all-packages.sh
+fi
+
 dumb-init -- node /app/server/kill-server.js $@ &
 
 cd /usr/src/app && /usr/src/app/scripts/start.sh &
