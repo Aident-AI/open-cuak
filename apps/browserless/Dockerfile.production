@@ -22,7 +22,7 @@ RUN npm run install:debugger
 
 WORKDIR /app
 USER root
-RUN npm install -g nodemon
+RUN npm install -g nodemon vercel
 RUN mkdir -p /app
 
 COPY out/ /app/extension
