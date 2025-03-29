@@ -26,18 +26,29 @@ echo "{
 vercel env pull --environment=production --token=$VERCEL_TOKEN .env.cloud
 echo "Vercel environment variables fetched successfully"
 
-# Merge .env.cloud into .env.production
-touch .env.production # Create if it doesn't exist
-while IFS= read -r line || [[ -n "$line" ]]; do
-  if [[ ! "$line" =~ ^# && -n "$line" ]]; then
-    # Extract key (everything before the first =)
-    key="${line%%=*}"
-    if [ -n "$key" ]; then
-      # Remove the key and its value from .env.production if it exists
-      sed -i "/^$key=/d" .env.production
-      # Append the line from .env.cloud to .env.production
-      echo "$line" >>.env.production
+# Check if .env.production exists and is writable
+if [ ! -w ".env.production" ]; then
+  echo "Warning: .env.production is not writable, attempting to fix permissions"
+  touch .env.production 2>/dev/null || echo "Error: Could not create .env.production file, continuing with .env.cloud only"
+  chmod 666 .env.production 2>/dev/null
+fi
+
+# Only proceed with merging if .env.production is writable
+if [ -w ".env.production" ]; then
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    if [[ ! "$line" =~ ^# && -n "$line" ]]; then
+      # Extract key (everything before the first =)
+      key="${line%%=*}"
+      if [ -n "$key" ]; then
+        # Remove the key and its value from .env.production if it exists
+        sed -i "/^$key=/d" .env.production
+        # Append the line from .env.cloud to .env.production
+        echo "$line" >>.env.production
+      fi
     fi
-  fi
-done <.env.cloud
-echo "Environment variables merged into .env.production successfully"
+  done <.env.cloud
+  echo "Environment variables merged into .env.production successfully"
+else
+  echo "Using .env.cloud as the environment file"
+  cp .env.cloud .env.production 2>/dev/null || echo "Could not copy .env.cloud to .env.production"
+fi

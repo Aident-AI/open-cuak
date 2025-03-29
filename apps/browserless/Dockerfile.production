@@ -34,9 +34,12 @@ COPY server/ /app/server
 RUN chmod +x /app/server/scripts/start-ws-server.sh
 RUN cd /app && npm install express socket.io rebrowser-puppeteer-core@^23.10.3 uuid axios
 
+# Create .env.production file if it doesn't exist and set proper permissions
+RUN touch /app/.env.production && chmod 666 /app/.env.production
+
 EXPOSE 3000
 EXPOSE 11975
 EXPOSE 50000
 
 USER blessuser
-CMD ["/app/server/scripts/start-ws-server.sh", "--prod"]
+CMD ["/app/server/scripts/start-ws-server.sh", "--prod"] 
