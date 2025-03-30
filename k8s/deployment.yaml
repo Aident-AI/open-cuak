@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: ${AZURE_DEPLOYMENT_NAME}
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: ${AZURE_APP_NAME}
@@ -15,6 +15,15 @@ spec:
       containers:
         - name: ${AZURE_CONTAINER_NAME}
           image: ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
+          command: ["/bin/sh", "-c"]
+          args: ["/app/server/scripts/start-ws-server.sh --prod --cloud"]
+          env:
+            - name: VERCEL_TOKEN
+              value: "${VERCEL_TOKEN}"
+            - name: VERCEL_ORG_ID
+              value: "${VERCEL_ORG_ID}"
+            - name: VERCEL_PROJECT_ID
+              value: "${VERCEL_PROJECT_ID}"
           ports:
             - containerPort: 3000
             - containerPort: 50000

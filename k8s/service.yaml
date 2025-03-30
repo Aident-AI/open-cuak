@@ -16,4 +16,5 @@ spec:
       targetPort: 3000
     - name: ws
       port: 50000
+      protocol: TCP
       targetPort: 50000

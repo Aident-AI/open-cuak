@@ -246,6 +246,9 @@ echo "Reserved static public IP for WebSocket: $WS_INGRESS_IP"
 # Prepare and apply deployment manifest
 echo "Preparing deployment manifest..."
 export DOCKER_IMAGE_NAME DOCKER_IMAGE_TAG FORCE_REVISION_TIMESTAMP AZURE_BROWSERLESS_SERVICE_NAME
+# Add container command and Vercel environment variables
+export CONTAINER_CMD="/app/server/scripts/start-ws-server.sh --prod --cloud"
+export VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID
 cat k8s/deployment.yaml | envsubst >deployment.yaml
 echo "Applying deployment manifest..."
 kubectl apply -f deployment.yaml || {
@@ -649,3 +652,18 @@ echo "     kubectl logs -n ingress-nginx -l app.kubernetes.io/component=controll
 echo ""
 echo "  4. Test internal connectivity:"
 echo "     kubectl run -i --tty --rm debug --image=curlimages/curl --restart=Never -- curl -v http://${AZURE_BROWSERLESS_SERVICE_NAME}:50000"
+
+# Add WebSocket fallback strategy
+echo ""
+echo "For WebSocket connectivity issues, consider these options:"
+echo "  1. Continue using the ingress WSS connection: wss://ws.${AZURE_DOMAIN_NAME}"
+echo "  2. Use direct WebSocket connection: ws://${WS_SERVICE_IP}:50000"
+echo ""
+echo "Alternative DNS configuration for more reliable WebSocket connections:"
+echo "  You can point the ws.${AZURE_DOMAIN_NAME} domain directly to the dedicated WebSocket service:"
+if [ "$WS_SERVICE_IP" != "Not found" ]; then
+  echo "  - Update your DNS for ws.${AZURE_DOMAIN_NAME} to point to: ${WS_SERVICE_IP}"
+  echo "  - Use the ws:// protocol instead of wss:// (direct WebSocket service doesn't use TLS)"
+else
+  echo "  - WebSocket service IP not found. Check with: kubectl get service browserless-websocket"
+fi
