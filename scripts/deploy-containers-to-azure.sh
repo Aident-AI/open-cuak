@@ -46,11 +46,16 @@ handle_error() {
 }
 trap 'handle_error $LINENO' ERR
 
-##############################
-#  1. Create Resource Group  #
-##############################
-az group show --name $AZURE_RESOURCE_GROUP ||
+##################################
+#  1. Create Resource Group      #
+##################################
+RG_EXISTS=$(az group exists --name $AZURE_RESOURCE_GROUP)
+if [ "$RG_EXISTS" != "true" ]; then
+  echo "Resource group $AZURE_RESOURCE_GROUP does not exist. Creating..."
   az group create --name $AZURE_RESOURCE_GROUP --location $AZURE_LOCATION
+else
+  echo "Resource group $AZURE_RESOURCE_GROUP already exists."
+fi
 
 ################################
 #  2. Create VNet and Subnets  #
@@ -105,76 +110,28 @@ az network vnet subnet update \
   --network-security-group $AZURE_NSG_NAME
 
 # Create NSG rules for the required ports
-echo "Creating NSG rule for port 50000 (WebSocket)..."
-if ! az network nsg rule show --resource-group $AZURE_RESOURCE_GROUP --nsg-name $AZURE_NSG_NAME --name Allow-Port-50000 &>/dev/null; then
-  az network nsg rule create \
-    --resource-group $AZURE_RESOURCE_GROUP \
-    --nsg-name $AZURE_NSG_NAME \
-    --name Allow-Port-50000 \
-    --priority 100 \
-    --direction Inbound \
-    --access Allow \
-    --protocol Tcp \
-    --source-address-prefix '*' \
-    --source-port-range '*' \
-    --destination-port-range 50000
-else
-  echo "NSG rule Allow-Port-50000 already exists"
-fi
-
-echo "Creating NSG rule for port 3000 (HTTP)..."
-if ! az network nsg rule show --resource-group $AZURE_RESOURCE_GROUP --nsg-name $AZURE_NSG_NAME --name Allow-Port-3000 &>/dev/null; then
-  az network nsg rule create \
-    --resource-group $AZURE_RESOURCE_GROUP \
-    --nsg-name $AZURE_NSG_NAME \
-    --name Allow-Port-3000 \
-    --priority 120 \
-    --direction Inbound \
-    --access Allow \
-    --protocol Tcp \
-    --source-address-prefix '*' \
-    --source-port-range '*' \
-    --destination-port-range 3000
-else
-  echo "NSG rule Allow-Port-3000 already exists"
-fi
-
-echo "Creating NSG rule for port 443 (HTTPS)..."
-if ! az network nsg rule show --resource-group $AZURE_RESOURCE_GROUP --nsg-name $AZURE_NSG_NAME --name Allow-Port-443 &>/dev/null; then
-  az network nsg rule create \
-    --resource-group $AZURE_RESOURCE_GROUP \
-    --nsg-name $AZURE_NSG_NAME \
-    --name Allow-Port-443 \
-    --priority 130 \
-    --direction Inbound \
-    --access Allow \
-    --protocol Tcp \
-    --source-address-prefix '*' \
-    --source-port-range '*' \
-    --destination-port-range 443
-else
-  echo "NSG rule Allow-Port-443 already exists"
-fi
-
-echo "Creating NSG rule for port 80 (HTTP)..."
-if ! az network nsg rule show --resource-group $AZURE_RESOURCE_GROUP --nsg-name $AZURE_NSG_NAME --name Allow-Port-80 &>/dev/null; then
-  az network nsg rule create \
-    --resource-group $AZURE_RESOURCE_GROUP \
-    --nsg-name $AZURE_NSG_NAME \
-    --name Allow-Port-80 \
-    --priority 140 \
-    --direction Inbound \
-    --access Allow \
-    --protocol Tcp \
-    --source-address-prefix '*' \
-    --source-port-range '*' \
-    --destination-port-range 80
-else
-  echo "NSG rule Allow-Port-80 already exists"
-fi
+for port in 50000 3000 443 80; do
+  RULE_NAME="Allow-Port-${port}"
+  if ! az network nsg rule show --resource-group $AZURE_RESOURCE_GROUP --nsg-name $AZURE_NSG_NAME --name $RULE_NAME &>/dev/null; then
+    echo "Creating NSG rule for port $port..."
+    az network nsg rule create \
+      --resource-group $AZURE_RESOURCE_GROUP \
+      --nsg-name $AZURE_NSG_NAME \
+      --name $RULE_NAME \
+      --priority $((100 + port)) \
+      --direction Inbound \
+      --access Allow \
+      --protocol Tcp \
+      --source-address-prefix '*' \
+      --source-port-range '*' \
+      --destination-port-range $port
+  else
+    echo "NSG rule $RULE_NAME already exists"
+  fi
+done
 
 #########################################
-#  5. Create AKS Cluster in the Subnet  #
+#  4. Create AKS Cluster in the Subnet  #
 #########################################
 SUBNET_ID=$(az network vnet subnet show --resource-group $AZURE_RESOURCE_GROUP \
   --vnet-name $AZURE_VNET_NAME --name $AZURE_SUBNET_NAME --query id -o tsv)
@@ -215,7 +172,7 @@ fi
 az aks get-credentials --resource-group $AZURE_RESOURCE_GROUP --name $AZURE_AKS_NAME
 
 ########################################
-#  6. Deploy Application to AKS (K8s)  #
+#  5. Deploy Application to AKS (K8s)  #
 ########################################
 SERVICE_ERROR=false
 DEPLOYMENT_ERROR=false
@@ -246,7 +203,6 @@ echo "Reserved static public IP for WebSocket: $WS_INGRESS_IP"
 # Prepare and apply deployment manifest
 echo "Preparing deployment manifest..."
 export DOCKER_IMAGE_NAME DOCKER_IMAGE_TAG FORCE_REVISION_TIMESTAMP AZURE_BROWSERLESS_SERVICE_NAME
-# Add container command and Vercel environment variables
 export CONTAINER_CMD="/app/server/scripts/start-ws-server.sh --prod --cloud"
 export VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID
 cat k8s/deployment.yaml | envsubst >deployment.yaml
@@ -271,7 +227,6 @@ if [ "$DEPLOYMENT_ERROR" != true ] && [ "$SERVICE_ERROR" != true ]; then
     echo "Deployment rollout timed out after 5 minutes"
     DEPLOYMENT_ERROR=true
   }
-
   echo "Verifying all pods are running..."
   PODS_READY=false
   for i in {1..30}; do
@@ -283,7 +238,6 @@ if [ "$DEPLOYMENT_ERROR" != true ] && [ "$SERVICE_ERROR" != true ]; then
     echo "Waiting for pods to be ready... (attempt $i/30)"
     sleep 10
   done
-
   if [ "$PODS_READY" != "true" ]; then
     echo "Not all pods are in Running state after 5 minutes"
     DEPLOYMENT_ERROR=true
@@ -302,27 +256,20 @@ else
 fi
 
 ############################
-#  7. Connectivity Tests   #
+#  6. Connectivity Tests   #
 ############################
 echo "Running connectivity tests..."
-
-# Check service details
 echo "Checking service details:"
 kubectl get service $AZURE_BROWSERLESS_SERVICE_NAME
-
-# Check service endpoints
 echo "Checking service endpoints:"
 kubectl get endpoints -n default
-
-# Test connectivity to the browserless service
 echo "Testing internal connectivity to browserless service:"
 kubectl run -i --tty --rm curl-test --image=curlimages/curl --restart=Never -- curl -v http://$AZURE_BROWSERLESS_SERVICE_NAME:3000
-
 echo "External connectivity will be through ingress controller with HTTPS"
 echo "External connectivity tests will be performed after HTTPS setup"
 
 ############################
-#  8. Configure HTTPS      #
+#  7. Configure HTTPS      #
 ############################
 echo "Setting up HTTPS configuration..."
 
@@ -333,117 +280,134 @@ helm repo update
 # Create dedicated namespace for ingress if it doesn't exist
 kubectl create namespace ingress-nginx 2>/dev/null || true
 
-# Check if NGINX Ingress Controller service already exists
-INGRESS_CONTROLLER_SERVICE=$(kubectl get service -l app.kubernetes.io/component=controller -n ingress-nginx -o name 2>/dev/null || echo "")
-if [ -z "$INGRESS_CONTROLLER_SERVICE" ]; then
-  # Try alternative label for service discovery
-  INGRESS_CONTROLLER_SERVICE=$(kubectl get service ingress-nginx-controller -n ingress-nginx -o name 2>/dev/null || echo "")
-fi
+# Assign Network Contributor role to the AKS managed identity to allow it to manage network resources
+echo "Checking if Network Contributor role is already assigned to AKS managed identity..."
+AKS_PRINCIPAL_ID=$(az aks show --resource-group $AZURE_RESOURCE_GROUP --name $AZURE_AKS_NAME --query "identity.principalId" -o tsv)
+if [ -n "$AKS_PRINCIPAL_ID" ]; then
+  echo "Found AKS managed identity principal ID: $AKS_PRINCIPAL_ID"
 
-# Check for existing Helm releases that might conflict
-EXISTING_RELEASE=$(helm list -n ingress-nginx -q | grep -E '^ingress-nginx$' || true)
-if [ -n "$EXISTING_RELEASE" ]; then
-  echo "Found existing Helm release named 'ingress-nginx'. Checking its status..."
-  RELEASE_STATUS=$(helm status ingress-nginx -n ingress-nginx -o json | jq -r '.info.status' 2>/dev/null || echo "unknown")
+  # Check if role is already assigned
+  ROLE_EXISTS=$(az role assignment list --assignee "$AKS_PRINCIPAL_ID" --role "Network Contributor" \
+    --scope "/subscriptions/$(az account show --query id -o tsv)/resourceGroups/$AZURE_RESOURCE_GROUP" \
+    --query "[].roleDefinitionName" -o tsv 2>/dev/null || echo "")
 
-  if [ "$RELEASE_STATUS" = "deployed" ]; then
-    echo "Existing release is in 'deployed' state. Will use the existing release."
-    echo "Upgrading existing ingress-nginx release with our configuration..."
-    helm upgrade ingress-nginx ingress-nginx/ingress-nginx \
-      --namespace ingress-nginx \
-      --set controller.service.loadBalancerIP=$INGRESS_IP \
-      --set controller.service.annotations."service\.beta\.kubernetes\.io/azure-load-balancer-resource-group"=$AZURE_RESOURCE_GROUP \
-      --set controller.service.externalTrafficPolicy=Local \
-      --set controller.config.proxy-body-size="0" \
-      --set controller.config.proxy-read-timeout="300" \
-      --set controller.config.proxy-send-timeout="300" || {
-      echo "Failed to upgrade ingress-nginx, attempting to uninstall and reinstall..."
-      helm uninstall ingress-nginx -n ingress-nginx
-      INSTALLATION_SUCCESS=false
-    }
-    # Set flag to indicate we've already handled the installation via upgrade
-    INSTALLATION_HANDLED=true
+  if [ -n "$ROLE_EXISTS" ]; then
+    echo "Network Contributor role is already assigned to AKS managed identity. Skipping..."
   else
-    echo "Existing release is in '$RELEASE_STATUS' state. Uninstalling it before proceeding..."
-    helm uninstall ingress-nginx -n ingress-nginx || {
-      echo "Failed to uninstall existing release. Trying alternate name..."
-      INSTALLATION_SUCCESS=false
-    }
-    INSTALLATION_HANDLED=false
+    echo "Assigning Network Contributor role to AKS managed identity..."
+    az role assignment create \
+      --assignee "$AKS_PRINCIPAL_ID" \
+      --role "Network Contributor" \
+      --scope "/subscriptions/$(az account show --query id -o tsv)/resourceGroups/$AZURE_RESOURCE_GROUP" \
+      --only-show-errors
+
+    echo "Waiting 60 seconds for RBAC propagation..."
+    sleep 60
   fi
 else
-  INSTALLATION_SUCCESS=true
-  INSTALLATION_HANDLED=false
+  echo "Warning: Could not find AKS managed identity principal ID. Network operations may fail."
 fi
 
-# First try with standard configuration
-if kubectl get ingressclass nginx &>/dev/null; then
-  echo "Using existing IngressClass 'nginx'"
-  EXTRA_ARGS="--set controller.ingressClassResource.enabled=false --set controller.ingressClassResource.name=nginx"
+# Remove any existing ingress releases
+EXISTING_RELEASES=$(helm list -n ingress-nginx -q | grep -E 'ingress-nginx|ingress-nginx-http|ingress-nginx-ws' || true)
+if [ -n "$EXISTING_RELEASES" ]; then
+  echo "Found existing ingress releases. Uninstalling them to avoid conflicts..."
+  helm list -n ingress-nginx -q | grep -E 'ingress-nginx|ingress-nginx-http|ingress-nginx-ws' | xargs -r helm uninstall -n ingress-nginx
+fi
+
+# Create single public IP for the ingress controller
+echo "Creating static public IP for ingress controller..."
+# Check if the IP already exists
+EXISTING_IP=$(az network public-ip show --resource-group $AZURE_RESOURCE_GROUP --name $AZURE_HTTP_INGRESS_IP_NAME --query ipAddress -o tsv 2>/dev/null || echo "")
+
+if [ -n "$EXISTING_IP" ]; then
+  echo "Using existing static IP: $EXISTING_IP"
+  INGRESS_IP=$EXISTING_IP
 else
-  echo "Creating new IngressClass"
-  EXTRA_ARGS=""
+  # Create a new static IP if it doesn't exist
+  az network public-ip create \
+    --resource-group $AZURE_RESOURCE_GROUP \
+    --name $AZURE_HTTP_INGRESS_IP_NAME \
+    --sku Standard \
+    --allocation-method static \
+    --location $AZURE_LOCATION
+
+  INGRESS_IP=$(az network public-ip show --resource-group $AZURE_RESOURCE_GROUP --name $AZURE_HTTP_INGRESS_IP_NAME --query ipAddress -o tsv)
+  echo "Reserved new static public IP for ingress: $INGRESS_IP"
 fi
 
-# Try to install ingress-nginx if we haven't yet handled the installation (via upgrade)
-if [ "${INSTALLATION_SUCCESS:-true}" = true ] && [ "${INSTALLATION_HANDLED:-false}" = false ]; then
-  echo "Installing HTTP NGINX Ingress Controller with name 'ingress-nginx-http'..."
-  helm install ingress-nginx-http ingress-nginx/ingress-nginx \
-    --namespace ingress-nginx \
-    $EXTRA_ARGS \
-    --set controller.service.loadBalancerIP=$HTTP_INGRESS_IP \
-    --set controller.service.annotations."service\.beta\.kubernetes\.io/azure-load-balancer-resource-group"=$AZURE_RESOURCE_GROUP \
-    --set controller.service.externalTrafficPolicy=Local \
-    --set controller.config.proxy-body-size="0" \
-    --set controller.config.proxy-read-timeout="300" \
-    --set controller.config.proxy-send-timeout="300" \
-    --set controller.ingressClass=nginx-http
-
-  HTTP_INSTALLATION_RESULT=$?
-  if [ $HTTP_INSTALLATION_RESULT -ne 0 ]; then
-    echo "HTTP Installation failed with status $HTTP_INSTALLATION_RESULT"
-    HTTP_INSTALLATION_SUCCESS=false
-  else
-    HTTP_INSTALLATION_SUCCESS=true
-  fi
-
-  echo "Installing WebSocket NGINX Ingress Controller with name 'ingress-nginx-ws'..."
-  helm install ingress-nginx-ws ingress-nginx/ingress-nginx \
-    --namespace ingress-nginx \
-    $EXTRA_ARGS \
-    --set controller.service.loadBalancerIP=$WS_INGRESS_IP \
-    --set controller.service.annotations."service\.beta\.kubernetes\.io/azure-load-balancer-resource-group"=$AZURE_RESOURCE_GROUP \
-    --set controller.service.externalTrafficPolicy=Local \
-    --set controller.config.proxy-body-size="0" \
-    --set controller.config.proxy-read-timeout="3600" \
-    --set controller.config.proxy-send-timeout="3600" \
-    --set controller.config.proxy-connect-timeout="60" \
-    --set controller.ingressClass=nginx-ws
-
-  WS_INSTALLATION_RESULT=$?
-  if [ $WS_INSTALLATION_RESULT -ne 0 ]; then
-    echo "WebSocket Installation failed with status $WS_INSTALLATION_RESULT"
-    WS_INSTALLATION_SUCCESS=false
-  else
-    WS_INSTALLATION_SUCCESS=true
-  fi
-
-  INSTALLATION_SUCCESS=$([[ "$HTTP_INSTALLATION_SUCCESS" = true ]] && [[ "$WS_INSTALLATION_SUCCESS" = true ]] && echo true || echo false)
+# Check current DNS records for the domain to see if they match our ingress IP
+echo "Checking current DNS records for $AZURE_DOMAIN_NAME..."
+DNS_IP=""
+if command -v dig &>/dev/null; then
+  # Use dig if available (more reliable)
+  DNS_IP=$(dig +short $AZURE_DOMAIN_NAME | grep -v '\.$' | head -n1 || echo "")
+elif command -v nslookup &>/dev/null; then
+  # Fallback to nslookup if dig is not available
+  DNS_IP=$(nslookup $AZURE_DOMAIN_NAME | grep -A2 'Name:' | grep 'Address:' | tail -n1 | awk '{print $2}' || echo "")
 fi
 
-if [ "${INSTALLATION_SUCCESS:-false}" = false ] && [ "${INSTALLATION_HANDLED:-false}" = false ]; then
-  echo "Failed to install NGINX Ingress Controller"
+if [ -n "$DNS_IP" ]; then
+  if [ "$DNS_IP" != "$INGRESS_IP" ]; then
+    echo "WARNING: DNS record for $AZURE_DOMAIN_NAME currently points to $DNS_IP"
+    echo "This differs from the current ingress IP ($INGRESS_IP)"
+    echo "You will need to update your DNS records after this deployment"
+  else
+    echo "DNS record for $AZURE_DOMAIN_NAME already correctly points to $INGRESS_IP"
+  fi
+else
+  echo "Could not determine current DNS settings for $AZURE_DOMAIN_NAME"
+  echo "Make sure to set up DNS records to point to $INGRESS_IP after deployment"
+fi
+
+# Also check WebSocket domain
+WS_DOMAIN="ws.$AZURE_DOMAIN_NAME"
+echo "Checking current DNS records for $WS_DOMAIN..."
+WS_DNS_IP=""
+if command -v dig &>/dev/null; then
+  WS_DNS_IP=$(dig +short $WS_DOMAIN | grep -v '\.$' | head -n1 || echo "")
+elif command -v nslookup &>/dev/null; then
+  WS_DNS_IP=$(nslookup $WS_DOMAIN | grep -A2 'Name:' | grep 'Address:' | tail -n1 | awk '{print $2}' || echo "")
+fi
+
+if [ -n "$WS_DNS_IP" ]; then
+  if [ "$WS_DNS_IP" != "$INGRESS_IP" ]; then
+    echo "WARNING: DNS record for $WS_DOMAIN currently points to $WS_DNS_IP"
+    echo "This differs from the current ingress IP ($INGRESS_IP)"
+    echo "You will need to update your DNS records after this deployment"
+  else
+    echo "DNS record for $WS_DOMAIN already correctly points to $INGRESS_IP"
+  fi
+else
+  echo "Could not determine current DNS settings for $WS_DOMAIN"
+  echo "Make sure to set up DNS records to point to $INGRESS_IP after deployment"
+fi
+
+# Install a single NGINX ingress controller
+echo "Installing NGINX Ingress Controller..."
+helm install ingress-nginx ingress-nginx/ingress-nginx \
+  --namespace ingress-nginx \
+  --set controller.service.loadBalancerIP=$INGRESS_IP \
+  --set controller.service.annotations."service\.beta\.kubernetes\.io/azure-load-balancer-resource-group"=$AZURE_RESOURCE_GROUP \
+  --set controller.service.externalTrafficPolicy=Local \
+  --set controller.config.proxy-body-size="0" \
+  --set controller.config.proxy-read-timeout="3600" \
+  --set controller.config.proxy-send-timeout="3600" \
+  --set controller.config.proxy-connect-timeout="60" \
+  --set controller.config.use-forwarded-headers="true"
+
+INSTALLATION_RESULT=$?
+if [ $INSTALLATION_RESULT -ne 0 ]; then
+  echo "Ingress controller installation failed with status $INSTALLATION_RESULT"
   exit 1
 fi
 
-# Wait for ingress controller to be ready
 echo "Waiting for NGINX Ingress Controller to be ready..."
-kubectl wait --for=condition=ready pod -l app.kubernetes.io/component=controller --timeout=300s --all-namespaces || {
+kubectl wait --for=condition=ready pod -l app.kubernetes.io/component=controller --timeout=300s -n ingress-nginx || {
   echo "Timed out waiting for NGINX Ingress Controller to be ready"
   echo "Continuing anyway, but HTTPS setup might not complete successfully"
 }
 
-# Wait for admission webhook to be ready
 echo "Waiting for NGINX Ingress admission webhook to be ready..."
 for i in {1..30}; do
   if kubectl get validatingwebhookconfigurations.admissionregistration.k8s.io ingress-nginx-admission &>/dev/null; then
@@ -454,33 +418,24 @@ for i in {1..30}; do
   sleep 10
 done
 
-# Get the actual ingress controller IP
 echo "Getting ingress controller IP..."
 INGRESS_CONTROLLER_IP=""
 for i in {1..30}; do
-  # Try different method to get IP
   INGRESS_CONTROLLER_IP=$(kubectl get service ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
-
-  if [ -z "$INGRESS_CONTROLLER_IP" ]; then
-    # Try alternative services
-    INGRESS_CONTROLLER_IP=$(kubectl get service -l app.kubernetes.io/component=controller -n ingress-nginx -o jsonpath='{.items[0].status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "")
-  fi
-
   if [ -n "$INGRESS_CONTROLLER_IP" ]; then
     echo "Found ingress controller IP: $INGRESS_CONTROLLER_IP"
     break
   fi
-
   echo "Waiting for ingress controller IP to be assigned... (attempt $i/30)"
   sleep 10
 done
 
 if [ -z "$INGRESS_CONTROLLER_IP" ]; then
-  echo "Warning: Could not find ingress controller IP after multiple attempts. Using the reserved IP: $INGRESS_IP"
+  echo "Warning: Could not find ingress controller IP after multiple attempts. Using the reserved IP."
   INGRESS_CONTROLLER_IP=$INGRESS_IP
 elif [ "$INGRESS_CONTROLLER_IP" != "$INGRESS_IP" ]; then
-  echo "Warning: Ingress controller IP ($INGRESS_CONTROLLER_IP) doesn't match the reserved IP ($INGRESS_IP)"
-  echo "Using the actual ingress controller IP for further configuration"
+  echo "Warning: Ingress controller IP ($INGRESS_CONTROLLER_IP) doesn't match the reserved IP ($INGRESS_IP)."
+  echo "Using the actual ingress controller IP for further configuration."
   INGRESS_IP=$INGRESS_CONTROLLER_IP
 fi
 
@@ -491,34 +446,20 @@ if ! kubectl get namespace cert-manager &>/dev/null; then
     echo "Failed to install cert-manager"
     exit 1
   }
-
-  # Wait for cert-manager to be ready
   echo "Waiting for cert-manager to be ready..."
-  kubectl wait --namespace cert-manager --for=condition=ready pod -l app=cert-manager --timeout=120s || {
-    echo "Timed out waiting for cert-manager to be ready"
-    echo "Continuing anyway, but certificate issuance might not work"
-  }
-
-  # Additional wait for webhook to be ready
+  kubectl wait --namespace cert-manager --for=condition=ready pod -l app=cert-manager --timeout=120s || { echo "Timed out waiting for cert-manager to be ready"; }
   echo "Waiting for cert-manager webhook to be ready..."
-  kubectl wait --namespace cert-manager --for=condition=ready pod -l app=webhook --timeout=120s || {
-    echo "Timed out waiting for cert-manager webhook to be ready"
-    echo "Continuing anyway, but certificate issuance might not work"
-  }
+  kubectl wait --namespace cert-manager --for=condition=ready pod -l app=webhook --timeout=120s || { echo "Timed out waiting for cert-manager webhook to be ready"; }
 else
   echo "cert-manager is already installed"
 fi
 
-# Create ClusterIssuer for Let's Encrypt if it doesn't exist
 if ! kubectl get clusterissuer letsencrypt-prod &>/dev/null; then
   echo "Creating ClusterIssuer for Let's Encrypt..."
-  export ACME_EMAIL="${ACME_EMAIL:-your-email@example.com}" # Use provided email or default
-
-  # Check if email is set to the default and warn if so
+  export ACME_EMAIL="${ACME_EMAIL:-your-email@example.com}"
   if [ "$ACME_EMAIL" = "your-email@example.com" ]; then
-    echo "WARNING: Using default email for Let's Encrypt. Set ACME_EMAIL environment variable to use your own email."
+    echo "WARNING: Using default email for Let's Encrypt. Set ACME_EMAIL to your email."
   fi
-
   cat k8s/cluster-issuer.yaml | envsubst | kubectl apply -f - || {
     echo "Failed to create ClusterIssuer"
     kubectl get clusterissuer letsencrypt-prod -o yaml
@@ -528,35 +469,44 @@ else
   echo "ClusterIssuer letsencrypt-prod already exists"
 fi
 
-# Apply ingress configuration
-echo "Applying ingress configuration..."
-export AZURE_BROWSERLESS_SERVICE_NAME
+# Update Ingress resource names with environment variables
+# No need to create inline configs as we'll use the existing YAML files
+echo "Preparing ingress configurations from existing templates..."
+export AZURE_APP_NAME AZURE_BROWSERLESS_SERVICE_NAME AZURE_DOMAIN_NAME AZURE_TLS_SECRET_NAME
+export AZURE_RESOURCE_GROUP AZURE_HTTP_INGRESS_IP_NAME AZURE_WS_INGRESS_IP_NAME
 
-# Retry logic for applying ingress
+# -------------------------
+# Apply Ingress configuration for both HTTP and WebSocket
+# -------------------------
+echo "Applying HTTP ingress configuration..."
 MAX_RETRIES=5
 for i in $(seq 1 $MAX_RETRIES); do
-  echo "Attempt $i/$MAX_RETRIES to apply ingress configuration..."
-
-  if cat k8s/ingress.yaml | envsubst | kubectl apply -f -; then
-    echo "Successfully applied ingress configuration"
+  echo "Attempt $i/$MAX_RETRIES to apply HTTP ingress configuration..."
+  if cat k8s/ingress-http.yaml | envsubst | kubectl apply -f -; then
+    echo "Successfully applied HTTP ingress configuration"
     break
   else
     if [ $i -eq $MAX_RETRIES ]; then
-      echo "Failed to apply ingress configuration after $MAX_RETRIES attempts"
+      echo "Failed to apply HTTP ingress configuration after $MAX_RETRIES attempts"
       exit 1
     fi
+    echo "Retrying HTTP ingress configuration in 30 seconds..."
+    sleep 30
+  fi
+done
 
-    echo "Failed to apply ingress configuration. Waiting before retry..."
-    # Additional debugging
-    echo "Checking webhook configuration..."
-    kubectl get validatingwebhookconfigurations.admissionregistration.k8s.io
-
-    # Check if there's an issue with the old admission webhook
-    if kubectl get validatingwebhookconfigurations.admissionregistration.k8s.io | grep -q "ingress-nginx-alt"; then
-      echo "Found conflicting webhook configuration. Attempting to remove..."
-      kubectl delete validatingwebhookconfigurations.admissionregistration.k8s.io ingress-nginx-alt-admission 2>/dev/null || true
+echo "Applying WebSocket ingress configuration..."
+for i in $(seq 1 $MAX_RETRIES); do
+  echo "Attempt $i/$MAX_RETRIES to apply WebSocket ingress configuration..."
+  if cat k8s/ingress-ws.yaml | envsubst | kubectl apply -f -; then
+    echo "Successfully applied WebSocket ingress configuration"
+    break
+  else
+    if [ $i -eq $MAX_RETRIES ]; then
+      echo "Failed to apply WebSocket ingress configuration after $MAX_RETRIES attempts"
+      exit 1
     fi
-
+    echo "Retrying WebSocket ingress configuration in 30 seconds..."
     sleep 30
   fi
 done
@@ -566,28 +516,10 @@ echo "Deploying ACME solver for Let's Encrypt challenge handling..."
 export AZURE_BROWSERLESS_SERVICE_NAME
 if [ -f "k8s/acme-solver.yaml" ]; then
   echo "Applying ACME solver configuration..."
-  cat k8s/acme-solver.yaml | envsubst | kubectl apply -f - || {
-    echo "Warning: Failed to apply ACME solver configuration. HTTPS certificate issuance may fail."
-    echo "This usually happens when the path format is incompatible with your ingress controller version."
-    echo "Continuing deployment process..."
-  }
+  cat k8s/acme-solver.yaml | envsubst | kubectl apply -f - || { echo "Warning: Failed to apply ACME solver configuration."; }
 else
   echo "Error: Required file k8s/acme-solver.yaml not found"
   exit 1
-fi
-
-# Deploy dedicated WebSocket service (bypassing ingress)
-echo "Deploying dedicated WebSocket service..."
-export AZURE_CONTAINER_NAME AZURE_RESOURCE_GROUP
-if [ -f "k8s/service-websocket.yaml" ]; then
-  echo "Applying WebSocket service configuration..."
-  cat k8s/service-websocket.yaml | envsubst | kubectl apply -f - || {
-    echo "Warning: Failed to apply WebSocket service configuration."
-    echo "WebSocket connections may not work properly."
-  }
-else
-  echo "Warning: WebSocket service file k8s/service-websocket.yaml not found"
-  echo "This may affect WebSocket connectivity."
 fi
 
 echo "HTTPS setup complete!"
@@ -598,72 +530,32 @@ echo "Your browserless service will be accessible via HTTPS once DNS is configur
 echo "You can check certificate status with: kubectl get certificate -o wide"
 echo "You can check ingress status with: kubectl get ingress"
 
+# -------------------------
 # Print DNS configuration instructions
+# -------------------------
 echo ""
-echo "To complete HTTPS setup, ensure your DNS points to the ingress controller IP:"
-INGRESS_CONTROLLER_IP=$(kubectl get service ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "Not found")
-if [ "$INGRESS_CONTROLLER_IP" = "Not found" ]; then
-  echo "Warning: Could not find ingress controller IP. Check with: kubectl get service ingress-nginx-controller -n ingress-nginx"
-  echo "Both domains should point to the same ingress controller IP:"
-else
-  echo "Main domain (${AZURE_DOMAIN_NAME}): $INGRESS_CONTROLLER_IP"
-  echo "WebSocket domain (ws.${AZURE_DOMAIN_NAME}): $INGRESS_CONTROLLER_IP"
-fi
-
-# Get WebSocket service IP for direct connections
-WS_SERVICE_IP=$(kubectl get service browserless-websocket -o jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || echo "Not found")
-
+echo "To complete HTTPS setup, configure your DNS records as follows:"
+echo "  - Main domain (${AZURE_DOMAIN_NAME}): Set the A record to the Ingress IP: ${INGRESS_IP}"
+echo "  - WebSocket domain (ws.${AZURE_DOMAIN_NAME}): Set the A record to the same Ingress IP: ${INGRESS_IP}"
+echo ""
+echo "This IP address (${INGRESS_IP}) is STATIC and should not change between deployments."
+echo "The script will automatically reuse this IP in future deployments."
 echo ""
 echo "Test connectivity after DNS configuration:"
 echo "HTTP/HTTPS:"
 echo "  curl -v https://${AZURE_DOMAIN_NAME}/"
 echo ""
-echo "WebSocket:"
+echo "WebSocket (secure):"
 echo "  websocat wss://ws.${AZURE_DOMAIN_NAME}/"
-echo ""
-
-if [ "$WS_SERVICE_IP" != "Not found" ]; then
-  echo "Direct WebSocket connection (alternative):"
-  echo "  websocat ws://${WS_SERVICE_IP}:50000"
-fi
-
-echo ""
-echo "Fallback paths:"
-echo "  WebSocket: wss://ws.${AZURE_DOMAIN_NAME}/"
-echo "  HTTP: https://${AZURE_DOMAIN_NAME}/"
-
-# Add instructions for dedicated WebSocket service
 echo ""
 echo "After deployment is complete, your services should be accessible at:"
 echo "  HTTPS: https://${AZURE_DOMAIN_NAME}"
 echo "  WebSocket: wss://ws.${AZURE_DOMAIN_NAME}"
-
-# Add WebSocket troubleshooting steps
 echo ""
-echo "Troubleshooting (if you encounter connectivity issues):"
-echo "  1. Check ingress configuration:"
-echo "     kubectl get ingress -o wide"
+echo "Troubleshooting:"
+echo "  1. Check ingress configuration: kubectl get ingress -o wide"
+echo "  2. Verify service endpoints: kubectl get endpoints ${AZURE_BROWSERLESS_SERVICE_NAME}"
+echo "  3. Check ingress controller logs: kubectl logs -n ingress-nginx -l app.kubernetes.io/component=controller --tail=100"
+echo "  4. Test internal connectivity: kubectl run -i --tty --rm debug --image=curlimages/curl --restart=Never -- curl -v http://${AZURE_BROWSERLESS_SERVICE_NAME}:3000"
 echo ""
-echo "  2. Verify service endpoints:"
-echo "     kubectl get endpoints ${AZURE_BROWSERLESS_SERVICE_NAME}"
-echo ""
-echo "  3. Check ingress controller logs:"
-echo "     kubectl logs -n ingress-nginx -l app.kubernetes.io/component=controller --tail=100"
-echo ""
-echo "  4. Test internal connectivity:"
-echo "     kubectl run -i --tty --rm debug --image=curlimages/curl --restart=Never -- curl -v http://${AZURE_BROWSERLESS_SERVICE_NAME}:50000"
-
-# Add WebSocket fallback strategy
-echo ""
-echo "For WebSocket connectivity issues, consider these options:"
-echo "  1. Continue using the ingress WSS connection: wss://ws.${AZURE_DOMAIN_NAME}"
-echo "  2. Use direct WebSocket connection: ws://${WS_SERVICE_IP}:50000"
-echo ""
-echo "Alternative DNS configuration for more reliable WebSocket connections:"
-echo "  You can point the ws.${AZURE_DOMAIN_NAME} domain directly to the dedicated WebSocket service:"
-if [ "$WS_SERVICE_IP" != "Not found" ]; then
-  echo "  - Update your DNS for ws.${AZURE_DOMAIN_NAME} to point to: ${WS_SERVICE_IP}"
-  echo "  - Use the ws:// protocol instead of wss:// (direct WebSocket service doesn't use TLS)"
-else
-  echo "  - WebSocket service IP not found. Check with: kubectl get service browserless-websocket"
-fi
+echo "Deployment script complete!"
