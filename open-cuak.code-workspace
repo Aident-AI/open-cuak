@@ -1,6 +1,10 @@
 {
   "folders": [
     {
+      "name": "🌱 Repo Root",
+      "path": ".",
+    },
+    {
       "name": "🕸️ Web",
       "path": "apps/web",
     },
@@ -27,10 +31,6 @@
     {
       "name": "💾 Installer",
       "path": "./installer",
-    },
-    {
-      "name": "🌱 Repo Root",
-      "path": ".",
     },
   ],
   "settings": {
