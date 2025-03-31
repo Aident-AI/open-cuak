@@ -23,28 +23,414 @@ AZURE_VNET_NAME="$AZURE_APP_ENV_NAME-vnet"
 DOCKER_IMAGE_NAME="ghcr.io/aident-ai/open-cuak-browserless"
 DOCKER_IMAGE_TAG="latest"
 
+# Optional: override the domain names for WS
+AZURE_WS_DOMAIN_NAME="${AZURE_WS_DOMAIN_NAME:-ws.${AZURE_DOMAIN_NAME}}"
+
 # Export variables for envsubst in YAML files
 export AZURE_BROWSERLESS_SERVICE_NAME
 export AZURE_DEPLOYMENT_NAME
 export AZURE_APP_NAME
 export AZURE_CONTAINER_NAME
 export AZURE_DOMAIN_NAME
+export AZURE_WS_DOMAIN_NAME
 export AZURE_TLS_SECRET_NAME
 export AZURE_HTTP_INGRESS_IP_NAME
 export AZURE_WS_INGRESS_IP_NAME
 export AZURE_RESOURCE_GROUP
 export DOCKER_IMAGE_NAME
 export DOCKER_IMAGE_TAG
+export REUSED_CERT_NAME
+export REUSED_SECRET_NAME
 
 # Optionally, a timestamp for revision purposes
 FORCE_REVISION_TIMESTAMP=$(date +%s)
 
-# Function to handle errors
+# Function to handle script errors
 handle_error() {
-  echo "Error occurred at line $1"
+  echo "ERROR: Deployment failed at line $1"
   exit 1
 }
+
+# Set up error trap
 trap 'handle_error $LINENO' ERR
+
+# Function to check if we've hit Let's Encrypt rate limits
+detect_rate_limit() {
+  if kubectl get order -A 2>/dev/null | grep -q "rateLimited"; then
+    echo "Let's Encrypt rate limit detected."
+    return 0
+  fi
+  return 1
+}
+
+# Function to find and reuse a valid certificate
+find_valid_certificate() {
+  echo "Checking for valid certificates to reuse..."
+
+  # First: Check if we need to check for certificates with alternate domains
+  local DOMAINS_TO_CHECK=("${AZURE_DOMAIN_NAME}" "${AZURE_WS_DOMAIN_NAME}")
+  local LEGACY_DOMAINS=()
+
+  # If we detect we've migrated from browserless.aident.ai to browser.aident.ai
+  if [[ "${AZURE_DOMAIN_NAME}" == "browser.aident.ai" ]]; then
+    echo "Domain migration detected (from browserless.aident.ai to browser.aident.ai)"
+    LEGACY_DOMAINS+=("browserless.aident.ai" "ws.browserless.aident.ai")
+  fi
+
+  # First: Check certificate objects in the cluster
+  local CERT_LIST=$(kubectl get certificate -o 'custom-columns=NAME:.metadata.name,READY:.status.conditions[0].status,SECRET:.spec.secretName' --sort-by=.metadata.creationTimestamp 2>/dev/null | tac || echo "")
+
+  if [ -n "$CERT_LIST" ] && [ "$CERT_LIST" != "No resources found" ]; then
+    local CERT_NAMES=$(echo "$CERT_LIST" | grep -v "NAME" | awk '{print $1}')
+
+    for CERT_NAME in $CERT_NAMES; do
+      local SECRET_NAME=$(kubectl get certificate "$CERT_NAME" -o jsonpath='{.spec.secretName}' 2>/dev/null || echo "")
+      if [ -n "$SECRET_NAME" ] && check_valid_certificate_secret "$SECRET_NAME"; then
+        return 0
+      fi
+    done
+  fi
+
+  # Second: Check TLS secrets directly
+  local SECRET_LIST=$(kubectl get secrets --field-selector type=kubernetes.io/tls -o name 2>/dev/null || echo "")
+  if [ -n "$SECRET_LIST" ]; then
+    for SECRET in $SECRET_LIST; do
+      local SECRET_NAME=$(echo "$SECRET" | sed 's|^secret/||')
+      if check_valid_certificate_secret "$SECRET_NAME"; then
+        return 0
+      fi
+    done
+  fi
+
+  # Third: Check all secrets for valid certificate data
+  local ALL_SECRETS=$(kubectl get secrets -o name 2>/dev/null | grep -v "default-token" || echo "")
+  if [ -n "$ALL_SECRETS" ]; then
+    for SECRET in $ALL_SECRETS; do
+      local SECRET_NAME=$(echo "$SECRET" | sed 's|^secret/||')
+      # Only check secrets with certificate data
+      if kubectl get secret "$SECRET_NAME" -o jsonpath='{.data.tls\.crt}' &>/dev/null &&
+        kubectl get secret "$SECRET_NAME" -o jsonpath='{.data.tls\.key}' &>/dev/null; then
+        if check_valid_certificate_secret "$SECRET_NAME"; then
+          return 0
+        fi
+      fi
+    done
+  fi
+
+  # If we have legacy domains and we've hit rate limits, try checking for certificates with old domains
+  if [ ${#LEGACY_DOMAINS[@]} -gt 0 ] && detect_rate_limit; then
+    echo "Checking for certificates with legacy domains due to rate limiting..."
+    for SECRET in $(kubectl get secrets --field-selector type=kubernetes.io/tls -o name 2>/dev/null || echo ""); do
+      local SECRET_NAME=$(echo "$SECRET" | sed 's|^secret/||')
+      if extract_and_reissue_certificate "$SECRET_NAME"; then
+        return 0
+      fi
+    done
+  fi
+
+  echo "No valid certificates found to reuse"
+  return 1
+}
+
+# Helper function to extract certificate from one domain and reissue for another
+extract_and_reissue_certificate() {
+  local SECRET="$1"
+  echo "Checking if secret $SECRET can be reused for the new domain..."
+
+  # Get the certificate data
+  local CERT_DATA=$(kubectl get secret "$SECRET" -o jsonpath='{.data.tls\.crt}' 2>/dev/null || echo "")
+  local KEY_DATA=$(kubectl get secret "$SECRET" -o jsonpath='{.data.tls\.key}' 2>/dev/null || echo "")
+
+  if [ -z "$CERT_DATA" ] || [ -z "$KEY_DATA" ]; then
+    return 1
+  fi
+
+  # Create a new secret for the new domains
+  echo "Creating a temporary secret for the new domains..."
+  kubectl create secret tls "${AZURE_TLS_SECRET_NAME}-temp" \
+    --cert <(echo "$CERT_DATA" | base64 --decode) \
+    --key <(echo "$KEY_DATA" | base64 --decode) \
+    --dry-run=client -o yaml | kubectl apply -f -
+
+  # Create a certificate object referencing this secret but for the new domains
+  echo "Creating certificate for new domains using the extracted key..."
+  cat <<EOF | kubectl apply -f -
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: ${AZURE_TLS_SECRET_NAME}
+spec:
+  secretName: ${AZURE_TLS_SECRET_NAME}
+  dnsNames:
+  - ${AZURE_DOMAIN_NAME}
+  - ${AZURE_WS_DOMAIN_NAME}
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+EOF
+
+  # Update ingress to use this certificate temporarily
+  export AZURE_TLS_SECRET_NAME
+
+  return 0
+}
+
+# Helper function to check if a secret contains a valid certificate for our domains
+check_valid_certificate_secret() {
+  local SECRET="$1"
+
+  # Verify secret exists
+  if ! kubectl get secret "$SECRET" &>/dev/null; then
+    return 1
+  fi
+
+  # Get domains from certificate
+  local SECRET_DOMAINS=""
+
+  # Try annotations first
+  SECRET_DOMAINS=$(kubectl get secret "$SECRET" -o jsonpath='{.metadata.annotations.cert-manager\.io/alt-names}' 2>/dev/null || echo "")
+
+  # If no domains in annotations, try certificate data
+  if [ -z "$SECRET_DOMAINS" ] && command -v openssl &>/dev/null; then
+    local CERT_DATA=$(kubectl get secret "$SECRET" -o jsonpath='{.data.tls\.crt}' 2>/dev/null || echo "")
+    if [ -n "$CERT_DATA" ]; then
+      local TEMP_CERT="/tmp/cert_extract_${SECRET}.pem"
+      echo "$CERT_DATA" | base64 --decode >"$TEMP_CERT" 2>/dev/null
+
+      if [ -f "$TEMP_CERT" ] && [ -s "$TEMP_CERT" ]; then
+        # Extract SANs or CN
+        SECRET_DOMAINS=$(openssl x509 -noout -text -in "$TEMP_CERT" 2>/dev/null | grep -A1 "Subject Alternative Name" | grep "DNS:" | sed 's/DNS://g; s/,/,/g' | tr -d ' ' || echo "")
+        if [ -z "$SECRET_DOMAINS" ]; then
+          SECRET_DOMAINS=$(openssl x509 -noout -subject -in "$TEMP_CERT" 2>/dev/null | grep -o "CN = [^,]*" | cut -d= -f2 | tr -d ' ' || echo "")
+        fi
+
+        # Check expiration
+        if ! openssl x509 -noout -checkend 0 -in "$TEMP_CERT" 2>/dev/null; then
+          echo "Certificate is expired"
+          rm -f "$TEMP_CERT" 2>/dev/null || true
+          return 1
+        fi
+
+        rm -f "$TEMP_CERT" 2>/dev/null || true
+      else
+        return 1
+      fi
+    else
+      return 1
+    fi
+  fi
+
+  if [ -z "$SECRET_DOMAINS" ]; then
+    return 1
+  fi
+
+  # Check if the certificate covers both required domains
+  local MAIN_DOMAIN_FOUND=0
+  local WS_DOMAIN_FOUND=0
+
+  if echo "$SECRET_DOMAINS" | grep -E "(^|,)${AZURE_DOMAIN_NAME}(,|$)" >/dev/null; then
+    MAIN_DOMAIN_FOUND=1
+  fi
+
+  if echo "$SECRET_DOMAINS" | grep -E "(^|,)${AZURE_WS_DOMAIN_NAME}(,|$)" >/dev/null; then
+    WS_DOMAIN_FOUND=1
+  fi
+
+  if [ "$MAIN_DOMAIN_FOUND" -eq 1 ] && [ "$WS_DOMAIN_FOUND" -eq 1 ]; then
+    echo "✅ Found valid TLS secret $SECRET covering all required domains"
+    export AZURE_TLS_SECRET_NAME="$SECRET"
+
+    # Create a certificate object if it doesn't exist
+    if ! kubectl get certificate -o jsonpath='{.items[?(@.spec.secretName=="'"$SECRET"'")].metadata.name}' 2>/dev/null | grep -q .; then
+      echo "Creating certificate object for existing secret..."
+      export REUSED_CERT_NAME="reused-$(echo "$SECRET" | sed 's/[^a-zA-Z0-9]/-/g')-cert"
+      export REUSED_SECRET_NAME="$SECRET"
+
+      if [ -f "k8s/reused-certificate.yaml" ]; then
+        cat k8s/reused-certificate.yaml | envsubst | kubectl apply -f -
+      else
+        # Create a basic certificate object
+        cat <<EOF | envsubst | kubectl apply -f -
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: ${REUSED_CERT_NAME}
+spec:
+  secretName: ${REUSED_SECRET_NAME}
+  dnsNames:
+  - ${AZURE_DOMAIN_NAME}
+  - ${AZURE_WS_DOMAIN_NAME}
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+EOF
+      fi
+    fi
+
+    # Update ingress configurations to use this certificate
+    update_ingress_resources "$SECRET"
+    return 0
+  fi
+
+  return 1
+}
+
+# Helper function to update ingress resources to use a specific certificate
+update_ingress_resources() {
+  local SECRET="$1"
+
+  # Update HTTP ingress
+  if kubectl get ingress "${AZURE_APP_NAME}-http-ingress" &>/dev/null; then
+    kubectl patch ingress "${AZURE_APP_NAME}-http-ingress" --type=json \
+      -p "[{\"op\": \"replace\", \"path\": \"/spec/tls/0/secretName\", \"value\": \"$SECRET\"}]" 2>/dev/null || {
+      kubectl delete ingress "${AZURE_APP_NAME}-http-ingress" --ignore-not-found
+      [ -f "k8s/ingress-http.yaml" ] && cat k8s/ingress-http.yaml | envsubst | kubectl apply -f -
+    }
+  fi
+
+  # Update WebSocket ingress
+  if kubectl get ingress "${AZURE_APP_NAME}-ws-ingress" &>/dev/null; then
+    kubectl patch ingress "${AZURE_APP_NAME}-ws-ingress" --type=json \
+      -p "[{\"op\": \"replace\", \"path\": \"/spec/tls/0/secretName\", \"value\": \"$SECRET\"}]" 2>/dev/null || {
+      kubectl delete ingress "${AZURE_APP_NAME}-ws-ingress" --ignore-not-found
+      [ -f "k8s/ingress-ws.yaml" ] && cat k8s/ingress-ws.yaml | envsubst | kubectl apply -f -
+    }
+  fi
+
+  # Restart ingress controller to pick up changes
+  kubectl rollout restart deployment -n ingress-nginx ingress-nginx-controller 2>/dev/null || true
+  kubectl rollout status deployment -n ingress-nginx ingress-nginx-controller --timeout=120s 2>/dev/null || true
+}
+
+# Function to create a self-signed certificate as a fallback when rate-limited
+create_self_signed_certificate() {
+  echo "Creating self-signed certificate as fallback due to rate limiting..."
+
+  # Create a temporary directory
+  local TEMP_DIR=$(mktemp -d)
+
+  # Generate a private key
+  openssl genrsa -out "$TEMP_DIR/tls.key" 2048
+
+  # Create a config file for the certificate
+  cat >"$TEMP_DIR/openssl.cnf" <<EOF
+[req]
+distinguished_name = req_distinguished_name
+req_extensions = v3_req
+prompt = no
+
+[req_distinguished_name]
+CN = ${AZURE_DOMAIN_NAME}
+
+[v3_req]
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = ${AZURE_DOMAIN_NAME}
+DNS.2 = ${AZURE_WS_DOMAIN_NAME}
+EOF
+
+  # Generate a certificate
+  openssl req -x509 -new -nodes -key "$TEMP_DIR/tls.key" \
+    -sha256 -days 90 -out "$TEMP_DIR/tls.crt" \
+    -config "$TEMP_DIR/openssl.cnf"
+
+  # Create the secret
+  kubectl create secret tls "${AZURE_TLS_SECRET_NAME}" \
+    --cert="$TEMP_DIR/tls.crt" \
+    --key="$TEMP_DIR/tls.key" \
+    --dry-run=client -o yaml | kubectl apply -f -
+
+  # Create a dummy certificate object to track this
+  cat <<EOF | kubectl apply -f -
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: ${AZURE_TLS_SECRET_NAME}
+  annotations:
+    cert-manager.io/self-signed: "true"
+    cert-manager.io/alt-names: "${AZURE_DOMAIN_NAME},${AZURE_WS_DOMAIN_NAME}"
+spec:
+  secretName: ${AZURE_TLS_SECRET_NAME}
+  dnsNames:
+  - ${AZURE_DOMAIN_NAME}
+  - ${AZURE_WS_DOMAIN_NAME}
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+EOF
+
+  # Clean up
+  rm -rf "$TEMP_DIR"
+
+  echo "Created self-signed certificate. IMPORTANT: This is temporary and not secure!"
+  echo "You will need to run this script again after Let's Encrypt rate limits expire."
+
+  return 0
+}
+
+# Apply certificate with intelligent reuse logic
+apply_certificate() {
+  local cert_file=$1
+  echo "Managing certificates with reuse prioritization..."
+
+  # First try to find and reuse an existing valid certificate
+  if find_valid_certificate; then
+    echo "Using existing valid certificate - skipping certificate creation"
+    return 0
+  fi
+
+  # Check if we're currently rate-limited
+  if detect_rate_limit; then
+    echo "⚠️ Let's Encrypt rate limit detected. Attempting to use a temporary solution..."
+
+    # Try to create a self-signed certificate as fallback
+    if [ -x "$(command -v openssl)" ]; then
+      if create_self_signed_certificate; then
+        return 0
+      fi
+    fi
+
+    echo "WARNING: Rate limited and could not create a fallback certificate"
+    echo "You may need to wait until the rate limit expires (usually 1 week)"
+    return 1
+  fi
+
+  # Not rate-limited, try to apply the certificate normally
+  echo "No valid existing certificates found, attempting to create a new one..."
+  local CERT_RESULT=$(cat "$cert_file" | envsubst | kubectl apply -f - 2>&1)
+
+  if echo "$CERT_RESULT" | grep -q "rateLimited\|too many certificates\|rate limit"; then
+    echo "⚠️ Rate limit detected, attempting more thorough search for valid certificates..."
+    # Try one more time with more intensive search
+    if find_valid_certificate; then
+      echo "Successfully found and reusing a valid certificate"
+      return 0
+    else
+      # Try to create a self-signed certificate as fallback
+      if [ -x "$(command -v openssl)" ]; then
+        if create_self_signed_certificate; then
+          return 0
+        fi
+      fi
+
+      echo "WARNING: Rate limited and could not find a valid certificate to reuse"
+      echo "You may need to wait until the rate limit expires"
+      # Continue with a warning
+      return 1
+    fi
+  else
+    echo "Certificate creation initiated without rate limiting"
+    echo "$CERT_RESULT"
+    return 0
+  fi
+}
+
+# Replace apply_certificate_with_rate_limit_check with the new function
+# This ensures backward compatibility
+apply_certificate_with_rate_limit_check() {
+  apply_certificate "$1"
+}
 
 ##################################
 #  1. Create Resource Group      #
@@ -200,6 +586,53 @@ az network public-ip create \
 WS_INGRESS_IP=$(az network public-ip show --resource-group $AZURE_RESOURCE_GROUP --name $AZURE_WS_INGRESS_IP_NAME --query ipAddress -o tsv)
 echo "Reserved static public IP for WebSocket: $WS_INGRESS_IP"
 
+# Validate all required YAML files exist before proceeding
+echo "Validating required YAML configuration files..."
+MISSING_FILES=false
+for file in k8s/certificate.yaml k8s/cluster-issuer.yaml k8s/ingress-http.yaml k8s/ingress-ws.yaml k8s/acme-solver.yaml k8s/service-internal.yaml k8s/deployment.yaml k8s/cert-manager-config.yaml; do
+  if [ ! -f "$file" ]; then
+    echo "Error: Required file $file not found"
+    MISSING_FILES=true
+  fi
+done
+
+if [ "$MISSING_FILES" = true ]; then
+  echo "Error: One or more required configuration files are missing. Aborting deployment."
+  exit 1
+fi
+echo "All required configuration files found."
+
+# Add a section before the certificate creation to handle domain transitions
+if [ -f "k8s/certificate.yaml" ]; then
+  echo "Preparing certificate configuration for domains:"
+  echo "- Main domain: ${AZURE_DOMAIN_NAME}"
+  echo "- WebSocket domain: ${AZURE_WS_DOMAIN_NAME}"
+
+  # Check if we're changing domain names
+  DOMAIN_CHANGED=false
+  CURRENT_CERTS=$(kubectl get certificates -o jsonpath='{.items[*].spec.dnsNames}' 2>/dev/null || echo "")
+
+  if echo "$CURRENT_CERTS" | grep -q "browserless.aident.ai" && [[ "${AZURE_DOMAIN_NAME}" != "browserless.aident.ai" ]]; then
+    echo "⚠️ Domain transition detected: browserless.aident.ai → ${AZURE_DOMAIN_NAME}"
+    DOMAIN_CHANGED=true
+  fi
+
+  if $DOMAIN_CHANGED; then
+    echo "Handling domain transition carefully to avoid rate limits..."
+
+    # First check if we can reuse a certificate with the new domain name
+    if ! find_valid_certificate && detect_rate_limit; then
+      echo "Creating a temporary self-signed certificate to bridge the transition..."
+      if [ -x "$(command -v openssl)" ]; then
+        create_self_signed_certificate
+      else
+        echo "WARNING: Could not create self-signed certificate (openssl not available)"
+        echo "You may experience certificate errors until Let's Encrypt rate limits expire"
+      fi
+    fi
+  fi
+fi
+
 # Prepare and apply deployment manifest
 echo "Preparing deployment manifest..."
 export DOCKER_IMAGE_NAME DOCKER_IMAGE_TAG FORCE_REVISION_TIMESTAMP AZURE_BROWSERLESS_SERVICE_NAME
@@ -230,12 +663,15 @@ if [ "$DEPLOYMENT_ERROR" != true ] && [ "$SERVICE_ERROR" != true ]; then
   echo "Verifying all pods are running..."
   PODS_READY=false
   for i in {1..30}; do
-    NOT_READY=$(kubectl get pods | grep -v NAME | grep -v Running | grep -v Completed | wc -l)
+    # Check only pods belonging to the browserless deployment
+    NOT_READY=$(kubectl get pods -l app=$AZURE_APP_NAME | grep -v NAME | grep -v Running | grep -v Completed | wc -l)
     if [ "$NOT_READY" -eq 0 ]; then
       PODS_READY=true
       break
     fi
     echo "Waiting for pods to be ready... (attempt $i/30)"
+    echo "Non-ready pods:"
+    kubectl get pods -l app=$AZURE_APP_NAME | grep -v NAME | grep -v Running | grep -v Completed
     sleep 10
   done
   if [ "$PODS_READY" != "true" ]; then
@@ -279,6 +715,14 @@ helm repo update
 
 # Create dedicated namespace for ingress if it doesn't exist
 kubectl create namespace ingress-nginx 2>/dev/null || true
+
+# Add better cert-manager configuration and ensure the right certificate chain
+echo "Applying cert-manager configuration..."
+if [ ! -f "k8s/cert-manager-config.yaml" ]; then
+  echo "Error: Required file k8s/cert-manager-config.yaml not found"
+  exit 1
+fi
+cat k8s/cert-manager-config.yaml | envsubst | kubectl apply -f -
 
 # Assign Network Contributor role to the AKS managed identity to allow it to manage network resources
 echo "Checking if Network Contributor role is already assigned to AKS managed identity..."
@@ -394,13 +838,14 @@ helm install ingress-nginx ingress-nginx/ingress-nginx \
   --set controller.config.proxy-read-timeout="3600" \
   --set controller.config.proxy-send-timeout="3600" \
   --set controller.config.proxy-connect-timeout="60" \
-  --set controller.config.use-forwarded-headers="true"
-
-INSTALLATION_RESULT=$?
-if [ $INSTALLATION_RESULT -ne 0 ]; then
-  echo "Ingress controller installation failed with status $INSTALLATION_RESULT"
+  --set controller.config.use-forwarded-headers="true" \
+  --set controller.config.ssl-protocols="TLSv1.2 TLSv1.3" \
+  --set controller.config.ssl-ciphers="ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384" \
+  --set controller.config.ssl-session-tickets="false" \
+  --set controller.config.ssl-session-timeout="1h" || {
+  echo "Error: Ingress controller installation failed."
   exit 1
-fi
+}
 
 echo "Waiting for NGINX Ingress Controller to be ready..."
 kubectl wait --for=condition=ready pod -l app.kubernetes.io/component=controller --timeout=300s -n ingress-nginx || {
@@ -440,8 +885,25 @@ elif [ "$INGRESS_CONTROLLER_IP" != "$INGRESS_IP" ]; then
 fi
 
 # Check if cert-manager is already installed
-if ! kubectl get namespace cert-manager &>/dev/null; then
-  echo "Installing cert-manager..."
+if ! kubectl get namespace cert-manager &>/dev/null ||
+  [ "$(kubectl get deployment -n cert-manager --no-headers 2>/dev/null | wc -l)" -eq 0 ]; then
+  # If namespace exists but is empty, remove it to allow clean install
+  if kubectl get namespace cert-manager &>/dev/null; then
+    echo "cert-manager namespace exists but has no deployments. Reinstalling cert-manager..."
+    kubectl delete namespace cert-manager
+    # Wait for namespace deletion to complete
+    for i in {1..30}; do
+      if ! kubectl get namespace cert-manager &>/dev/null; then
+        break
+      fi
+      echo "Waiting for cert-manager namespace deletion... (attempt $i/30)"
+      sleep 5
+    done
+  else
+    echo "Installing cert-manager..."
+  fi
+
+  # Install cert-manager
   kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.12.0/cert-manager.yaml || {
     echo "Failed to install cert-manager"
     exit 1
@@ -451,7 +913,71 @@ if ! kubectl get namespace cert-manager &>/dev/null; then
   echo "Waiting for cert-manager webhook to be ready..."
   kubectl wait --namespace cert-manager --for=condition=ready pod -l app=webhook --timeout=120s || { echo "Timed out waiting for cert-manager webhook to be ready"; }
 else
-  echo "cert-manager is already installed"
+  echo "cert-manager is already installed with deployments"
+fi
+
+# Ensure cert-manager webhook service exists (needed for certificate creation)
+if ! kubectl get service cert-manager-webhook -n cert-manager &>/dev/null; then
+  echo "Creating cert-manager webhook service..."
+  # First check the actual name of the webhook deployment
+  WEBHOOK_DEPLOYMENT=$(kubectl get deployment -n cert-manager -l app=webhook -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
+
+  if [ -z "$WEBHOOK_DEPLOYMENT" ]; then
+    echo "Error: Could not find cert-manager webhook deployment."
+    echo "Available deployments in cert-manager namespace:"
+    kubectl get deployments -n cert-manager
+    exit 1
+  fi
+
+  echo "Found webhook deployment: $WEBHOOK_DEPLOYMENT"
+  kubectl expose deployment $WEBHOOK_DEPLOYMENT --name=cert-manager-webhook --namespace=cert-manager --port=443 --target-port=10250 || {
+    echo "Error: Failed to create cert-manager webhook service."
+    exit 1
+  }
+else
+  echo "Cert-manager webhook service already exists."
+fi
+
+# Add a more robust check for cert-manager webhook readiness
+echo "Ensuring cert-manager webhook has available endpoints..."
+WEBHOOK_READY=false
+for i in {1..60}; do
+  ENDPOINTS=$(kubectl get endpoints cert-manager-webhook -n cert-manager -o jsonpath='{.subsets[0].addresses}' 2>/dev/null || echo "")
+  if [ -n "$ENDPOINTS" ]; then
+    echo "Cert-manager webhook endpoints are ready."
+    WEBHOOK_READY=true
+    break
+  fi
+  echo "Waiting for cert-manager webhook endpoints to be available... (attempt $i/60)"
+  sleep 5
+done
+
+if [ "$WEBHOOK_READY" != "true" ]; then
+  echo "Error: Cert-manager webhook endpoints not available after 5 minutes."
+  echo "Restarting cert-manager pods to recover..."
+  kubectl rollout restart deployment -n cert-manager cert-manager cert-manager-cainjector cert-manager-webhook
+
+  # Wait again after restart
+  echo "Waiting for cert-manager pods to restart..."
+  kubectl rollout status deployment -n cert-manager cert-manager cert-manager-cainjector cert-manager-webhook --timeout=300s
+
+  # Check again for webhook readiness
+  echo "Checking webhook endpoints again after restart..."
+  for i in {1..30}; do
+    ENDPOINTS=$(kubectl get endpoints cert-manager-webhook -n cert-manager -o jsonpath='{.subsets[0].addresses}' 2>/dev/null || echo "")
+    if [ -n "$ENDPOINTS" ]; then
+      echo "Cert-manager webhook endpoints are now ready after restart."
+      WEBHOOK_READY=true
+      break
+    fi
+    echo "Still waiting for cert-manager webhook endpoints... (attempt $i/30)"
+    sleep 10
+  done
+
+  if [ "$WEBHOOK_READY" != "true" ]; then
+    echo "Error: Cert-manager webhook still not ready after restart. Exiting."
+    exit 1
+  fi
 fi
 
 if ! kubectl get clusterissuer letsencrypt-prod &>/dev/null; then
@@ -460,17 +986,56 @@ if ! kubectl get clusterissuer letsencrypt-prod &>/dev/null; then
   if [ "$ACME_EMAIL" = "your-email@example.com" ]; then
     echo "WARNING: Using default email for Let's Encrypt. Set ACME_EMAIL to your email."
   fi
-  cat k8s/cluster-issuer.yaml | envsubst | kubectl apply -f - || {
-    echo "Failed to create ClusterIssuer"
-    kubectl get clusterissuer letsencrypt-prod -o yaml
-    exit 1
-  }
+
+  # Apply the ClusterIssuer from the standalone file
+  cat k8s/cluster-issuer.yaml | envsubst | kubectl apply -f -
 else
   echo "ClusterIssuer letsencrypt-prod already exists"
+  # Update the ClusterIssuer to ensure proper chain configuration
+  kubectl patch clusterissuer letsencrypt-prod --type=merge -p '{"spec":{"acme":{"solvers":[{"http01":{"ingress":{"class":"nginx","podTemplate":{"spec":{"nodeSelector":{"kubernetes.io/os":"linux"}}}}}}]}}}'
 fi
 
+# -------------------------
+# Apply multi-domain certificate configuration
+# -------------------------
+echo "Cleaning up any outdated certificates..."
+# Check and remove certificates other than the one we want
+kubectl get certificate 2>/dev/null | grep -v "^NAME" | grep -v "${AZURE_TLS_SECRET_NAME}" | awk '{print $1}' | xargs -r kubectl delete certificate || true
+
+# Instead of deleting existing certificate, use apply to update it if it exists
+echo "Creating/updating multi-domain TLS certificate configuration..."
+export AZURE_APP_NAME AZURE_BROWSERLESS_SERVICE_NAME AZURE_DOMAIN_NAME AZURE_TLS_SECRET_NAME
+
+# Add a retry mechanism for certificate creation
+MAX_CERT_RETRIES=3
+for i in $(seq 1 $MAX_CERT_RETRIES); do
+  echo "Attempt $i/$MAX_CERT_RETRIES to create/update certificate..."
+  if apply_certificate_with_rate_limit_check "k8s/certificate.yaml"; then
+    echo "Successfully created/updated certificate configuration."
+    break
+  else
+    if [ $i -eq $MAX_CERT_RETRIES ]; then
+      echo "Error: Failed to create/update certificate after $MAX_CERT_RETRIES attempts."
+      echo "Checking webhook status and availability:"
+      kubectl get pods -n cert-manager
+      kubectl get endpoints -n cert-manager
+      kubectl describe service cert-manager-webhook -n cert-manager
+
+      # Add debugging info for the existing certificate
+      echo "Existing certificate information:"
+      kubectl get certificate "${AZURE_TLS_SECRET_NAME}" -o yaml || true
+
+      # Continue execution instead of exiting
+      echo "WARNING: Certificate creation/update failed, but continuing with deployment."
+      echo "You may need to manually create or update the certificate later."
+      break
+    fi
+    echo "Retrying certificate creation/update in 30 seconds..."
+    sleep 30
+  fi
+done
+
 # Update Ingress resource names with environment variables
-# No need to create inline configs as we'll use the existing YAML files
 echo "Preparing ingress configurations from existing templates..."
 export AZURE_APP_NAME AZURE_BROWSERLESS_SERVICE_NAME AZURE_DOMAIN_NAME AZURE_TLS_SECRET_NAME
 export AZURE_RESOURCE_GROUP AZURE_HTTP_INGRESS_IP_NAME AZURE_WS_INGRESS_IP_NAME
@@ -480,6 +1045,15 @@ export AZURE_RESOURCE_GROUP AZURE_HTTP_INGRESS_IP_NAME AZURE_WS_INGRESS_IP_NAME
 # -------------------------
 echo "Applying HTTP ingress configuration..."
 MAX_RETRIES=5
+
+# Force clean existing ingress to ensure clean configuration
+echo "Removing existing ingress configurations to ensure clean setup..."
+kubectl delete ingress "${AZURE_APP_NAME}-http-ingress" "${AZURE_APP_NAME}-ws-ingress" --ignore-not-found
+
+# Add a short pause to ensure resources are removed
+sleep 5
+
+# Apply HTTP ingress with retries
 for i in $(seq 1 $MAX_RETRIES); do
   echo "Attempt $i/$MAX_RETRIES to apply HTTP ingress configuration..."
   if cat k8s/ingress-http.yaml | envsubst | kubectl apply -f -; then
@@ -511,24 +1085,42 @@ for i in $(seq 1 $MAX_RETRIES); do
   fi
 done
 
+# Verify ingress TLS configuration is set up properly
+echo "Verifying ingress TLS configuration..."
+HTTP_INGRESS_TLS=$(kubectl get ingress "${AZURE_APP_NAME}-http-ingress" -o jsonpath='{.spec.tls[0]}' 2>/dev/null || echo "")
+WS_INGRESS_TLS=$(kubectl get ingress "${AZURE_APP_NAME}-ws-ingress" -o jsonpath='{.spec.tls[0]}' 2>/dev/null || echo "")
+
+# If either ingress has TLS issues, force reload ingress controller
+if [[ "$HTTP_INGRESS_TLS" != *"${AZURE_TLS_SECRET_NAME}"* ]] || [[ "$WS_INGRESS_TLS" != *"${AZURE_TLS_SECRET_NAME}"* ]]; then
+  echo "TLS configuration issue detected in ingress. Reloading NGINX ingress controller..."
+  kubectl rollout restart deployment -n ingress-nginx ingress-nginx-controller
+  echo "Waiting for ingress controller to reload (30 seconds)..."
+  sleep 30
+  # Verify again after reload
+  HTTP_INGRESS_TLS=$(kubectl get ingress "${AZURE_APP_NAME}-http-ingress" -o jsonpath='{.spec.tls[0]}' 2>/dev/null || echo "")
+  WS_INGRESS_TLS=$(kubectl get ingress "${AZURE_APP_NAME}-ws-ingress" -o jsonpath='{.spec.tls[0]}' 2>/dev/null || echo "")
+  echo "HTTP ingress TLS after reload: $HTTP_INGRESS_TLS"
+  echo "WebSocket ingress TLS after reload: $WS_INGRESS_TLS"
+fi
+
 # Deploy ACME solver for challenge handling
 echo "Deploying ACME solver for Let's Encrypt challenge handling..."
 export AZURE_BROWSERLESS_SERVICE_NAME
 if [ -f "k8s/acme-solver.yaml" ]; then
   echo "Applying ACME solver configuration..."
-  cat k8s/acme-solver.yaml | envsubst | kubectl apply -f - || { echo "Warning: Failed to apply ACME solver configuration."; }
+  cat k8s/acme-solver.yaml | envsubst | kubectl apply -f - || {
+    echo "Error: Failed to apply ACME solver configuration."
+    # Don't exit here as this is not critical for basic functionality
+    # But do warn the user
+    echo "Warning: Certificate issuance might fail due to ACME solver issues."
+  }
 else
   echo "Error: Required file k8s/acme-solver.yaml not found"
   exit 1
 fi
 
 echo "HTTPS setup complete!"
-echo "Checking certificate status (this might take a few minutes to complete)..."
-kubectl get certificate -o wide
-
-echo "Your browserless service will be accessible via HTTPS once DNS is configured and certificates are issued"
-echo "You can check certificate status with: kubectl get certificate -o wide"
-echo "You can check ingress status with: kubectl get ingress"
+echo "Waiting for certificates to be issued (this might take a few minutes)..."
 
 # -------------------------
 # Print DNS configuration instructions
@@ -541,21 +1133,334 @@ echo ""
 echo "This IP address (${INGRESS_IP}) is STATIC and should not change between deployments."
 echo "The script will automatically reuse this IP in future deployments."
 echo ""
-echo "Test connectivity after DNS configuration:"
+echo "Test connectivity after deployment is complete:"
 echo "HTTP/HTTPS:"
 echo "  curl -v https://${AZURE_DOMAIN_NAME}/"
 echo ""
 echo "WebSocket (secure):"
 echo "  websocat wss://ws.${AZURE_DOMAIN_NAME}/"
 echo ""
-echo "After deployment is complete, your services should be accessible at:"
-echo "  HTTPS: https://${AZURE_DOMAIN_NAME}"
-echo "  WebSocket: wss://ws.${AZURE_DOMAIN_NAME}"
+
+# -------------------------
+# Certificate and DNS Health Check
+# -------------------------
+echo "Certificate and DNS Health Check:"
+echo "-------------------------------"
+
+echo "1. Checking DNS resolution..."
+if command -v dig &>/dev/null; then
+  echo "   Main domain DNS: $(dig +short ${AZURE_DOMAIN_NAME})"
+  echo "   WebSocket domain DNS: $(dig +short ws.${AZURE_DOMAIN_NAME})"
+elif command -v nslookup &>/dev/null; then
+  echo "   Main domain DNS:"
+  nslookup ${AZURE_DOMAIN_NAME} | grep -A2 'Name:' | grep 'Address:' | tail -n1
+  echo "   WebSocket domain DNS:"
+  nslookup ws.${AZURE_DOMAIN_NAME} | grep -A2 'Name:' | grep 'Address:' | tail -n1
+fi
+
 echo ""
-echo "Troubleshooting:"
-echo "  1. Check ingress configuration: kubectl get ingress -o wide"
-echo "  2. Verify service endpoints: kubectl get endpoints ${AZURE_BROWSERLESS_SERVICE_NAME}"
-echo "  3. Check ingress controller logs: kubectl logs -n ingress-nginx -l app.kubernetes.io/component=controller --tail=100"
-echo "  4. Test internal connectivity: kubectl run -i --tty --rm debug --image=curlimages/curl --restart=Never -- curl -v http://${AZURE_BROWSERLESS_SERVICE_NAME}:3000"
+echo "2. Certificate status:"
+# Show the relevant certificate, only exact match on name
+CERT_OUTPUT=$(kubectl get certificate -o wide 2>/dev/null || echo "No certificates found")
+if kubectl get certificate "${AZURE_TLS_SECRET_NAME}" &>/dev/null; then
+  echo "$(kubectl get certificate "${AZURE_TLS_SECRET_NAME}" -o wide)"
+else
+  echo "   No certificate found with exact name: ${AZURE_TLS_SECRET_NAME}"
+  echo "   List of existing certificates:"
+  kubectl get certificate -o wide 2>/dev/null || echo "   No certificates found in cluster"
+fi
+
 echo ""
+echo "3. TLS Secret and Domains Coverage:"
+# Check for exact certificate name match
+echo "   Checking certificate with name ${AZURE_TLS_SECRET_NAME}..."
+if kubectl get secret "${AZURE_TLS_SECRET_NAME}" &>/dev/null; then
+  # Certificate exists, check if it's valid (includes both domains)
+  CERT_DOMAINS=$(kubectl get secret "${AZURE_TLS_SECRET_NAME}" -o jsonpath='{.metadata.annotations.cert-manager\.io/alt-names}' 2>/dev/null || echo "")
+  echo "   Current domains in certificate: $CERT_DOMAINS"
+
+  # Check if both domains are in the certificate using exact matching
+  MAIN_DOMAIN_PRESENT=$(echo "$CERT_DOMAINS" | grep -E "(^|,)${AZURE_DOMAIN_NAME}(,|$)" || echo "")
+  WS_DOMAIN_PRESENT=$(echo "$CERT_DOMAINS" | grep -E "(^|,)ws\.${AZURE_DOMAIN_NAME}(,|$)" || echo "")
+
+  if [ -z "$MAIN_DOMAIN_PRESENT" ] || [ -z "$WS_DOMAIN_PRESENT" ]; then
+    echo "   ❌ Certificate is missing required domains!"
+    echo "   Required domains: ${AZURE_DOMAIN_NAME} and ws.${AZURE_DOMAIN_NAME}"
+    echo "   Actual domains: $CERT_DOMAINS"
+    echo "   Forcing recreation of certificate..."
+
+    # Force recreation of all related resources
+    echo "   Deleting TLS secret..."
+    kubectl delete secret "${AZURE_TLS_SECRET_NAME}" --ignore-not-found
+
+    echo "   Deleting certificate..."
+    kubectl delete certificate "${AZURE_TLS_SECRET_NAME}" --ignore-not-found
+
+    # Delete any existing orders/challenges for this certificate
+    echo "   Cleaning up certificate orders and challenges..."
+    kubectl get orders -l cert-manager.io/certificate-name="${AZURE_TLS_SECRET_NAME}" -o name 2>/dev/null | xargs -r kubectl delete
+    kubectl get challenges --all-namespaces -o name 2>/dev/null | xargs -r kubectl delete
+
+    echo "   Waiting for resources to be fully deleted (10 seconds)..."
+    sleep 10
+
+    # Create new certificate
+    echo "   Creating new certificate with both domains..."
+    apply_certificate_with_rate_limit_check "k8s/certificate.yaml" || {
+      echo "   ✗ Failed to create new certificate. Please check logs and try again."
+    }
+
+    echo "   Waiting for certificate to be issued (30 seconds)..."
+    sleep 30
+
+    # Force update ingress to use the new certificate
+    echo "   Updating ingress resources to use new certificate..."
+    kubectl delete ingress "${AZURE_APP_NAME}-http-ingress" "${AZURE_APP_NAME}-ws-ingress" --ignore-not-found
+    cat k8s/ingress-http.yaml k8s/ingress-ws.yaml | envsubst | kubectl apply -f -
+  else
+    echo "   ✓ Certificate contains both required domains"
+
+    # Check certificate status
+    CERT_STATUS=$(kubectl describe certificate "${AZURE_TLS_SECRET_NAME}" | grep -E 'Status:|Ready:' | tail -n 2)
+    echo "   Certificate status: $CERT_STATUS"
+
+    if [[ "$CERT_STATUS" == *"False"* ]] || [[ "$CERT_STATUS" == *"Error"* ]]; then
+      echo "   ⚠️ Certificate shows error status - recreating..."
+      kubectl delete secret "${AZURE_TLS_SECRET_NAME}" --ignore-not-found
+      kubectl delete certificate "${AZURE_TLS_SECRET_NAME}" --ignore-not-found
+      sleep 10
+      echo "   Creating new certificate..."
+      apply_certificate_with_rate_limit_check "k8s/certificate.yaml"
+    fi
+  fi
+else
+  # Certificate doesn't exist, create a new one
+  echo "   Certificate does not exist - creating new certificate..."
+  apply_certificate_with_rate_limit_check "k8s/certificate.yaml" || {
+    echo "   ✗ Failed to create new certificate. Please check logs and try again."
+  }
+
+  echo "   Waiting for certificate to be issued (30 seconds)..."
+  sleep 30
+fi
+
+# Additional step: verify certificate.yaml content
+echo ""
+echo "4. Verifying certificate template:"
+echo "   Content of processed certificate.yaml (checking domain entries):"
+CERT_YAML=$(cat k8s/certificate.yaml | envsubst)
+DOMAIN_ENTRIES=$(echo "$CERT_YAML" | grep -A 5 "dnsNames:")
+echo "   $DOMAIN_ENTRIES"
+
+# Add an explicit check for ingress TLS settings
+echo ""
+echo "5. Verifying ingress TLS configuration:"
+echo "   HTTP ingress TLS configuration:"
+HTTP_INGRESS_TLS=$(kubectl get ingress -o jsonpath='{.items[?(@.metadata.name=="browserless-http-ingress")].spec.tls[0]}')
+echo "   $HTTP_INGRESS_TLS"
+echo "   WebSocket ingress TLS configuration:"
+WS_INGRESS_TLS=$(kubectl get ingress -o jsonpath='{.items[?(@.metadata.name=="browserless-ws-ingress")].spec.tls[0]}')
+echo "   $WS_INGRESS_TLS"
+
+echo ""
+echo "Troubleshooting Commands:"
+echo "------------------------"
+echo "  • Check ingress: kubectl get ingress -o wide"
+echo "  • Service endpoints: kubectl get endpoints ${AZURE_BROWSERLESS_SERVICE_NAME}"
+echo "  • Ingress logs: kubectl logs -n ingress-nginx -l app.kubernetes.io/component=controller --tail=100"
+echo "  • Test connectivity: kubectl run -i --tty --rm debug --image=curlimages/curl --restart=Never -- curl -v http://${AZURE_BROWSERLESS_SERVICE_NAME}:3000"
+echo "  • Certificate details: kubectl describe certificate ${AZURE_TLS_SECRET_NAME}"
+echo ""
+
+# Add EMERGENCY final certificate check and regeneration
+echo "EMERGENCY Certificate Check: Ensuring certificate covers both domains..."
+CERT_DATA=$(kubectl get secret "${AZURE_TLS_SECRET_NAME}" -o json 2>/dev/null || echo "{}")
+CERT_DOMAINS=$(echo "$CERT_DATA" | grep -o 'cert-manager.io/alt-names.*' | cut -d '"' -f 2 || echo "")
+echo "Current domains in certificate: $CERT_DOMAINS"
+
+# Check if both domains are present using strict matching
+MAIN_DOMAIN_PRESENT=0
+WS_DOMAIN_PRESENT=0
+
+if [ -n "$CERT_DOMAINS" ]; then
+  if echo "$CERT_DOMAINS" | grep -q "${AZURE_DOMAIN_NAME}"; then
+    MAIN_DOMAIN_PRESENT=1
+  fi
+
+  if echo "$CERT_DOMAINS" | grep -q "ws.${AZURE_DOMAIN_NAME}"; then
+    WS_DOMAIN_PRESENT=1
+  fi
+fi
+
+# Use ingress controller logs to check for certificate errors
+CERT_ERRORS=0
+CERT_ERROR_CHECK=$(kubectl logs -n ingress-nginx -l app.kubernetes.io/component=controller --tail=50 2>/dev/null | grep -c "certificate is valid for.*not ${AZURE_DOMAIN_NAME}" || echo "0")
+CERT_ERROR_CHECK=$(echo "$CERT_ERROR_CHECK" | tr -cd '0-9')
+# Default to 0 if empty
+CERT_ERROR_CHECK=${CERT_ERROR_CHECK:-0}
+if [ "$CERT_ERROR_CHECK" -ne 0 ]; then
+  CERT_ERRORS=1
+fi
+
+# Check for certificate issues
+if [ "$MAIN_DOMAIN_PRESENT" -eq 0 ] || [ "$WS_DOMAIN_PRESENT" -eq 0 ] || [ "$CERT_ERRORS" -eq 1 ]; then
+  echo "⚠️ CRITICAL: Certificate issues detected! Performing emergency certificate regeneration"
+
+  # First try to find and reuse an existing valid certificate
+  if find_valid_certificate; then
+    echo "✅ Successfully reused an existing valid certificate"
+  else
+    # If no valid certificate was found, try to regenerate one
+    echo "No valid certificate found to reuse. Attempting to create a new one..."
+
+    # Complete cleanup of all certificate resources
+    echo "1. Complete cleanup of certificate resources..."
+    kubectl delete secret "${AZURE_TLS_SECRET_NAME}" --ignore-not-found
+    kubectl delete certificate "${AZURE_TLS_SECRET_NAME}" --ignore-not-found
+    kubectl get orders --all-namespaces -o name | grep -i "${AZURE_TLS_SECRET_NAME}" | xargs -r kubectl delete
+    kubectl get challenges --all-namespaces -o name | xargs -r kubectl delete
+
+    echo "2. Waiting for resources to be fully deleted (15 seconds)..."
+    sleep 15
+
+    # Create certificate using apply_certificate_with_rate_limit_check
+    echo "3. Creating certificate with rate limit awareness..."
+    if [ ! -f "k8s/certificate.yaml" ]; then
+      echo "Error: Required file k8s/certificate.yaml not found for emergency certificate regeneration"
+      exit 1
+    fi
+    apply_certificate_with_rate_limit_check "k8s/certificate.yaml"
+
+    echo "4. Waiting for certificate to be processed (45 seconds)..."
+    sleep 45
+  fi
+
+  # Force update of all ingress resources
+  echo "5. Force updating all ingress resources..."
+
+  # Check if required files exist
+  for file in k8s/ingress-http.yaml k8s/ingress-ws.yaml k8s/acme-solver.yaml; do
+    if [ ! -f "$file" ]; then
+      echo "Error: Required file $file not found for emergency ingress recreation"
+      exit 1
+    fi
+  done
+
+  echo "Applying ingress resources with TLS secret: ${AZURE_TLS_SECRET_NAME}"
+  # Apply the ingress configurations with the current (potentially changed) AZURE_TLS_SECRET_NAME
+  cat k8s/ingress-http.yaml | envsubst | kubectl apply -f -
+  cat k8s/ingress-ws.yaml | envsubst | kubectl apply -f -
+  cat k8s/acme-solver.yaml | envsubst | kubectl apply -f -
+
+  # Restart ingress controller
+  echo "6. Restarting ingress controller to pick up new certificate..."
+  kubectl rollout restart deployment -n ingress-nginx ingress-nginx-controller
+
+  echo "7. Waiting for changes to take effect (30 seconds)..."
+  sleep 30
+
+  # Final verification
+  echo "8. Final certificate verification:"
+  kubectl describe certificate "${AZURE_TLS_SECRET_NAME}" | grep -E "Status:|Message:|DNS Names:" || echo "Certificate details not available"
+
+  echo "Emergency certificate regeneration complete!"
+else
+  echo "✅ Certificate appears to correctly include both domains."
+fi
+
+# Certificate Verification and Troubleshooting Section
+echo ""
+echo "==================================="
+echo "Certificate Verification and Troubleshooting"
+echo "==================================="
+
+# Verify the certificate is correctly created
+echo "Fetching certificate information..."
+CERT_STATUS=$(kubectl get certificate "${AZURE_TLS_SECRET_NAME}" -o custom-columns=NAME:.metadata.name,READY:.status.conditions[0].status,STATUS:.status.conditions[0].message 2>/dev/null || echo "Certificate not found")
+echo "Certificate Status: $CERT_STATUS"
+
+echo "Checking for issues with cert-manager..."
+CERT_MANAGER_PODS=$(kubectl get pods -n cert-manager -o wide 2>/dev/null || echo "No cert-manager pods found")
+echo "cert-manager pods:"
+echo "$CERT_MANAGER_PODS"
+
+echo "Checking for failed certificate issuance orders..."
+FAILED_ORDERS=$(kubectl get orders -l cert-manager.io/certificate-name="${AZURE_TLS_SECRET_NAME}" -o custom-columns=NAME:.metadata.name,STATE:.status.state,REASON:.status.reason,MESSAGE:.status.reason 2>/dev/null || echo "No orders found")
+echo "Orders for certificate:"
+echo "$FAILED_ORDERS"
+
+echo "Checking challenge status..."
+CHALLENGES=$(kubectl get challenges -o custom-columns=NAME:.metadata.name,STATE:.status.state,REASON:.status.reason,DOMAIN:.spec.dnsName 2>/dev/null || echo "No challenges found")
+echo "Certificate challenges:"
+echo "$CHALLENGES"
+
+echo "Checking Ingress controller logs for TLS errors..."
+INGRESS_POD=$(kubectl get pods -n ingress-nginx -l app.kubernetes.io/component=controller -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
+if [ -n "$INGRESS_POD" ]; then
+  echo "Checking ingress controller logs for TLS/cert issues (last 50 lines)..."
+  kubectl logs -n ingress-nginx "$INGRESS_POD" --tail=50 | grep -i -E 'tls|cert|ssl' || echo "No TLS-related logs found"
+else
+  echo "No ingress controller pod found"
+fi
+
+# Add troubleshooting steps
+echo ""
+echo "============================================="
+echo "Troubleshooting Steps for SSL Certificate Issue"
+echo "============================================="
+echo "If you're still experiencing SSL certificate issues, try these steps:"
+echo ""
+echo "1. Check certificate secret content:"
+echo "   kubectl get secret ${AZURE_TLS_SECRET_NAME} -o yaml"
+echo ""
+echo "2. Check that cert-manager can access Let's Encrypt:"
+echo "   kubectl logs -n cert-manager -l app=cert-manager"
+echo ""
+echo "3. Try manually deleting and recreating the certificate:"
+echo "   kubectl delete secret ${AZURE_TLS_SECRET_NAME} --ignore-not-found"
+echo "   kubectl delete certificate ${AZURE_TLS_SECRET_NAME} --ignore-not-found"
+echo "   cat k8s/certificate.yaml | envsubst | kubectl apply -f -"
+echo ""
+echo "4. If challenges are failing, make sure DNS is correctly configured:"
+echo "   - ${AZURE_DOMAIN_NAME} points to ${INGRESS_IP}"
+echo "   - ws.${AZURE_DOMAIN_NAME} points to ${INGRESS_IP}"
+echo ""
+echo "5. Check if Let's Encrypt rate limits are hit:"
+echo "   https://letsencrypt.org/docs/rate-limits/"
+echo ""
+echo "6. Verify ACME challenge routing works:"
+echo "   curl -v http://${AZURE_DOMAIN_NAME}/.well-known/acme-challenge/test"
+echo "   curl -v http://ws.${AZURE_DOMAIN_NAME}/.well-known/acme-challenge/test"
+echo ""
+echo "7. If using a custom CA or proxy, try testing with insecure flag:"
+echo "   curl -k -v https://${AZURE_DOMAIN_NAME}/"
+echo ""
+echo "8. To view the certificate chain once it's issued:"
+echo "   openssl s_client -showcerts -connect ${AZURE_DOMAIN_NAME}:443 </dev/null | openssl x509 -text"
+echo ""
+echo "9. Recreate the entire certificate infrastructure if needed:"
+echo "   kubectl delete clusterissuer letsencrypt-prod"
+echo "   kubectl delete -f https://github.com/cert-manager/cert-manager/releases/download/v1.12.0/cert-manager.yaml"
+echo "   kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.12.0/cert-manager.yaml"
+echo "   # Wait for cert-manager to be ready, then re-run this deployment script"
+echo "============================================="
+
+# Add monitoring for cert-manager to ensure it's functioning properly
+echo "Adding monitoring for certificate issuance..."
+kubectl get order -o wide || true     # Display order status if available
+kubectl get challenge -o wide || true # Display challenge status if available
+
+# Add health check for HTTPS connectivity
+echo "Running HTTPS connectivity test (if curl is available)..."
+if command -v curl &>/dev/null; then
+  CURL_VERSION=$(curl --version | head -n 1)
+  echo "Using curl: $CURL_VERSION"
+
+  echo "Testing HTTPS connectivity to ${AZURE_DOMAIN_NAME}..."
+  curl -k -s -o /dev/null -w "Status: %{http_code}, SSL Verify: %{ssl_verify_result}\n" https://${AZURE_DOMAIN_NAME}/ || echo "Connection failed or returned error."
+
+  echo "To debug further, run: curl -v --insecure https://${AZURE_DOMAIN_NAME}/"
+  echo "Once certificates are fully provisioned, try: curl -v https://${AZURE_DOMAIN_NAME}/"
+fi
+
 echo "Deployment script complete!"

@@ -1,0 +1,25 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: ${AZURE_TLS_SECRET_NAME}
+  namespace: default
+spec:
+  secretName: ${AZURE_TLS_SECRET_NAME}
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  commonName: ${AZURE_DOMAIN_NAME}
+  dnsNames:
+    - ${AZURE_DOMAIN_NAME}
+    - ws.${AZURE_DOMAIN_NAME}
+  usages:
+    - digital signature
+    - key encipherment
+    - server auth
+  privateKey:
+    algorithm: RSA
+    encoding: PKCS1
+    size: 2048
+  duration: 2160h # 90 days
+  renewBefore: 360h # 15 days
+  isCA: false

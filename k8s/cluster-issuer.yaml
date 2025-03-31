@@ -12,3 +12,9 @@ spec:
       - http01:
           ingress:
             class: nginx
+            podTemplate:
+              spec:
+                nodeSelector:
+                  "kubernetes.io/os": linux
+    # Explicitly set retry interval to avoid repeated failed requests
+    retryPeriod: 2h

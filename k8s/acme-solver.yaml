@@ -5,13 +5,17 @@ metadata:
   annotations:
     cert-manager.io/issue-temporary-certificate: "true"
     acme.cert-manager.io/http01-edit-in-place: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/rewrite-target: "/$2"
+    nginx.ingress.kubernetes.io/use-regex: "true"
 spec:
   ingressClassName: nginx
   rules:
     - host: "${AZURE_DOMAIN_NAME}"
       http:
         paths:
-          - path: "/.well-known/acme-challenge/"
+          - path: "/.well-known/acme-challenge/(.*)"
             pathType: ImplementationSpecific
             backend:
               service:
@@ -26,13 +30,17 @@ metadata:
   annotations:
     cert-manager.io/issue-temporary-certificate: "true"
     acme.cert-manager.io/http01-edit-in-place: "true"
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/rewrite-target: "/$2"
+    nginx.ingress.kubernetes.io/use-regex: "true"
 spec:
   ingressClassName: nginx
   rules:
     - host: "ws.${AZURE_DOMAIN_NAME}"
       http:
         paths:
-          - path: "/.well-known/acme-challenge/"
+          - path: "/.well-known/acme-challenge/(.*)"
             pathType: ImplementationSpecific
             backend:
               service:

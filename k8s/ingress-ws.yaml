@@ -25,12 +25,19 @@ metadata:
     nginx.ingress.kubernetes.io/session-cookie-name: "browserless_ws_affinity"
     nginx.ingress.kubernetes.io/session-cookie-expires: "86400"
     nginx.ingress.kubernetes.io/session-cookie-max-age: "86400"
+    # SSL configuration
+    nginx.ingress.kubernetes.io/ssl-protocols: "TLSv1.2 TLSv1.3"
+    nginx.ingress.kubernetes.io/ssl-ciphers: "ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.org/hsts: "true"
+    nginx.org/hsts-max-age: "63072000"
+    nginx.org/hsts-include-subdomains: "true"
 spec:
   ingressClassName: nginx
   tls:
     - hosts:
         - ws.${AZURE_DOMAIN_NAME}
-      secretName: ${AZURE_TLS_SECRET_NAME}-ws
+      secretName: ${AZURE_TLS_SECRET_NAME}
   rules:
     - host: ws.${AZURE_DOMAIN_NAME}
       http:

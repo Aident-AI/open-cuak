@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cert-manager-config
+  namespace: cert-manager
+data:
+  # Configure cert-manager to use DNS01 and HTTP01 challenges
+  acme-http01-solver-config: |
+    # Request longer timeouts for ACME challenges
+    timeout: 180s
+    ingress-class: nginx
+    pod-template:
+      spec:
+        nodeSelector:
+          kubernetes.io/os: linux
+
+  # Additional cert-manager configuration
+  controller-config: |
+    # Enable leader election for HA deployments
+    leaderElection:
+      enabled: true
+      namespace: cert-manager
+
+    # Configure certificate chain
+    featureGates:
+      AdditionalCertificateOutputFormats: true
+      ExperimentalCertificateSigningRequestControllers: true
+      ServerSideApply: true
+      
+    # Logging configuration
+    logLevel: 2
+    logging:
+      level: 2
+      format: text
+
+    # Certificate reuse settings
+    enableCertificateRenewal: true
+    enableCertificateOwnerRef: false
+    enableStatusConditions: true
+
+    # Rate limit handling
+    acme:
+      http01:
+        # Prioritize reuse before attempting new challenges
+        prioritizeReuseByDefault: true
+        retryPeriod: 60s

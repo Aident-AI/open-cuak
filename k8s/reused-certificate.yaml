@@ -1,0 +1,27 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: ${REUSED_CERT_NAME}
+  annotations:
+    cert-manager.io/issue-temporary-certificate: "false"
+    cert-manager.io/allow-direct-injection: "true"
+    cert-manager.io/disable-auto-replace: "true"
+    cert-manager.io/reused-from: "${REUSED_SECRET_NAME}"
+spec:
+  secretName: ${REUSED_SECRET_NAME}
+  commonName: ${AZURE_DOMAIN_NAME}
+  dnsNames:
+    - ${AZURE_DOMAIN_NAME}
+    - ws.${AZURE_DOMAIN_NAME}
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  duration: 2160h
+  renewBefore: 360h
+  # Store certificates in PEM format
+  additionalOutputFormats:
+    - type: CertificateChain
+  privateKey:
+    algorithm: RSA
+    encoding: PKCS1
+    size: 2048
