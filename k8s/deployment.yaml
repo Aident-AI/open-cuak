@@ -15,6 +15,7 @@ spec:
       containers:
         - name: ${AZURE_CONTAINER_NAME}
           image: ${DOCKER_IMAGE_NAME}:${DOCKER_IMAGE_TAG}
+          imagePullPolicy: Always
           command: ["/bin/sh", "-c"]
           args: ["/app/server/scripts/start-ws-server.sh --prod --cloud"]
           env:
