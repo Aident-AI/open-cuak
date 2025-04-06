@@ -26,6 +26,47 @@ echo "{
 vercel env pull --environment=production --token=$VERCEL_TOKEN .env.cloud
 echo "Vercel environment variables fetched successfully"
 
+# Update environment variables in index.js files
+echo "Updating environment variables in index.js files..."
+
+# Extract environment variables from .env.cloud
+CLOUD_SUPABASE_ANON_KEY=$(grep -E "^NEXT_PUBLIC_SUPABASE_ANON_KEY=" .env.cloud | cut -d '=' -f2-)
+CLOUD_SUPABASE_URL=$(grep -E "^NEXT_PUBLIC_SUPABASE_URL=" .env.cloud | cut -d '=' -f2-)
+CLOUD_PG_CONNECTION=$(grep -E "^PG_CONNECTION=" .env.cloud | cut -d '=' -f2-)
+CLOUD_SUPABASE_SERVICE_ROLE_KEY=$(grep -E "^SUPABASE_SERVICE_ROLE_KEY=" .env.cloud | cut -d '=' -f2-)
+
+# Extract environment variables from .env.production if it exists
+if [ -f ".env.production" ]; then
+  PROD_SUPABASE_ANON_KEY=$(grep -E "^NEXT_PUBLIC_SUPABASE_ANON_KEY=" .env.production | cut -d '=' -f2-)
+  PROD_SUPABASE_URL=$(grep -E "^NEXT_PUBLIC_SUPABASE_URL=" .env.production | cut -d '=' -f2-)
+  PROD_PG_CONNECTION=$(grep -E "^PG_CONNECTION=" .env.production | cut -d '=' -f2-)
+  PROD_SUPABASE_SERVICE_ROLE_KEY=$(grep -E "^SUPABASE_SERVICE_ROLE_KEY=" .env.production | cut -d '=' -f2-)
+fi
+
+# Find all index.js files in /app/extension/scripts
+find /app/extension/scripts -name "index.js" | while read -r file; do
+  echo "Processing $file..."
+
+  # Replace environment variables if they exist in production
+  if [ -n "$PROD_SUPABASE_ANON_KEY" ]; then
+    sed -i "s|$PROD_SUPABASE_ANON_KEY|$CLOUD_SUPABASE_ANON_KEY|g" "$file"
+  fi
+
+  if [ -n "$PROD_SUPABASE_URL" ]; then
+    sed -i "s|$PROD_SUPABASE_URL|$CLOUD_SUPABASE_URL|g" "$file"
+  fi
+
+  if [ -n "$PROD_PG_CONNECTION" ]; then
+    sed -i "s|$PROD_PG_CONNECTION|$CLOUD_PG_CONNECTION|g" "$file"
+  fi
+
+  if [ -n "$PROD_SUPABASE_SERVICE_ROLE_KEY" ]; then
+    sed -i "s|$PROD_SUPABASE_SERVICE_ROLE_KEY|$CLOUD_SUPABASE_SERVICE_ROLE_KEY|g" "$file"
+  fi
+done
+
+echo "Environment variables updated in index.js files"
+
 # Check if .env.production exists and is writable
 if [ ! -w ".env.production" ]; then
   echo "Warning: .env.production is not writable, attempting to fix permissions"
