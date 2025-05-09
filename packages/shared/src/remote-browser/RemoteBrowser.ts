@@ -15,9 +15,8 @@ import { SupabaseClientForServer } from '~shared/supabase/client/SupabaseClientF
 import { WaitUtils } from '~shared/utils/WaitUtils';
 
 export interface RemoteBrowserOptions {
-  endpoint: string;
-
   defaultViewport?: { width: number; height: number };
+  endpoint?: string;
   execSessionId?: string;
   loadExtension?: boolean;
   maxRetries?: number; // default is 10
