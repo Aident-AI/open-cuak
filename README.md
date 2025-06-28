@@ -18,7 +18,7 @@
 
 <h1 align="center">🤖 - Free OpenAI Operator alternative - 👥</h1>
 
-Open CUA Kit (Computer Use Agent), or Open-CUAK (pronounced "quack" 🦆🗣️), is THE platform for teaching, hiring and managing automation agents at scale — starting with browsers.
+Open CUA (Computer Use Agent) Kit, or Open-CUAK (pronounced "quack" 🦆🗣️), is THE platform for teaching, hiring and managing automation agents at scale — starting with browsers.
 
 ### 🎯 Why Open-CUAK?
 
